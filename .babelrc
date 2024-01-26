@@ -1,0 +1,13 @@
+{
+  "plugins": [
+    "@vue/babel-plugin-jsx",
+    [
+      "module-resolver",
+      {
+        "alias": {
+          "@": "./src"
+        }
+      }
+    ]
+  ]
+}
