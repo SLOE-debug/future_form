@@ -16,7 +16,20 @@ export default class File extends BaseEntity implements IFile {
   /**
    * 文件名称
    */
-  name: string;
+  private _name: string;
+  public get name(): string {
+    return this._name;
+  }
+  public set name(v: string) {
+    this._name = v;
+    this.suffix = v.split(".").pop().toLowerCase() || "";
+  }
+
+  /**
+   * 文件后缀
+   */
+  public suffix: string;
+
   /**
    * 文件内容
    */

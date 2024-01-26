@@ -1,10 +1,11 @@
-export  namespace VritualFileSytem {
+export namespace VritualFileSytem {
   export interface BaseEntity {
     name: string;
     Delete: () => void;
   }
 
   export interface IFile extends BaseEntity {
+    suffix: string;
     content: string;
   }
 

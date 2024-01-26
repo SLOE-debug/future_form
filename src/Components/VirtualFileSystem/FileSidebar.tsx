@@ -18,11 +18,10 @@ export default class FileSidebar extends Vue {
     },
   ];
 
-  @Provide("subDirectorys")
-  subDirectorys: IDirectory[];
-
+  @Provide("directory")
+  directory: IDirectory;
   created() {
-    this.subDirectorys = [this.$Store.get.Root];
+    this.directory = this.$Store.get.Root;
   }
 
   render() {
@@ -35,7 +34,7 @@ export default class FileSidebar extends Vue {
         </div>
         <div class={css.content}>
           <div class={css.projectName}>项目名称</div>
-          <Folder {...{ root: true }} />
+          <Folder />
         </div>
       </div>
     );

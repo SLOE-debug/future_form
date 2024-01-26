@@ -6,31 +6,18 @@ type IDirectory = VritualFileSytem.IDirectory;
 
 @Component
 export default class Folder extends Vue {
-  @Prop({ default: false })
-  root: boolean;
-  @Prop
-  index: number;
+  @Prop({ default: 0 })
+  level: number;
 
-  @Inject({ from: "subDirectorys" })
-  subDirectorys: IDirectory[];
-
-  @Provide("directory")
+  @Inject
   directory: IDirectory;
-
-  created() {
-    if (this.root) {
-      this.directory = this.subDirectorys[0];
-    } else {
-      this.directory = this.subDirectorys[this.index];
-    }
-  }
 
   render() {
     let dirs = this.directory.directories.map((dir, i) => {
-      return <Entity {...{ name: dir.name, isDirectory: true, index: i }}></Entity>;
+      return <Entity {...{ name: dir.name, isDirectory: true, index: i, level: this.level }}></Entity>;
     });
     let files = this.directory.files.map((file) => {
-      return <Entity {...{ name: file.name }}></Entity>;
+      return <Entity {...{ name: file.name, suffix: file.suffix, level: this.level }}></Entity>;
     });
     return (
       <>

@@ -15,6 +15,8 @@ const root = new Directory("root");
 const home = new Directory("home");
 home.directories = [new Directory("user")];
 
+home.files = [new File("file1.txt"), new File("main.ts"), new File("file3.txt")];
+
 root.directories = [
   home,
   new Directory("bin"),
@@ -23,6 +25,7 @@ root.directories = [
   new Directory("tmp"),
   new Directory("usr"),
 ];
+root.files = [new File("file1.txt"), new File("main.ts"), new File("file3.txt")];
 
 const state: FileSytemState = {
   Root: root,
