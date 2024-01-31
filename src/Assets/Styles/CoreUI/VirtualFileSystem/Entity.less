@@ -1,0 +1,62 @@
+.entity {
+  width: 100%;
+  color: #999;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  .fileInfo {
+    display: flex;
+    align-items: center;
+    height: 22px;
+    position: relative;
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #e6e6e6;
+    }
+    svg {
+      font-size: 0.6rem;
+    }
+    .name {
+      width: 99%;
+      margin-left: 6px;
+      height: 95%;
+      display: flex;
+      align-items: center;
+      position: relative;
+      input {
+        width: 99%;
+        border: none;
+        background-color: transparent;
+        color: #e6e6e6;
+        font-size: 0.8rem;
+        font-weight: 500;
+        box-shadow: 0 0 0 1px #ad9cff inset;
+        height: 95%;
+        &:focus {
+          outline: none;
+        }
+      }
+      .error {
+        position: absolute;
+        width: 100%;
+        top: 22px;
+        z-index: 999;
+        color: #e6e6e6 !important;
+        border: 1px solid #b31000;
+        background-color: #5a1d1d;
+        padding: 2px;
+      }
+    }
+    .lock {
+      position: absolute;
+      right: 10px;
+      font-size: 0.8rem;
+      color: #999;
+    }
+  }
+  .active {
+    box-shadow: 0 0 0 1px #ad9cff inset;
+    color: #e6e6e6;
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+}

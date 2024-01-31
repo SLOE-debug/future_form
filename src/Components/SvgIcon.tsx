@@ -7,7 +7,7 @@ export default class SvgIcon extends Vue {
   name: string;
   @Prop({ default: 18 })
   size: number;
-  @Prop
+  @Prop({ default: "#e6e6e6" })
   color: string;
 
   render() {
@@ -20,7 +20,13 @@ export default class SvgIcon extends Vue {
         ></div>
       );
     } catch (error) {
-      return <FontAwesomeIcon icon={"file"} />;
+      return (
+        <div
+          style={{ width: this.size + "px", height: this.size + "px", fill: this.color }}
+          class={css.svgIcon}
+          v-html={require(`!!raw-loader!@/Assets/Icon/SVG/unknownFileSuffix.svg`).default}
+        ></div>
+      );
     }
   }
 }

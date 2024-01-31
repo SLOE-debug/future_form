@@ -1,11 +1,16 @@
 import { App } from "vue";
 import { createStore, Store } from "vuex";
-import FileSytemModule, { FileSytemState } from "./Modules/VirtualFileSystem";
+import VirtualFileSytemModule, { VirtualFileSytemState } from "./Modules/VirtualFileSystem";
+import PageModule, { PageState } from "./Modules/Page";
 
-export type RootState = FileSytemState;
+export type RootState = {
+  Page: PageState;
+  VirtualFileSystem: VirtualFileSytemState;
+};
 const store: Store<RootState> = createStore({
   modules: {
-    FileSytemModule: FileSytemModule,
+    Page: PageModule,
+    VirtualFileSystem: VirtualFileSytemModule,
   },
 });
 
@@ -13,12 +18,6 @@ export default store;
 
 export const vuex = {
   install(app: App<Element>) {
-    Object.defineProperty(store, "get", {
-      get() {
-        return store.getters;
-      },
-    });
-
     app.config.globalProperties.$Store = store;
 
     if (sessionStorage.Token) store.dispatch("SetToken", sessionStorage.Token);
