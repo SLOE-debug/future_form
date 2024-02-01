@@ -31,7 +31,7 @@ export default class Directory extends Basic implements IDirectory {
   AddDirectory(...dirs: IDirectory[]) {
     for (let i = 0; i < dirs.length; i++) {
       const d = dirs[i];
-      d.path = `${this.path ? this.path + "/" : ""}${d.name}`;
+      d.path = `${this.path ? this.path + "/" : ""}${this.name}`;
     }
 
     this.directories.push(...dirs);
@@ -44,7 +44,7 @@ export default class Directory extends Basic implements IDirectory {
   AddFile(...files: IFile[]) {
     for (let i = 0; i < files.length; i++) {
       const f = files[i];
-      f.path = `${this.path ? this.path + "/" : ""}${f.name}`;
+      f.path = `${this.path ? this.path + "/" : ""}${this.name}`;
     }
     this.files.push(...files);
     this.files.sort((a, b) => a.name.localeCompare(b.name));

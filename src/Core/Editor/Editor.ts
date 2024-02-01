@@ -1,4 +1,5 @@
 import { VritualFileSytem } from "@/Types/VirtualFileSystem";
+import store from "@/Vuex/Store";
 import * as monaco from "monaco-editor";
 import * as actions from "monaco-editor/esm/vs/platform/actions/common/actions";
 
@@ -13,6 +14,7 @@ export default class Editor {
   constructor() {
     this.DefineTheme();
     this.SetTypeScriptTokenizer();
+    this.SetTypeScriptProjectConfig();
   }
 
   /**
@@ -36,6 +38,28 @@ export default class Editor {
       ],
       colors: {
         "editor.foreground": "#d4d4d4",
+      },
+    });
+  }
+
+  private SetTypeScriptProjectConfig() {
+    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+      baseUrl: ".",
+      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+    });
+    monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
+    monaco.languages.registerDefinitionProvider("typescript", {
+      provideDefinition: function (model, position) {
+        let contet = model.getLineContent(position.lineNumber);
+        let ref = contet.match(/from\s+['](.*)[']/);
+        console.log(ref);
+
+        // 这里编写代码来决定如何查找定义
+        // 比如，可以解析文件、分析导入语句等
+        return {
+          uri: model.uri, // 目标文件的 URI
+          range: new monaco.Range(0, 0, 0, 0), // 目标位置
+        };
       },
     });
   }
@@ -134,61 +158,107 @@ export default class Editor {
   ConfigureAutoComplete() {
     monaco.languages.registerCompletionItemProvider("typescript", {
       triggerCharacters: ["'", '"'],
-      provideCompletionItems: function (model, position, ctx, token) {
+      provideCompletionItems: (model, position, ctx, token) => {
         let content = model.getLineContent(position.lineNumber);
-        if (content.startsWith("import")) {
+        let range = new monaco.Range(
+          position.lineNumber,
+          position.column - 1,
+          position.lineNumber,
+          position.column - 1
+        );
+
+        let match = content.match(/from\s+[']/);
+        if (match && (content[position.column - 1] == "'" || content[position.column - 1] == '"')) {
           return {
-            suggestions: [
-              {
-                label: "vue",
-                kind: monaco.languages.CompletionItemKind.Keyword,
-                insertText: "vue",
-                sortText: "0",
-                range: new monaco.Range(
-                  position.lineNumber,
-                  position.column - 1,
-                  position.lineNumber,
-                  position.column - 1
-                ),
-              },
-            ],
+            suggestions: this.CreateFilePathSuggestions(range),
           };
         }
 
         return {
-          suggestions: [
-            {
-              label: "import",
-              kind: monaco.languages.CompletionItemKind.Keyword,
-              insertText: "import {${1}} from '${2}'",
-              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-              detail: "import ... from ...",
-              sortText: "0",
-              range: new monaco.Range(
-                position.lineNumber,
-                position.column - 1,
-                position.lineNumber,
-                position.column - 1
-              ),
-            },
-            {
-              label: "log",
-              kind: monaco.languages.CompletionItemKind.Function,
-              insertText: "console.log(${1})",
-              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-              detail: "输出",
-              documentation: "控制台输出方法",
-              range: new monaco.Range(
-                position.lineNumber,
-                position.column - 1,
-                position.lineNumber,
-                position.column - 1
-              ),
-            },
-          ],
+          suggestions: this.CreateBasicSuggestions(range, position),
         };
       },
     });
+  }
+
+  /**
+   * 创建基础建议
+   * @param range 范围
+   * @returns 建议
+   */
+  CreateBasicSuggestions(range: monaco.Range, position: monaco.Position) {
+    let content = this.editor.getModel().getLineContent(position.lineNumber);
+    let suggestions = [];
+
+    if ("import".startsWith(content.trim())) {
+      suggestions.push({
+        label: "import",
+        kind: monaco.languages.CompletionItemKind.Keyword,
+        insertText: "import {} from '${1}'",
+        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+        detail: "import ... from ...",
+        sortText: "0",
+        range,
+      });
+    }
+
+    suggestions.push({
+      label: "log",
+      kind: monaco.languages.CompletionItemKind.Function,
+      insertText: "console.log(${1})",
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      detail: "输出",
+      range,
+    });
+
+    return suggestions;
+  }
+
+  /**
+   * 创建文件路径建议
+   * @param range 范围
+   * @returns 建议
+   */
+  CreateFilePathSuggestions(range: monaco.Range) {
+    let currentFile = store.state.VirtualFileSystem.CurrentFile;
+    let currentPath = currentFile.path; // 例如：''，'' 代表是在根目录
+
+    let suggestions = [];
+    let dirs = [store.state.VirtualFileSystem.Root];
+    while (dirs.length) {
+      let dir = dirs.pop();
+
+      for (const file of dir.files) {
+        let relativePath = file.path; // 例如：'home', 这代表是在home目录下
+        let insertPath = "";
+        let name = file.name.substring(0, file.name.lastIndexOf("."));
+
+        // 生成相对路径
+        let relPathArr = relativePath.split("/").filter((m) => m);
+        let currentPathArr = currentPath.split("/").filter((m) => m);
+        if (currentPathArr.length > relPathArr.length) {
+          relPathArr.unshift(...new Array(currentPathArr.length - relPathArr.length).fill(".."));
+          insertPath = [...relPathArr, name].join("/");
+        } else if (currentPathArr.length == relPathArr.length) {
+          insertPath = [".", name].join("/");
+        } else {
+          insertPath = [".", ...relPathArr, name].join("/");
+        }
+
+        suggestions.push({
+          label: name,
+          kind: monaco.languages.CompletionItemKind.File,
+          insertText: insertPath,
+          detail: insertPath,
+          sortText: "0",
+          range,
+        });
+      }
+
+      dirs.push(...dir.directories);
+    }
+
+    return suggestions;
   }
 
   /**
@@ -198,9 +268,11 @@ export default class Editor {
    */
   GetOrCreateModel(file: IFile) {
     let fullName = file.GetFullName();
+
     let model = this.models.get(fullName);
     if (model) return model;
-    model = monaco.editor.createModel(file.content, "typescript", monaco.Uri.parse(`file:///${fullName}`));
+
+    model = monaco.editor.createModel(file.content, "typescript", monaco.Uri.parse(`inmemory:///${fullName}`));
     this.models.set(fullName, model);
     return model;
   }

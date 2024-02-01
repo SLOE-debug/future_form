@@ -38,7 +38,7 @@ export default abstract class Basic {
    * @returns 全名
    */
   GetFullName() {
-    return this.path + "/" + this.name;
+    return `${this.path ? this.path + "/" : ""}${this.name}`;
   }
 
   Delete() {

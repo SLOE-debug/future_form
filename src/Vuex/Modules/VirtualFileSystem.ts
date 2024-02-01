@@ -14,21 +14,23 @@ export type VirtualFileSytemState = {
   ContextMenus: MenuItem[];
 };
 
-const root = new Directory("root");
+const root = new Directory("");
 const home = new Directory("home");
 root.AddDirectory(home);
 home.AddDirectory(new Directory("user"));
 
-home.AddFile(new File("file1.txt"), new File("file2.txt"), new File("file3.txt"));
+home.AddFile(new File("file1.ts"), new File("file2.txt"), new File("file3.txt"));
 
 let Main = new File("Main.ts", true);
-Main.content = `class Main {
+Main.content = `export default class Main {
   constructor(){
     console.log('Main.ts')
   }
 }`;
 let Index = new File("index.ts", true);
-Index.content = `class index {
+Index.content = `import {} from './Main'
+
+class index {
   constructor(){
     console.log('index.ts')
   }
