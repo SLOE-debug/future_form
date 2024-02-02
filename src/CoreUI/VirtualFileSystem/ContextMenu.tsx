@@ -40,7 +40,7 @@ export default class ContextMenu extends Vue {
     return (
       <div class={css.contextMenu} style={this.style}>
         <ul>
-          {this.$Store.state.VirtualFileSystem.ContextMenus.map((m) => {
+          {this.$Store.get.VirtualFileSystem.ContextMenus.map((m) => {
             return (
               <li
                 onMousedown={(e: MouseEvent) => {

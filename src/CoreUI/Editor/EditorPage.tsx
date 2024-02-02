@@ -13,13 +13,18 @@ const editor = new Editor();
 export default class EditorPage extends Vue {
   get Style() {
     return {
-      marginLeft: this.$Store.state.Page.FileSidebarWidth + "px",
-      width: `calc(100% - ${this.$Store.state.Page.FileSidebarWidth}px)`,
+      marginLeft: this.$Store.get.Page.FileSidebarWidth + "px",
+      width: `calc(100% - ${this.$Store.get.Page.FileSidebarWidth}px)`,
     };
   }
 
+  @Watch("Style")
+  OnStyleChange(nv: any, ov: any) {
+    editor.editor?.layout();
+  }
+
   get File() {
-    return this.$Store.state.VirtualFileSystem.CurrentFile;
+    return this.$Store.get.VirtualFileSystem.CurrentFile;
   }
 
   /**
@@ -46,14 +51,40 @@ export default class EditorPage extends Vue {
     return (
       <div style={this.Style} class={css.editor}>
         <div class={css.tabs}>
-          <div class={css.item}>
-            <SvgIcon {...{ name: `tsFileSuffix`, color: suffix2Color["ts"] }}></SvgIcon>
-            <span>index.ts</span>
-            <FontAwesomeIcon icon={"xmark"}></FontAwesomeIcon>
-          </div>
+          {this.$Store.get.VirtualFileSystem.OpenFiles.map((m) => {
+            return (
+              <div
+                class={[css.item, this.$Store.get.VirtualFileSystem.CurrentFile == m ? css.active : ""].join(" ")}
+                onClick={(e) => {
+                  this.$Store.dispatch("VirtualFileSystem/SelectFile", m);
+                }}
+              >
+                <SvgIcon {...{ name: `tsFileSuffix`, color: suffix2Color["ts"] }}></SvgIcon>
+                <span>{m.name}</span>
+                <FontAwesomeIcon
+                  icon={"xmark"}
+                  {...{
+                    onClick: (e: MouseEvent) => {
+                      this.$Store.dispatch("VirtualFileSystem/CloseFile", m);
+                      if (this.$Store.get.VirtualFileSystem.OpenFiles.length == 0) {
+                        editor.Dispose();
+                      }
+                      e.stopPropagation();
+                    },
+                  }}
+                ></FontAwesomeIcon>
+              </div>
+            );
+          })}
         </div>
         <div class={css.content}>
-          <div ref="editor" class={css.editorInstance}></div>
+          <div
+            ref="editor"
+            class={css.editorInstance}
+            onDblclick={(e) => {
+              editor.GetCompiledCode();
+            }}
+          ></div>
           {/* <div style={{ color: "white" }}>编辑文件</div> */}
         </div>
       </div>

@@ -16,6 +16,12 @@ const actions: ActionTree<PageState, any> = {
       state.FileSidebarWidth += diff;
     }
   },
+  ShowFileSidebar({ state }) {
+    state.FileSidebarWidth = state.FileSidebarMinWidth;
+  },
+  HideFileSidebar({ state }) {
+    state.FileSidebarWidth = 2;
+  },
 };
 
 const getters: GetterTree<PageState, any> = {

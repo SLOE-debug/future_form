@@ -1,4 +1,5 @@
 import { VritualFileSytem } from "@/Types/VirtualFileSystem";
+import { Path } from "@/Utils/VirtualFileSystem/Path";
 import store from "@/Vuex/Store";
 import * as monaco from "monaco-editor";
 import * as actions from "monaco-editor/esm/vs/platform/actions/common/actions";
@@ -9,6 +10,7 @@ export default class Editor {
   ele: HTMLElement;
   editor: monaco.editor.IStandaloneCodeEditor;
   models: Map<string, monaco.editor.ITextModel> = new Map();
+  model2File: Map<monaco.editor.ITextModel, IFile> = new Map();
   modelStates: Map<string, monaco.editor.ICodeEditorViewState> = new Map();
 
   constructor() {
@@ -42,25 +44,68 @@ export default class Editor {
     });
   }
 
+  // 自定义 typescript 提供者
+  async CustomTypeScriptProvider(model: monaco.editor.ITextModel, position: monaco.Position) {
+    // 判断当前光标是否停留在 from 的引号中
+    let content = model.getLineContent(position.lineNumber);
+    let match = content.match(/from\s+['|"](.*)['|"]/); // 例：'./Main'
+    if (match) {
+      let col = position.column - 1;
+      // 获取引号的位置
+      let frist = content.indexOf('"');
+      if (frist == -1) frist = content.indexOf("'");
+      let last = content.lastIndexOf('"');
+      if (last == -1) last = content.lastIndexOf("'");
+
+      let refPath = match[1]; // 例：./Main
+      let currentPath = model.uri.path; // 例：/index.ts
+      let refAbsolutePath = Path.GetAbsolutePath(currentPath, refPath); // 例：/Main
+
+      // 判断光标是否在引号中
+      if (col > frist && col < last) {
+        let refModel = this.models.get(refAbsolutePath + ".ts");
+        if (refModel) {
+          store.dispatch("VirtualFileSystem/SelectFile", this.model2File.get(refModel));
+        }
+      } else {
+        // 光标不在引号中
+        let word = model.getWordAtPosition(position);
+        if (word) {
+          let refModel = this.models.get(refAbsolutePath + ".ts");
+          if (refModel) {
+            let value = refModel.getValue();
+            let index = value.indexOf(" " + word.word + " ") + 1;
+            if (index != -1) {
+              let start = refModel.getPositionAt(index);
+              let end = refModel.getPositionAt(index + word.word.length);
+              await store.dispatch("VirtualFileSystem/SelectFile", this.model2File.get(refModel));
+              this.editor.setSelection(
+                new monaco.Selection(start.lineNumber, start.column, end.lineNumber, end.column)
+              );
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * 设置TypeScript项目配置
+   */
   private SetTypeScriptProjectConfig() {
+    // 设置TypeScript编译器配置
     monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+      target: monaco.languages.typescript.ScriptTarget.ESNext,
+      allowNonTsExtensions: true,
+      module: monaco.languages.typescript.ModuleKind.ES2015,
       baseUrl: ".",
       moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
     });
+    // 设置TypeScript编译器配置
     monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
+    // 设置TypeScript定义提供者
     monaco.languages.registerDefinitionProvider("typescript", {
-      provideDefinition: function (model, position) {
-        let contet = model.getLineContent(position.lineNumber);
-        let ref = contet.match(/from\s+['](.*)[']/);
-        console.log(ref);
-
-        // 这里编写代码来决定如何查找定义
-        // 比如，可以解析文件、分析导入语句等
-        return {
-          uri: model.uri, // 目标文件的 URI
-          range: new monaco.Range(0, 0, 0, 0), // 目标位置
-        };
-      },
+      provideDefinition: this.CustomTypeScriptProvider.bind(this),
     });
   }
 
@@ -82,7 +127,7 @@ export default class Editor {
           },
         ]);
 
-        res.language.tokenizer.root.unshift([/class|extends/, "keyword", "@className"]);
+        res.language.tokenizer.root.unshift([/class|extends|new/, "keyword", "@className"]);
         res.language.tokenizer.root.unshift([/console/, "typeIdentifier"]);
         res.language.tokenizer.className = [
           [/[a-zA-Z][\w\$]*/, "typeIdentifier", "@pop"],
@@ -106,6 +151,7 @@ export default class Editor {
         other: true, // 在其他文本中启用自动完成
       },
     });
+
     this.ConfigureContextMenuAndShortcut();
     this.ConfigureAutoComplete();
   }
@@ -119,6 +165,8 @@ export default class Editor {
       if (k.id == "EditorContext") {
         let node = v._first;
         do {
+          // console.log(node.element);
+
           let shouldRemove = ids.includes(node.element?.command?.id);
           if (shouldRemove) {
             v._remove(node);
@@ -133,10 +181,13 @@ export default class Editor {
    * 配置右键菜单和快捷键
    */
   ConfigureContextMenuAndShortcut() {
-    this.RemoveContextMenuById(["editor.action.formatDocument", "editor.action.quickCommand"]);
+    // 删除格式化文档和跳转到定义
+    this.RemoveContextMenuById(["editor.action.formatDocument", "editor.action.revealDefinition"]);
+
     this.editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-      //   this.File.content = this.editor.getValue();
+      store.get.VirtualFileSystem.CurrentFile.content = this.editor.getValue();
     });
+    this.editor.addCommand(monaco.KeyMod.Alt | monaco.KeyMod.Shift | monaco.KeyCode.KeyF, function () {}, "");
 
     this.editor.addAction({
       id: "FormattedDocument",
@@ -148,6 +199,16 @@ export default class Editor {
       ],
       run: () => {
         this.editor.trigger("anyString", "editor.action.formatDocument", {});
+      },
+    });
+    this.editor.addAction({
+      id: "GoToDefinition",
+      label: "跳转到定义",
+      contextMenuGroupId: "navigation",
+      contextMenuOrder: 0,
+      keybindings: [monaco.KeyCode.F12],
+      run: () => {
+        this.editor.trigger("anyString", "editor.action.revealDefinition", {});
       },
     });
   }
@@ -167,7 +228,7 @@ export default class Editor {
           position.column - 1
         );
 
-        let match = content.match(/from\s+[']/);
+        let match = content.match(/from\s+['|"]/);
         if (match && (content[position.column - 1] == "'" || content[position.column - 1] == '"')) {
           return {
             suggestions: this.CreateFilePathSuggestions(range),
@@ -202,14 +263,16 @@ export default class Editor {
       });
     }
 
-    suggestions.push({
-      label: "log",
-      kind: monaco.languages.CompletionItemKind.Function,
-      insertText: "console.log(${1})",
-      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-      detail: "输出",
-      range,
-    });
+    if ("log".startsWith(content.trim())) {
+      suggestions.push({
+        label: "log",
+        kind: monaco.languages.CompletionItemKind.Function,
+        insertText: "console.log(${1})",
+        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+        detail: "输出",
+        range,
+      });
+    }
 
     return suggestions;
   }
@@ -221,7 +284,6 @@ export default class Editor {
    */
   CreateFilePathSuggestions(range: monaco.Range) {
     let currentFile = store.state.VirtualFileSystem.CurrentFile;
-    let currentPath = currentFile.path; // 例如：''，'' 代表是在根目录
 
     let suggestions = [];
     let dirs = [store.state.VirtualFileSystem.Root];
@@ -229,21 +291,8 @@ export default class Editor {
       let dir = dirs.pop();
 
       for (const file of dir.files) {
-        let relativePath = file.path; // 例如：'home', 这代表是在home目录下
-        let insertPath = "";
-        let name = file.name.substring(0, file.name.lastIndexOf("."));
-
-        // 生成相对路径
-        let relPathArr = relativePath.split("/").filter((m) => m);
-        let currentPathArr = currentPath.split("/").filter((m) => m);
-        if (currentPathArr.length > relPathArr.length) {
-          relPathArr.unshift(...new Array(currentPathArr.length - relPathArr.length).fill(".."));
-          insertPath = [...relPathArr, name].join("/");
-        } else if (currentPathArr.length == relPathArr.length) {
-          insertPath = [".", name].join("/");
-        } else {
-          insertPath = [".", ...relPathArr, name].join("/");
-        }
+        let insertPath = Path.GetRelativePath(currentFile.GetFullName(), file.GetFullName());
+        let name = Path.RemoveSuffix(file.name);
 
         suggestions.push({
           label: name,
@@ -290,6 +339,58 @@ export default class Editor {
     let state = this.modelStates.get(fullName);
     let model = this.GetOrCreateModel(newFile);
     this.editor.setModel(model);
+    this.model2File.set(model, newFile);
     if (state) this.editor.restoreViewState(state);
+  }
+
+  importMap: Map<string, string> = new Map();
+
+  /**
+   * 获取编译后的代码
+   * @returns 编译后的代码
+   */
+  async GetCompiledCode() {
+    let models = monaco.editor.getModels();
+    let worker = await monaco.languages.typescript.getTypeScriptWorker();
+    models.forEach(async (m) => {
+      let client = await worker(m.uri);
+      let out = await client.getEmitOutput(m.uri.toString());
+
+      // 匹配源代码中的 import 行, 使用 gm 格式的正则
+      const importReg = /import\s+.*\s+from\s+.*/gm;
+      const match = out.outputFiles[0].text.match(importReg);
+      if (match) {
+        match.forEach((refStr) => {
+          const ref = refStr.match(/from\s+['|"](.*)['|"]/);
+          if (ref) {
+            let refPath = ref[1]; // 例：./Main
+            let currentPath = m.uri.path; // 例：/index.ts
+            let refAbsolutePath = Path.GetAbsolutePath(currentPath, refPath); // 例：/Main
+
+            const scriptURL = this.importMap.get(refAbsolutePath);
+            if (scriptURL) {
+              out.outputFiles[0].text = out.outputFiles[0].text.replace(refPath, scriptURL);
+            }
+          }
+        });
+      }
+
+      const blob = new Blob([out.outputFiles[0].text], { type: "text/javascript" });
+      const scriptURL = URL.createObjectURL(blob);
+      this.importMap.set(Path.RemoveSuffix(m.uri.path).substring(1), scriptURL);
+
+      const script = document.createElement("script");
+      script.type = "module";
+      script.src = scriptURL;
+      document.body.appendChild(script);
+    });
+  }
+
+  /**
+   * 释放资源
+   */
+  Dispose() {
+    this.editor.dispose();
+    this.editor = null;
   }
 }

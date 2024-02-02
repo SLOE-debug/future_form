@@ -18,6 +18,13 @@ export default store;
 
 export const vuex = {
   install(app: App<Element>) {
+    let get: any = {};
+    for (const key in (store as any)._modulesNamespaceMap) {
+      get[key.split("/")[0]] = (store as any)._modulesNamespaceMap[key].context.getters;
+    }
+
+    store.get = get;
+
     app.config.globalProperties.$Store = store;
 
     if (sessionStorage.Token) store.dispatch("SetToken", sessionStorage.Token);

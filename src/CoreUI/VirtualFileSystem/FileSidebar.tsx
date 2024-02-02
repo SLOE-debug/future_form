@@ -36,7 +36,7 @@ export default class FileSidebar extends Vue {
   @Provide("directory")
   directory: IDirectory;
   created() {
-    this.directory = this.$Store.state.VirtualFileSystem.Root;
+    this.directory = this.$Store.get.VirtualFileSystem.Root;
   }
 
   ProjectToolItemClick(m: any) {
@@ -59,9 +59,18 @@ export default class FileSidebar extends Vue {
   }
 
   Adjusting(e: MouseEvent) {
-    if (e.clientX < this.$Store.state.Page.FileSidebarMinWidth) return;
+    if (e.clientX < 20) {
+      this.$Store.dispatch("Page/HideFileSidebar");
+      return;
+    } else if (this.$Store.get.Page.FileSidebarWidth == 2 && e.clientX > 20) {
+      this.startAdjustX = this.$Store.get.Page.FileSidebarMinWidth;
+      this.$Store.dispatch("Page/ShowFileSidebar");
+      return;
+    }
+    if (e.clientX < this.$Store.get.Page.FileSidebarMinWidth) return;
     let diff = e.clientX - this.startAdjustX;
     this.startAdjustX = e.clientX;
+
     this.$Store.dispatch("Page/AdjustFileSidebarWidth", diff);
   }
 
@@ -81,10 +90,10 @@ export default class FileSidebar extends Vue {
       <div
         class={css.sidebar}
         onMousedown={() => {
-          this.$Store.dispatch("VirtualFileSystem/SelectDirectory", this.$Store.state.VirtualFileSystem.Root);
+          this.$Store.dispatch("VirtualFileSystem/SelectDirectory", this.$Store.get.VirtualFileSystem.Root);
           this.contextMenuPosition = null;
         }}
-        style={{ width: this.$Store.state.Page.FileSidebarWidth + "px" }}
+        style={{ width: this.$Store.get.Page.FileSidebarWidth + "px" }}
       >
         <div class={css.topTools}>
           {this.topTools.map((tool) => (

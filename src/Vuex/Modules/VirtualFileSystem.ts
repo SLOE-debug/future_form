@@ -12,6 +12,7 @@ export type VirtualFileSytemState = {
   CurrentDirectory: IDirectory;
   CurrentFile: IFile;
   ContextMenus: MenuItem[];
+  OpenFiles: IFile[];
 };
 
 const root = new Directory("");
@@ -19,22 +20,31 @@ const home = new Directory("home");
 root.AddDirectory(home);
 home.AddDirectory(new Directory("user"));
 
-home.AddFile(new File("file1.ts"), new File("file2.txt"), new File("file3.txt"));
+let file = new File("file1.ts");
+file.content = `export default class File {
+  constructor(){
+    
+  }
+}`;
+
+home.AddFile(file, new File("file2.txt"), new File("file3.txt"));
 
 let Main = new File("Main.ts", true);
 Main.content = `export default class Main {
   constructor(){
-    console.log('Main.ts')
+    console.log('Main 被创建')
   }
 }`;
-let Index = new File("index.ts", true);
-Index.content = `import {} from './Main'
+let Index = new File("Index.ts");
+Index.content = `import Main from './Main'
 
-class index {
+class Index {
   constructor(){
-    console.log('index.ts')
+    console.log('Index 被创建')
+    console.log(new Main())
   }
-}`;
+}
+new Index()`;
 
 root.AddFile(Main, Index);
 
@@ -43,11 +53,12 @@ const state: VirtualFileSytemState = {
   CurrentDirectory: root,
   CurrentFile: null,
   ContextMenus: [],
+  OpenFiles: [],
 };
 
 const actions: ActionTree<VirtualFileSytemState, any> = {
   // 寻找文件/文件夹父级
-  async FindParent({ state }, entity: IDirectory | IFile) {
+  FindParent({ state }, entity: IDirectory | IFile) {
     if (state.Root === entity) return null;
     let parent: IDirectory = null;
     const find = (dir: IDirectory) => {
@@ -61,7 +72,7 @@ const actions: ActionTree<VirtualFileSytemState, any> = {
     return parent;
   },
   // 创建文件夹
-  async CreateDirectory({ state, dispatch }) {
+  CreateDirectory({ state, dispatch }) {
     const directory = new Directory("");
     directory.isRename = true;
     state.CurrentDirectory.directories.push(directory);
@@ -81,7 +92,7 @@ const actions: ActionTree<VirtualFileSytemState, any> = {
     state.CurrentDirectory = parent;
   },
   // 创建文件
-  async CreateFile({ state, dispatch }) {
+  CreateFile({ state, dispatch }) {
     const file: IFile = new File("");
     file.isRename = true;
     state.CurrentDirectory.files.push(file);
@@ -93,6 +104,7 @@ const actions: ActionTree<VirtualFileSytemState, any> = {
     file.selected = true;
     state.CurrentFile = file;
     dispatch("SetMenus");
+    dispatch("OpenFile", file);
   },
   // 删除文件
   async DeleteFile({ state, dispatch }, file: IFile) {
@@ -104,6 +116,7 @@ const actions: ActionTree<VirtualFileSytemState, any> = {
   GetCurrentEntity({ state }) {
     return state.CurrentDirectory.selected ? state.CurrentDirectory : state.CurrentFile;
   },
+  // 设置右键菜单
   async SetMenus({ state, dispatch }) {
     let entity = (await dispatch("GetCurrentEntity")) as IDirectory | IFile;
     let menus = [];
@@ -113,14 +126,32 @@ const actions: ActionTree<VirtualFileSytemState, any> = {
     }
     state.ContextMenus = menus;
   },
+  // 打开文件
+  OpenFile({ state }, file: IFile) {
+    if (state.OpenFiles.includes(file)) return;
+    state.OpenFiles.push(file);
+  },
+  // 关闭文件
+  CloseFile({ state }, file: IFile) {
+    state.OpenFiles.splice(state.OpenFiles.indexOf(file), 1);
+    console.log(state.OpenFiles);
+  },
 };
 
 const getters: GetterTree<VirtualFileSytemState, any> = {
-  Root(state) {
-    return state.Root;
+  Root: (state) => state.Root,
+  CurrentDirectory(state) {
+    return state.CurrentDirectory;
   },
-  CurrentDirectory: (state) => state.CurrentDirectory,
-  CurrentFile: (state) => state.CurrentFile,
+  CurrentFile(state) {
+    return state.CurrentFile;
+  },
+  ContextMenus(state) {
+    return state.ContextMenus;
+  },
+  OpenFiles(state) {
+    return state.OpenFiles;
+  },
 };
 
 const VirtualFileSytemModule: Module<VirtualFileSytemState, any> = {
