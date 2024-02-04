@@ -1,12 +1,13 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { Component, Inject, Prop, Provide, Vue, Watch } from "vue-facing-decorator";
 import Folder from "./Folder";
-import { VritualFileSytem } from "@/Types/VirtualFileSystem";
+import { VritualFileSystem } from "@/Types/VirtualFileSystem";
 import SvgIcon from "../../Components/SvgIcon";
 import { suffix2Color } from "@/Utils/VirtualFileSystem/Index";
+import { Guid } from "@/Utils/Index";
 
-type IDirectory = VritualFileSytem.IDirectory;
-type IFile = VritualFileSytem.IFile;
+type IDirectory = VritualFileSystem.IDirectory;
+type IFile = VritualFileSystem.IFile;
 
 @Component
 export default class Entity extends Vue {
@@ -61,6 +62,7 @@ export default class Entity extends Vue {
       this.entity = this.Parentdirectory.directories[this.index];
     } else {
       this.entity = this.Parentdirectory.files[this.index];
+      this.FillSpecialFileChildren();
     }
   }
 
@@ -81,6 +83,17 @@ export default class Entity extends Vue {
     }
   }
 
+  // 特殊文件赋值子文件夹
+  FillSpecialFileChildren() {
+    let entity = this.entity as IFile;
+    if (entity.specialFile) {
+      this.directory = {
+        directories: [],
+        files: entity.children,
+      } as IDirectory;
+    }
+  }
+
   /**
    * 重命名
    * @param newName 新名称
@@ -96,6 +109,12 @@ export default class Entity extends Vue {
     }
     this.entity.name = newName;
     this.entity.isRename = false;
+    this.FillSpecialFileChildren();
+    if (this.isDirectory) {
+      this.$Store.dispatch("VirtualFileSystem/SelectDirectory", this.entity);
+    } else {
+      this.$Store.dispatch("VirtualFileSystem/SelectFile", this.entity);
+    }
   }
 
   newName = "";
@@ -106,6 +125,11 @@ export default class Entity extends Vue {
         type="text"
         v-focus
         key={this.entity.id}
+        onKeydown={(e) => {
+          if (e.key == "Enter") {
+            this.Rename(this.newName);
+          }
+        }}
         {...{
           type: "text",
           onClick: (e: MouseEvent) => e.stopPropagation(),
@@ -124,6 +148,15 @@ export default class Entity extends Vue {
         }}
       />
     );
+  }
+
+  RenderSubDirectory() {
+    if (this.directory?.spread) {
+      return <Folder {...{ level: this.level + 1 }} />;
+    }
+    if ((this.entity as IFile).specialFile && (this.entity as IFile).spread) {
+      return <Folder {...{ level: this.level + 1 }}></Folder>;
+    }
   }
 
   errorMessage = "";
@@ -145,7 +178,7 @@ export default class Entity extends Vue {
             <FontAwesomeIcon icon={"lock"} class={css.lock} title="不可删除和重命名的"></FontAwesomeIcon>
           )}
         </div>
-        {this.directory?.spread && <Folder {...{ level: this.level + 1 }} />}
+        {this.RenderSubDirectory()}
       </div>
     );
   }

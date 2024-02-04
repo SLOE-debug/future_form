@@ -1,7 +1,7 @@
-import { VritualFileSytem } from "@/Types/VirtualFileSystem";
+import { VritualFileSystem } from "@/Types/VirtualFileSystem";
 
-type IFile = VritualFileSytem.IFile;
-type IDirectory = VritualFileSytem.IDirectory;
+type IFile = VritualFileSystem.IFile;
+type IDirectory = VritualFileSystem.IDirectory;
 
 export function IsDirectory(entity: IFile | IDirectory): entity is IDirectory {
   return (entity as IDirectory).directories !== undefined;
@@ -12,12 +12,6 @@ export function IsDirectory(entity: IFile | IDirectory): entity is IDirectory {
  */
 export const suffix2Color = {
   ts: "#007acc",
-  vue: "#41b883",
-  scss: "#c6538c",
-  html: "#e34c26",
-  css: "#563d7c",
-  js: "#f1e05a",
-  json: "#f1e05a",
-  md: "#f1e05a",
   txt: "#f1e05a",
+  des: "rgb(165 127 255)",
 };

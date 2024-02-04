@@ -1,16 +1,16 @@
 import { App } from "vue";
 import { createStore, Store } from "vuex";
-import VirtualFileSytemModule, { VirtualFileSytemState } from "./Modules/VirtualFileSystem";
+import VirtualFileSystemModule, { VirtualFileSystemState } from "./Modules/VirtualFileSystem";
 import PageModule, { PageState } from "./Modules/Page";
 
 export type RootState = {
   Page: PageState;
-  VirtualFileSystem: VirtualFileSytemState;
+  VirtualFileSystem: VirtualFileSystemState;
 };
 const store: Store<RootState> = createStore({
   modules: {
     Page: PageModule,
-    VirtualFileSystem: VirtualFileSytemModule,
+    VirtualFileSystem: VirtualFileSystemModule,
   },
 });
 

@@ -1,9 +1,9 @@
-import { VritualFileSytem } from "@/Types/VirtualFileSystem";
+import { VritualFileSystem } from "@/Types/VirtualFileSystem";
 
 import Basic from "./Basic";
 
-type IDirectory = VritualFileSytem.IDirectory;
-type IFile = VritualFileSytem.IFile;
+type IDirectory = VritualFileSystem.IDirectory;
+type IFile = VritualFileSystem.IFile;
 
 export default class Directory extends Basic implements IDirectory {
   /**

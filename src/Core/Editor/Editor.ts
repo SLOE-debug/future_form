@@ -1,10 +1,12 @@
-import { VritualFileSytem } from "@/Types/VirtualFileSystem";
+import { Compile } from "@/Types/Compile";
+import { VritualFileSystem } from "@/Types/VirtualFileSystem";
 import { Path } from "@/Utils/VirtualFileSystem/Path";
 import store from "@/Vuex/Store";
 import * as monaco from "monaco-editor";
 import * as actions from "monaco-editor/esm/vs/platform/actions/common/actions";
 
-type IFile = VritualFileSytem.IFile;
+type IFile = VritualFileSystem.IFile;
+type CompiledFile = Compile.CompiledFile;
 
 export default class Editor {
   ele: HTMLElement;
@@ -17,6 +19,7 @@ export default class Editor {
     this.DefineTheme();
     this.SetTypeScriptTokenizer();
     this.SetTypeScriptProjectConfig();
+    this.ConfigureAutoComplete();
   }
 
   /**
@@ -152,8 +155,17 @@ export default class Editor {
       },
     });
 
+    this.editor.onDidChangeModelContent(this.ModelContentChanged.bind(this));
+
     this.ConfigureContextMenuAndShortcut();
-    this.ConfigureAutoComplete();
+  }
+
+  /**
+   * 模型内容改变
+   */
+  ModelContentChanged() {
+    store.get.VirtualFileSystem.CurrentFile.isUnsaved =
+      this.editor.getValue() != store.get.VirtualFileSystem.CurrentFile.content;
   }
 
   /**
@@ -177,15 +189,21 @@ export default class Editor {
     }
   }
 
+  // 是否已配置
+  isConfigured = false;
+
   /**
    * 配置右键菜单和快捷键
    */
   ConfigureContextMenuAndShortcut() {
+    if (this.isConfigured) return;
     // 删除格式化文档和跳转到定义
     this.RemoveContextMenuById(["editor.action.formatDocument", "editor.action.revealDefinition"]);
 
     this.editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       store.get.VirtualFileSystem.CurrentFile.content = this.editor.getValue();
+      store.get.VirtualFileSystem.CurrentFile.isUnsaved = false;
+      store.dispatch("VirtualFileSystem/SaveRoot");
     });
     this.editor.addCommand(monaco.KeyMod.Alt | monaco.KeyMod.Shift | monaco.KeyCode.KeyF, function () {}, "");
 
@@ -211,6 +229,7 @@ export default class Editor {
         this.editor.trigger("anyString", "editor.action.revealDefinition", {});
       },
     });
+    this.isConfigured = true;
   }
 
   /**
@@ -267,7 +286,7 @@ export default class Editor {
       suggestions.push({
         label: "log",
         kind: monaco.languages.CompletionItemKind.Function,
-        insertText: "console.log(${1})",
+        insertText: "console.log('${1}')",
         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
         detail: "输出",
         range,
@@ -293,6 +312,8 @@ export default class Editor {
       for (const file of dir.files) {
         let insertPath = Path.GetRelativePath(currentFile.GetFullName(), file.GetFullName());
         let name = Path.RemoveSuffix(file.name);
+
+        console.log(name);
 
         suggestions.push({
           label: name,
@@ -323,7 +344,23 @@ export default class Editor {
 
     model = monaco.editor.createModel(file.content, "typescript", monaco.Uri.parse(`inmemory:///${fullName}`));
     this.models.set(fullName, model);
+    this.model2File.set(model, file);
     return model;
+  }
+
+  /**
+   * 创建所有模型
+   */
+  CreateAllFileModel() {
+    let dirs = [store.get.VirtualFileSystem.Root];
+
+    while (dirs.length) {
+      let dir = dirs.pop();
+      for (const file of dir.files) {
+        this.GetOrCreateModel(file);
+      }
+      dirs.push(...dir.directories);
+    }
   }
 
   /**
@@ -339,51 +376,7 @@ export default class Editor {
     let state = this.modelStates.get(fullName);
     let model = this.GetOrCreateModel(newFile);
     this.editor.setModel(model);
-    this.model2File.set(model, newFile);
     if (state) this.editor.restoreViewState(state);
-  }
-
-  importMap: Map<string, string> = new Map();
-
-  /**
-   * 获取编译后的代码
-   * @returns 编译后的代码
-   */
-  async GetCompiledCode() {
-    let models = monaco.editor.getModels();
-    let worker = await monaco.languages.typescript.getTypeScriptWorker();
-    models.forEach(async (m) => {
-      let client = await worker(m.uri);
-      let out = await client.getEmitOutput(m.uri.toString());
-
-      // 匹配源代码中的 import 行, 使用 gm 格式的正则
-      const importReg = /import\s+.*\s+from\s+.*/gm;
-      const match = out.outputFiles[0].text.match(importReg);
-      if (match) {
-        match.forEach((refStr) => {
-          const ref = refStr.match(/from\s+['|"](.*)['|"]/);
-          if (ref) {
-            let refPath = ref[1]; // 例：./Main
-            let currentPath = m.uri.path; // 例：/index.ts
-            let refAbsolutePath = Path.GetAbsolutePath(currentPath, refPath); // 例：/Main
-
-            const scriptURL = this.importMap.get(refAbsolutePath);
-            if (scriptURL) {
-              out.outputFiles[0].text = out.outputFiles[0].text.replace(refPath, scriptURL);
-            }
-          }
-        });
-      }
-
-      const blob = new Blob([out.outputFiles[0].text], { type: "text/javascript" });
-      const scriptURL = URL.createObjectURL(blob);
-      this.importMap.set(Path.RemoveSuffix(m.uri.path).substring(1), scriptURL);
-
-      const script = document.createElement("script");
-      script.type = "module";
-      script.src = scriptURL;
-      document.body.appendChild(script);
-    });
   }
 
   /**

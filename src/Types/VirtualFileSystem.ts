@@ -1,4 +1,4 @@
-export namespace VritualFileSytem {
+export namespace VritualFileSystem {
   export interface Basic {
     id: string;
     path: string;
@@ -9,9 +9,15 @@ export namespace VritualFileSytem {
     Delete(): void;
     GetFullName(): string;
   }
+
   export interface IFile extends Basic {
+    showClose: boolean;
+    isUnsaved: boolean;
     suffix: string;
     content: string;
+    specialFile: boolean;
+    spread: boolean;
+    children: IFile[];
   }
 
   export interface IDirectory extends Basic {
@@ -19,6 +25,7 @@ export namespace VritualFileSytem {
     files: IFile[];
     directories: IDirectory[];
   }
+
   export type Coord = {
     x: number;
     y: number;

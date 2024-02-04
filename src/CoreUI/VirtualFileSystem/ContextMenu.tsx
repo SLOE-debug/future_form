@@ -1,14 +1,15 @@
-import { VritualFileSytem } from "@/Types/VirtualFileSystem";
+import { VritualFileSystem } from "@/Types/VirtualFileSystem";
 import { Component, Emit, Prop, Vue } from "vue-facing-decorator";
 
-type Coord = VritualFileSytem.Coord;
-type IDirectory = VritualFileSytem.IDirectory;
-type IFile = VritualFileSytem.IFile;
+type Coord = VritualFileSystem.Coord;
+type IDirectory = VritualFileSystem.IDirectory;
+type IFile = VritualFileSystem.IFile;
 
 @Component
 export default class ContextMenu extends Vue {
-  @Prop
-  position!: Coord;
+  get position(): Coord {
+    return this.$Store.get.VirtualFileSystem.ContextMenuPosition;
+  }
 
   get style() {
     let { x, y } = this.position;
@@ -35,12 +36,16 @@ export default class ContextMenu extends Vue {
     this.Close();
   }
 
+  get ContextMenus() {
+    return this.$Store.get.VirtualFileSystem.ContextMenus;
+  }
+
   render() {
     if (!this.position) return;
     return (
       <div class={css.contextMenu} style={this.style}>
         <ul>
-          {this.$Store.get.VirtualFileSystem.ContextMenus.map((m) => {
+          {this.ContextMenus.map((m) => {
             return (
               <li
                 onMousedown={(e: MouseEvent) => {

@@ -7,3 +7,17 @@ export const Guid = {
     });
   },
 };
+
+// 防抖装饰器
+export function Debounce(wait: number) {
+  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+    let timeout: NodeJS.Timeout;
+    const original = descriptor.value;
+    descriptor.value = function (...args: any[]) {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        original.apply(this, args);
+      }, wait);
+    };
+  };
+}

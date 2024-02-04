@@ -1,11 +1,13 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { Component, Provide, Vue } from "vue-facing-decorator";
 import Folder from "./Folder";
-import { VritualFileSytem } from "@/Types/VirtualFileSystem";
+import { VritualFileSystem } from "@/Types/VirtualFileSystem";
 import ContextMenu from "./ContextMenu";
+import { editor } from "../Editor/EditorPage";
+import Compiler from "@/Core/Compile/Compile";
 
-type IDirectory = VritualFileSytem.IDirectory;
-type Coord = VritualFileSytem.Coord;
+type IDirectory = VritualFileSystem.IDirectory;
+type Coord = VritualFileSystem.Coord;
 
 @Component
 export default class FileSidebar extends Vue {
@@ -79,10 +81,30 @@ export default class FileSidebar extends Vue {
     window.removeEventListener("mouseup", this.AdjustEnd);
   }
 
-  contextMenuPosition: Coord = null;
   OpenContextMenu(e: MouseEvent) {
-    this.contextMenuPosition = { x: e.clientX, y: e.clientY };
+    this.$Store.dispatch("VirtualFileSystem/SetContextMenuPosition", { x: e.clientX, y: e.clientY });
     e.preventDefault();
+  }
+
+  isRun = false;
+  RenderRunTool() {
+    if (this.isRun) return <FontAwesomeIcon icon={"stop"} style={{ color: "#C85961" }} title="停止"></FontAwesomeIcon>;
+    return (
+      <FontAwesomeIcon
+        icon={"play"}
+        style={{ color: "#9AE69A" }}
+        title="运行"
+        {...{
+          onClick: async () => {
+            this.isRun = true;
+            let compiler = new Compiler();
+            let files = await compiler.GetCompiledFiles();
+            compiler.RunCompiledFiles(files);
+            this.isRun = false;
+          },
+        }}
+      ></FontAwesomeIcon>
+    );
   }
 
   render() {
@@ -91,7 +113,7 @@ export default class FileSidebar extends Vue {
         class={css.sidebar}
         onMousedown={() => {
           this.$Store.dispatch("VirtualFileSystem/SelectDirectory", this.$Store.get.VirtualFileSystem.Root);
-          this.contextMenuPosition = null;
+          this.$Store.dispatch("VirtualFileSystem/ClearContextMenuPosition");
         }}
         style={{ width: this.$Store.get.Page.FileSidebarWidth + "px" }}
       >
@@ -110,6 +132,7 @@ export default class FileSidebar extends Vue {
               }}
             />
           ))}
+          {this.RenderRunTool()}
         </div>
         <div class={css.content}>
           <div class={css.projectTitle}>
@@ -134,9 +157,7 @@ export default class FileSidebar extends Vue {
           </div>
         </div>
         <div class={css.adjustEdge} onMousedown={this.BeginAdjust}></div>
-        <ContextMenu
-          {...{ position: this.contextMenuPosition, onClose: () => (this.contextMenuPosition = null) }}
-        ></ContextMenu>
+        <ContextMenu {...{ onClose: () => this.$Store.dispatch("VirtualFileSystem/ClearContextMenuPosition") }}></ContextMenu>
       </div>
     );
   }

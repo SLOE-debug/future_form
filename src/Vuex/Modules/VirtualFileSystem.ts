@@ -1,62 +1,39 @@
 import { Module, ActionTree, GetterTree } from "vuex";
-import { VritualFileSytem } from "@/Types/VirtualFileSystem";
+import { VritualFileSystem as VritualFileSystem } from "@/Types/VirtualFileSystem";
 import Directory from "@/Core/VirtualFileSystem/Directory";
 import File from "@/Core/VirtualFileSystem/File";
 
-type IDirectory = VritualFileSytem.IDirectory;
-type IFile = VritualFileSytem.IFile;
-type MenuItem = VritualFileSytem.MenuItem;
+type IDirectory = VritualFileSystem.IDirectory;
+type IFile = VritualFileSystem.IFile;
+type MenuItem = VritualFileSystem.MenuItem;
+type Coord = VritualFileSystem.Coord;
 
-export type VirtualFileSytemState = {
+const root = new Directory("");
+root.AddDirectory(new Directory("Src"));
+
+let Startup = new File("Startup.ts", true);
+Startup.content = ``;
+root.AddFile(Startup);
+
+export type VirtualFileSystemState = {
   Root: IDirectory;
   CurrentDirectory: IDirectory;
   CurrentFile: IFile;
   ContextMenus: MenuItem[];
+  ContextMenuPosition: Coord;
   OpenFiles: IFile[];
 };
 
-const root = new Directory("");
-const home = new Directory("home");
-root.AddDirectory(home);
-home.AddDirectory(new Directory("user"));
-
-let file = new File("file1.ts");
-file.content = `export default class File {
-  constructor(){
-    
-  }
-}`;
-
-home.AddFile(file, new File("file2.txt"), new File("file3.txt"));
-
-let Main = new File("Main.ts", true);
-Main.content = `export default class Main {
-  constructor(){
-    console.log('Main 被创建')
-  }
-}`;
-let Index = new File("Index.ts");
-Index.content = `import Main from './Main'
-
-class Index {
-  constructor(){
-    console.log('Index 被创建')
-    console.log(new Main())
-  }
-}
-new Index()`;
-
-root.AddFile(Main, Index);
-
-const state: VirtualFileSytemState = {
+const state: VirtualFileSystemState = {
   Root: root,
   CurrentDirectory: root,
   CurrentFile: null,
   ContextMenus: [],
+  ContextMenuPosition: null,
   OpenFiles: [],
 };
 
-const actions: ActionTree<VirtualFileSytemState, any> = {
+const actions: ActionTree<VirtualFileSystemState, any> = {
   // 寻找文件/文件夹父级
   FindParent({ state }, entity: IDirectory | IFile) {
     if (state.Root === entity) return null;
@@ -95,16 +72,26 @@ const actions: ActionTree<VirtualFileSytemState, any> = {
   CreateFile({ state, dispatch }) {
     const file: IFile = new File("");
     file.isRename = true;
+    if (!state.CurrentDirectory.spread) state.CurrentDirectory.spread = true;
     state.CurrentDirectory.files.push(file);
   },
   // 选择文件
   SelectFile({ state, dispatch }, file: IFile) {
     state.CurrentDirectory && (state.CurrentDirectory.selected = false);
     state.CurrentFile && (state.CurrentFile.selected = false);
-    file.selected = true;
-    state.CurrentFile = file;
-    dispatch("SetMenus");
-    dispatch("OpenFile", file);
+    if (state.CurrentFile && !state.CurrentFile.children?.includes(file)) {
+      state.CurrentFile && state.CurrentFile.specialFile && (state.CurrentFile.spread = false);
+    }
+    if (file) {
+      file.selected = true;
+      if (file.specialFile) file.spread = true;
+      state.CurrentFile = file;
+      // 更换完文件后设置右键菜单
+      dispatch("SetMenus");
+      if (!file.specialFile) dispatch("OpenFile", file);
+    } else {
+      state.CurrentFile = null;
+    }
   },
   // 删除文件
   async DeleteFile({ state, dispatch }, file: IFile) {
@@ -126,19 +113,34 @@ const actions: ActionTree<VirtualFileSytemState, any> = {
     }
     state.ContextMenus = menus;
   },
+  // 设置右键菜单位置
+  SetContextMenuPosition({ state }, position: Coord) {
+    state.ContextMenuPosition = position;
+  },
+  // 清空右键菜单位置
+  ClearContextMenuPosition({ state }) {
+    state.ContextMenuPosition = null;
+  },
   // 打开文件
   OpenFile({ state }, file: IFile) {
     if (state.OpenFiles.includes(file)) return;
     state.OpenFiles.push(file);
   },
   // 关闭文件
-  CloseFile({ state }, file: IFile) {
+  CloseFile({ state, dispatch }, file: IFile) {
+    if (file.isUnsaved) state.CurrentFile.content = file.content;
+
     state.OpenFiles.splice(state.OpenFiles.indexOf(file), 1);
-    console.log(state.OpenFiles);
+
+    let newFile = state.OpenFiles.length ? state.OpenFiles[state.OpenFiles.length - 1] : null;
+    dispatch("SelectFile", newFile);
+  },
+  SaveRoot({ state }) {
+    localStorage.setItem("root", JSON.stringify(state.Root));
   },
 };
 
-const getters: GetterTree<VirtualFileSytemState, any> = {
+const getters: GetterTree<VirtualFileSystemState, any> = {
   Root: (state) => state.Root,
   CurrentDirectory(state) {
     return state.CurrentDirectory;
@@ -152,13 +154,14 @@ const getters: GetterTree<VirtualFileSytemState, any> = {
   OpenFiles(state) {
     return state.OpenFiles;
   },
+  ContextMenuPosition: (state) => state.ContextMenuPosition,
 };
 
-const VirtualFileSytemModule: Module<VirtualFileSytemState, any> = {
+const VirtualFileSystemModule: Module<VirtualFileSystemState, any> = {
   namespaced: true,
   state,
   actions,
   getters,
 };
 
-export default VirtualFileSytemModule;
+export default VirtualFileSystemModule;

@@ -1,9 +1,9 @@
 import { Component, Inject, Prop, Vue } from "vue-facing-decorator";
 import Entity from "./Entity";
-import { VritualFileSytem } from "@/Types/VirtualFileSystem";
+import { VritualFileSystem } from "@/Types/VirtualFileSystem";
 import { IsDirectory } from "@/Utils/VirtualFileSystem/Index";
 
-type IDirectory = VritualFileSytem.IDirectory;
+type IDirectory = VritualFileSystem.IDirectory;
 
 @Component
 export default class Folder extends Vue {
@@ -32,10 +32,7 @@ export default class Folder extends Vue {
           } else {
             this.$Store.dispatch("VirtualFileSystem/SelectFile", entity);
           }
-          e.stopPropagation();
-        },
-        ondblclick: (e: MouseEvent) => {
-          entity.isRename = true;
+          this.$Store.dispatch("VirtualFileSystem/ClearContextMenuPosition");
           e.stopPropagation();
         },
       };
