@@ -25,18 +25,14 @@ export default class File extends Basic implements IFile {
   public set name(v: string) {
     this._name = v;
     this.suffix = v.split(".").pop().toLowerCase() || "";
-    if (this.suffix == "uid") {
+    if (this.suffix == "form") {
       this.specialFile = true;
       let prefixname = Path.RemoveSuffix(v);
-
-      let desName = prefixname + ".des";
       let tsName = prefixname + ".ts";
 
       if (this.children.length == 0) {
-        this.children.push(new File(desName));
         this.children.push(new File(tsName));
       } else {
-        this.children[0].name = desName;
         this.children[1].name = tsName;
       }
     }

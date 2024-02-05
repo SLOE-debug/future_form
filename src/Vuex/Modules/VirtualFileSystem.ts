@@ -12,7 +12,7 @@ type Coord = UtilsDeclare.Coord;
 const root = new Directory("");
 let src = new Directory("src");
 src.spread = true;
-let test = new File("test.uid");
+let test = new File("test.form");
 test.specialFile = true;
 test.spread = true;
 src.AddFile(test);
@@ -96,7 +96,7 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
       state.CurrentFile = file;
       // 更换完文件后设置右键菜单
       dispatch("SetMenus");
-      if (!file.specialFile) dispatch("OpenFile", file);
+      dispatch("OpenFile", file);
     } else {
       state.CurrentFile = null;
     }

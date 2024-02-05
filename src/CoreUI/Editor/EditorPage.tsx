@@ -45,8 +45,8 @@ export default class EditorPage extends Vue {
    */
   @Watch("File")
   OnFileChange(nv: IFile, ov: IFile) {
-    if (!nv || nv.specialFile) return;
-    if (nv.suffix == "des") {
+    if (!nv) return;
+    if (nv.suffix == "form") {
       this.isDesigner = true;
       return;
     } else {

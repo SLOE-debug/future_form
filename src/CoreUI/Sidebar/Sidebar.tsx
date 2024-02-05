@@ -35,9 +35,9 @@ export default class Sidebar extends Vue {
   render() {
     return (
       <div style={{ width: this.$Store.get.Page.SidebarWidth + "px" }} class={css.sidebar}>
-        <div>
+        {/* <div class={css.}>
           
-        </div>
+        </div> */}
         <FileSidebar></FileSidebar>
         <div class={css.adjustEdge} onMousedown={this.BeginAdjust}></div>
       </div>

@@ -13,8 +13,5 @@ export function IsDirectory(entity: IFile | IDirectory): entity is IDirectory {
 export const suffix2Color = {
   ts: "#007acc",
   txt: "#f1e05a",
-  des: "rgb(165 127 255)",
+  form: "rgb(165 127 255)",
 };
-
-// 排除的文件后缀
-export const excludeSuffix = ["uid", "des"];
