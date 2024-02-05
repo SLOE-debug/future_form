@@ -1,4 +1,3 @@
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { Component, Prop, Vue } from "vue-facing-decorator";
 
 @Component
@@ -16,7 +15,7 @@ export default class SvgIcon extends Vue {
         <div
           style={{ width: this.size + "px", height: this.size + "px", fill: this.color }}
           class={css.svgIcon}
-          v-html={require(`!!raw-loader!@/Assets/Icon/SVG/${this.name}.svg`).default}
+          v-html={require(`!!raw-loader!@/Assets/Icons/Svg/${this.name}.svg`).default}
         ></div>
       );
     } catch (error) {
@@ -24,7 +23,7 @@ export default class SvgIcon extends Vue {
         <div
           style={{ width: this.size + "px", height: this.size + "px", fill: this.color }}
           class={css.svgIcon}
-          v-html={require(`!!raw-loader!@/Assets/Icon/SVG/unknownFileSuffix.svg`).default}
+          v-html={require(`!!raw-loader!@/Assets/Icons/Svg/unknownFileSuffix.svg`).default}
         ></div>
       );
     }

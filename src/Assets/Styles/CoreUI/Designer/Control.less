@@ -1,0 +1,57 @@
+@dotSize: 6px;
+@offset: calc(-@dotSize / 2);
+
+.control {
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  .dot {
+    position: absolute;
+    border: 1px solid rgb(6, 123, 239);
+    width: @dotSize;
+    height: @dotSize;
+    background-color: white;
+    z-index: 999999;
+    user-select: none;
+  }
+  .nwse {
+    cursor: nwse-resize;
+  }
+  .ns {
+    cursor: ns-resize;
+  }
+  .nesw {
+    cursor: nesw-resize;
+  }
+  .ew {
+    cursor: ew-resize;
+  }
+  .l {
+    left: @offset;
+  }
+  .r {
+    right: @offset;
+  }
+  .t {
+    top: @offset;
+  }
+  .b {
+    bottom: @offset;
+  }
+  .error {
+    position: absolute;
+    top: 25%;
+    right: 0;
+    width: 2px;
+    text-align: center;
+    background-color: red;
+    height: 50%;
+  }
+}
+.bigshot {
+  .dot {
+    background-color: rgb(6, 123, 239);
+    border: 1px solid white;
+  }
+}

@@ -1,0 +1,34 @@
+.select {
+  width: 100%;
+  height: 100%;
+}
+
+.customPopper {
+  :global(.el-select-dropdown__list) {
+    width: auto !important;
+    :global(.el-select-dropdown__option-item) {
+      padding: 0;
+      position: relative !important;
+      &:not(:first-child) {
+        margin-top: -34px;
+      }
+      .option {
+        display: inline-block;
+        overflow: hidden;
+        margin: 0 0.5vw;
+        font-size: 14px;
+      }
+      .wide {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+}
+
+.eventNone {
+  :global(.el-input__suffix-inner) {
+    pointer-events: none;
+  }
+}

@@ -1,32 +1,32 @@
 import { Module, ActionTree, GetterTree } from "vuex";
 
 export type PageState = {
-  FileSidebarWidth: number;
-  FileSidebarMinWidth: number;
+  SidebarWidth: number;
+  SidebarMinWidth: number;
 };
 
 const state: PageState = {
-  FileSidebarWidth: 200,
-  FileSidebarMinWidth: 150,
+  SidebarWidth: 200,
+  SidebarMinWidth: 150,
 };
 
 const actions: ActionTree<PageState, any> = {
-  AdjustFileSidebarWidth({ state }, diff: number) {
-    if (state.FileSidebarWidth + diff > state.FileSidebarMinWidth) {
-      state.FileSidebarWidth += diff;
+  AdjustSidebarWidth({ state }, diff: number) {
+    if (state.SidebarWidth + diff > state.SidebarMinWidth) {
+      state.SidebarWidth += diff;
     }
   },
-  ShowFileSidebar({ state }) {
-    state.FileSidebarWidth = state.FileSidebarMinWidth;
+  ShowSidebar({ state }) {
+    state.SidebarWidth = state.SidebarMinWidth;
   },
-  HideFileSidebar({ state }) {
-    state.FileSidebarWidth = 2;
+  HideSidebar({ state }) {
+    state.SidebarWidth = 2;
   },
 };
 
 const getters: GetterTree<PageState, any> = {
-  FileSidebarWidth: (state) => state.FileSidebarWidth,
-  FileSidebarMinWidth: (state) => state.FileSidebarMinWidth,
+  SidebarWidth: (state) => state.SidebarWidth,
+  SidebarMinWidth: (state) => state.SidebarMinWidth,
 };
 
 const PageModule: Module<PageState, any> = {

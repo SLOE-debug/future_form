@@ -1,12 +1,12 @@
-import { Compile } from "@/Types/Compile";
-import { VritualFileSystem } from "@/Types/VirtualFileSystem";
+import { CompileDeclare } from "@/Types/CompileDeclare";
+import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { Path } from "@/Utils/VirtualFileSystem/Path";
 import store from "@/Vuex/Store";
 import * as monaco from "monaco-editor";
 import * as actions from "monaco-editor/esm/vs/platform/actions/common/actions";
 
-type IFile = VritualFileSystem.IFile;
-type CompiledFile = Compile.CompiledFile;
+type IFile = VritualFileSystemDeclare.IFile;
+type CompiledFile = CompileDeclare.CompiledFile;
 
 export default class Editor {
   ele: HTMLElement;

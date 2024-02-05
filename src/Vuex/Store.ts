@@ -2,15 +2,21 @@ import { App } from "vue";
 import { createStore, Store } from "vuex";
 import VirtualFileSystemModule, { VirtualFileSystemState } from "./Modules/VirtualFileSystem";
 import PageModule, { PageState } from "./Modules/Page";
+import DesignerModule, { DesignerState } from "./Modules/Designer";
+import WindowModule, { WindowState } from "./Modules/Window";
 
 export type RootState = {
   Page: PageState;
   VirtualFileSystem: VirtualFileSystemState;
+  Designer: DesignerState;
+  Window: WindowState;
 };
 const store: Store<RootState> = createStore({
   modules: {
     Page: PageModule,
     VirtualFileSystem: VirtualFileSystemModule,
+    Designer: DesignerModule,
+    Window: WindowModule,
   },
 });
 

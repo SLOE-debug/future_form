@@ -1,15 +1,23 @@
 import { Module, ActionTree, GetterTree } from "vuex";
-import { VritualFileSystem as VritualFileSystem } from "@/Types/VirtualFileSystem";
+import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import Directory from "@/Core/VirtualFileSystem/Directory";
 import File from "@/Core/VirtualFileSystem/File";
+import { UtilsDeclare } from "@/Types/UtilsDeclare";
 
-type IDirectory = VritualFileSystem.IDirectory;
-type IFile = VritualFileSystem.IFile;
-type MenuItem = VritualFileSystem.MenuItem;
-type Coord = VritualFileSystem.Coord;
+type IDirectory = VritualFileSystemDeclare.IDirectory;
+type IFile = VritualFileSystemDeclare.IFile;
+type MenuItem = VritualFileSystemDeclare.MenuItem;
+type Coord = UtilsDeclare.Coord;
 
 const root = new Directory("");
-root.AddDirectory(new Directory("Src"));
+let src = new Directory("src");
+src.spread = true;
+let test = new File("test.uid");
+test.specialFile = true;
+test.spread = true;
+src.AddFile(test);
+
+root.AddDirectory(src);
 
 let Startup = new File("Startup.ts", true);
 Startup.content = ``;

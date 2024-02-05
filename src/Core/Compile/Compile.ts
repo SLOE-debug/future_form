@@ -1,7 +1,7 @@
-import { Compile } from "@/Types/Compile";
+import { CompileDeclare } from "@/Types/CompileDeclare";
 import { Path } from "@/Utils/VirtualFileSystem/Path";
 import * as monaco from "monaco-editor";
-type CompiledFile = Compile.CompiledFile;
+type CompiledFile = CompileDeclare.CompiledFile;
 
 export default class Compiler {
   // 导入映射

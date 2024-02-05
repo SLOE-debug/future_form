@@ -1,13 +1,17 @@
 import EditorPage from "@/CoreUI/Editor/EditorPage";
-import FileSidebar from "@/CoreUI/VirtualFileSystem/FileSidebar";
+import Sidebar from "@/CoreUI/Sidebar/Sidebar";
 import { Component, Vue } from "vue-facing-decorator";
 
 @Component
 export default class Development extends Vue {
+  created() {
+    this.$Store.dispatch("Designer/SetDebug", true);
+  }
+
   render() {
     return (
       <>
-        <FileSidebar></FileSidebar>
+        <Sidebar></Sidebar>
         <EditorPage></EditorPage>
       </>
     );

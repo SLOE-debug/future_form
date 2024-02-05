@@ -1,0 +1,69 @@
+.table {
+  :global(.el-table-v2__header-cell) {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  :global(.el-table-v2__row-cell) {
+    padding: 0;
+  }
+
+  :global(.is-disabled) {
+    :global(.el-input__wrapper) {
+      background: none;
+      box-shadow: none;
+    }
+  }
+
+  .customHeader {
+    display: flex;
+    align-items: center;
+  }
+  .customCell {
+    width: 100%;
+    height: 100%;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    overflow: hidden;
+  }
+  .empty {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #909399;
+    overflow: hidden;
+  }
+}
+
+.filterCheckGroup {
+  > * {
+    width: 100%;
+    :global(.el-checkbox__label) {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}
+.btns {
+  border-top: 1px solid #dcdfe6;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 20px;
+  margin: 10px -10px -10px;
+}
+
+.active {
+  background-color: #c2defd;
+}
+
+.text {
+  :global(.el-input__wrapper) {
+    background: none;
+    box-shadow: none;
+  }
+}

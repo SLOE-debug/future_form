@@ -1,7 +1,7 @@
-import { VritualFileSystem } from "@/Types/VirtualFileSystem";
+import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 
-type IFile = VritualFileSystem.IFile;
-type IDirectory = VritualFileSystem.IDirectory;
+type IFile = VritualFileSystemDeclare.IFile;
+type IDirectory = VritualFileSystemDeclare.IDirectory;
 
 export function IsDirectory(entity: IFile | IDirectory): entity is IDirectory {
   return (entity as IDirectory).directories !== undefined;
@@ -15,3 +15,6 @@ export const suffix2Color = {
   txt: "#f1e05a",
   des: "rgb(165 127 255)",
 };
+
+// 排除的文件后缀
+export const excludeSuffix = ["uid", "des"];

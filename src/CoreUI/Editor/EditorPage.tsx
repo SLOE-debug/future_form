@@ -2,11 +2,12 @@ import SvgIcon from "@/Components/SvgIcon";
 import { suffix2Color } from "@/Utils/VirtualFileSystem/Index";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { Component, Vue, Watch } from "vue-facing-decorator";
-import { VritualFileSystem } from "@/Types/VirtualFileSystem";
+import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import Editor from "@/Core/Editor/Editor";
 import { Debounce } from "@/Utils/Index";
+import DesignerSpace from "../Designer/DesignerSpace";
 
-type IFile = VritualFileSystem.IFile;
+type IFile = VritualFileSystemDeclare.IFile;
 
 export const editor = new Editor();
 
@@ -14,8 +15,8 @@ export const editor = new Editor();
 export default class EditorPage extends Vue {
   get Style() {
     return {
-      marginLeft: this.$Store.get.Page.FileSidebarWidth + "px",
-      width: `calc(100% - ${this.$Store.get.Page.FileSidebarWidth}px)`,
+      marginLeft: this.$Store.get.Page.SidebarWidth + "px",
+      width: `calc(100% - ${this.$Store.get.Page.SidebarWidth}px)`,
     };
   }
 
@@ -31,6 +32,8 @@ export default class EditorPage extends Vue {
     return this.$Store.get.VirtualFileSystem.CurrentFile;
   }
 
+  isDesigner: boolean = false;
+
   /**
    * 旧文件
    */
@@ -43,9 +46,15 @@ export default class EditorPage extends Vue {
   @Watch("File")
   OnFileChange(nv: IFile, ov: IFile) {
     if (!nv || nv.specialFile) return;
-    this.$nextTick(() => {
-      editor.SwitchFile(nv, ov);
-    });
+    if (nv.suffix == "des") {
+      this.isDesigner = true;
+      return;
+    } else {
+      this.isDesigner = false;
+      this.$nextTick(() => {
+        editor.SwitchFile(nv, ov);
+      });
+    }
   }
 
   created() {
@@ -96,7 +105,7 @@ export default class EditorPage extends Vue {
                   m.showClose = false;
                 }}
               >
-                <SvgIcon {...{ name: `tsFileSuffix`, color: suffix2Color["ts"] }}></SvgIcon>
+                <SvgIcon {...{ name: `${m.suffix}FileSuffix`, color: suffix2Color[m.suffix] }}></SvgIcon>
                 <span>{m.name}</span>
                 {this.RenderTabItemIcon(m)}
               </div>
@@ -104,6 +113,7 @@ export default class EditorPage extends Vue {
           })}
         </div>
         <div class={css.content}>
+          <DesignerSpace v-show={this.isDesigner} ref={"designerSpace"}></DesignerSpace>
           <div ref="editor" class={css.editorInstance}></div>
         </div>
       </div>
