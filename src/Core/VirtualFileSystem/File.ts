@@ -24,16 +24,21 @@ export default class File extends Basic implements IFile {
   }
   public set name(v: string) {
     this._name = v;
-    this.suffix = v.split(".").pop().toLowerCase() || "";
-    if (this.suffix == "form") {
+    this.suffix = v.substring(v.indexOf(".") + 1);
+
+    if (this.suffix == VritualFileSystemDeclare.FileType.FormDesigner) {
       this.specialFile = true;
-      let prefixname = Path.RemoveSuffix(v);
+      this.content = `export default class Page {}`;
+      let prefixname = v.split(".")[0];
       let tsName = prefixname + ".ts";
 
       if (this.children.length == 0) {
-        this.children.push(new File(tsName));
+        let tsFile = new File(tsName);
+        tsFile.parentFile = this;
+        tsFile.content = `import Page from "./${prefixname}.form";\r\n\r\nexport default class ${prefixname} extends Page {\r\n\r\n}`;
+        this.AddFile(tsFile);
       } else {
-        this.children[1].name = tsName;
+        this.children[0].name = tsName;
       }
     }
   }
@@ -72,4 +77,21 @@ export default class File extends Basic implements IFile {
    * 是否展开
    */
   spread: boolean = false;
+
+  /**
+   * 父文件
+   */
+  parentFile: IFile = null;
+
+  /**
+   * 添加文件
+   * @param files 文件
+   */
+  AddFile(...files: IFile[]) {
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      f.path = this.path;
+    }
+    this.children.push(...files);
+  }
 }

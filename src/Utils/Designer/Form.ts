@@ -29,7 +29,7 @@ export class BaseForm {
     return new Promise(async (resolve, rekect) => {
       let res = await this.$Window.$Api.GetFormByClassName({ className: className });
       if (res.data) {
-        let id = await store.dispatch("CreateWindow", { config: res.data, dialog });
+        let id = await store.dispatch("Designer/CreateWindow", { config: res.data, dialog });
         let complete = setInterval(() => {
           let instance = store.get.Window.WindowInstances[id];
           if (instance) {

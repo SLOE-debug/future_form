@@ -17,13 +17,17 @@ export namespace VritualFileSystemDeclare {
     content: string;
     specialFile: boolean;
     spread: boolean;
+    parentFile: IFile;
     children: IFile[];
+    AddFile(...files: IFile[]): void;
   }
 
   export interface IDirectory extends Basic {
     spread: boolean;
     files: IFile[];
     directories: IDirectory[];
+    AddFile(...files: IFile[]): void;
+    AddDirectory(...directorys: IDirectory[]): void;
   }
 
   export type MenuItem = {
@@ -31,4 +35,9 @@ export namespace VritualFileSystemDeclare {
     code: string;
     shortcutKey?: string;
   };
+
+  export enum FileType {
+    Ts = "ts",
+    FormDesigner = "form.ts",
+  }
 }

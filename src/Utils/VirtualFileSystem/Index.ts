@@ -13,5 +13,5 @@ export function IsDirectory(entity: IFile | IDirectory): entity is IDirectory {
 export const suffix2Color = {
   ts: "#007acc",
   txt: "#f1e05a",
-  form: "rgb(165 127 255)",
+  "form.ts": "rgb(165 127 255)",
 };

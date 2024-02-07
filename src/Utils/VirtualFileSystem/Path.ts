@@ -73,4 +73,18 @@ export class Path {
     }
     return name;
   }
+
+  /**
+   * 补全文件后缀
+   * @param path 文件路径
+   * @param suffix 后缀
+   * @returns 文件路径
+   */
+  static ComplementSuffix(path: string, suffix: string) {
+    let name = path.substring(path.lastIndexOf("/") + 1);
+    if (name.indexOf(".") === -1) {
+      return path + suffix;
+    }
+    return path;
+  }
 }

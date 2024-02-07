@@ -14,7 +14,7 @@ export function CreateControlByDragEvent(e: DragEvent): ControlConfig {
   let type = e.dataTransfer.getData("type");
 
   if (!type) return;
-  this.$Store.dispatch("ClearSelected");
+  this.$Store.dispatch("Designer/ClearSelected");
 
   let config = CreateControlByType.call(this, type);
   config.top = y;

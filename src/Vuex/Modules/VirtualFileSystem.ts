@@ -11,13 +11,13 @@ type Coord = UtilsDeclare.Coord;
 
 const root = new Directory("");
 let src = new Directory("src");
+root.AddDirectory(src);
 src.spread = true;
-let test = new File("test.form");
+let test = new File("");
+src.AddFile(test);
+test.name = "test.form.ts";
 test.specialFile = true;
 test.spread = true;
-src.AddFile(test);
-
-root.AddDirectory(src);
 
 let Startup = new File("Startup.ts", true);
 Startup.content = ``;

@@ -46,14 +46,14 @@ export default class EditorPage extends Vue {
   @Watch("File")
   OnFileChange(nv: IFile, ov: IFile) {
     if (!nv) return;
-    if (nv.suffix == "form") {
+    this.$nextTick(() => {
+      editor.SwitchFile(nv, ov);
+    });
+    if (nv.suffix == VritualFileSystemDeclare.FileType.FormDesigner) {
       this.isDesigner = true;
       return;
     } else {
       this.isDesigner = false;
-      this.$nextTick(() => {
-        editor.SwitchFile(nv, ov);
-      });
     }
   }
 

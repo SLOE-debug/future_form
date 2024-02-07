@@ -48,7 +48,7 @@ export default class DesignerSpace extends Vue {
       }
       this.$nextTick(() => {
         this.$Store.dispatch(
-          "AddStack",
+          "Designer/AddStack",
           new Stack(this.$refs["form"].$refs[c.name] as Control, null, null, StackAction.Create)
         );
       });
@@ -57,7 +57,7 @@ export default class DesignerSpace extends Vue {
 
   DeleteControl(e: KeyboardEvent): ControlConfig[] {
     let delControls = this.$Store.get.Designer.SelectedContainerControls.map((c) => c.Delete().del);
-    if (delControls.length) this.$Store.dispatch("ClearSelected");
+    if (delControls.length) this.$Store.dispatch("Designer/ClearSelected");
 
     return delControls;
   }
@@ -68,7 +68,7 @@ export default class DesignerSpace extends Vue {
   }
 
   async CtrlKeyCControl(e: KeyboardEvent) {
-    this.$Store.dispatch("SetCopyControlJson", await this.$Store.dispatch("CopyControl"));
+    this.$Store.dispatch("Designer/SetCopyControlJson", await this.$Store.dispatch("Designer/CopyControl"));
     this.pasteCount = 1;
   }
 
@@ -78,18 +78,18 @@ export default class DesignerSpace extends Vue {
       this.AddControl(true, ...configs);
       this.pasteCount++;
       this.$nextTick(() => {
-        this.$Store.dispatch("SelectControlByConfig", configs);
+        this.$Store.dispatch("Designer/SelectControlByConfig", configs);
       });
     } catch {}
   }
 
   async CtrlKeyAControl(e: KeyboardEvent) {
-    await this.$Store.dispatch("SelectControlByConfig", FindControlsByType(this.$Store.get.Designer.FormConfig));
+    await this.$Store.dispatch("Designer/SelectControlByConfig", FindControlsByType(this.$Store.get.Designer.FormConfig));
     e.preventDefault();
   }
 
   async CtrlKeyZControl(e: KeyboardEvent) {
-    await this.$Store.dispatch("Undo");
+    await this.$Store.dispatch("Designer/Undo");
     e.preventDefault();
   }
 
@@ -104,7 +104,7 @@ export default class DesignerSpace extends Vue {
   }
 
   F7Control(e: KeyboardEvent) {
-    this.$Store.dispatch("SetCoding", true);
+    this.$Store.dispatch("Designer/SetCoding", true);
     e.preventDefault();
   }
 

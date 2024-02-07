@@ -5,9 +5,13 @@ import { UtilsDeclare } from "@/Types/UtilsDeclare";
 
 import { ElMessage } from "element-plus";
 import { Component, Provide } from "vue-facing-decorator";
-import { DataConsistencyProxyCreator, DataLink, EstablishLink } from "@/Core/Designer/DataConsistency/DataConsistencyProxy";
+import {
+  DataConsistencyProxyCreator,
+  DataLink,
+  EstablishLink,
+} from "@/Core/Designer/DataConsistency/DataConsistencyProxy";
 import TableControl from "./TableControl";
-import { defineAsyncComponent} from "vue";
+import { defineAsyncComponent } from "vue";
 import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import { baseProps, baseEvents } from "@/Utils/Designer/Controls";
 import { CreateControlByDragEvent, CreateControlName, CloneStruct } from "@/Utils/Designer/Designer";
@@ -89,6 +93,7 @@ export default class DataSourceGroupControl extends Control {
             {...{
               name: "GruopMove",
               class: css.move,
+              size: 22,
               onMousedown: (e) => {
                 this.Pick(e);
                 this.BeginAdjust(e);

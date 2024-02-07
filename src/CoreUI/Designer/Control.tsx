@@ -165,7 +165,7 @@ export default class Control extends DataSourceControl {
           this.disableStack = false;
         });
       } else {
-        await this.$Store.dispatch("AddStack", new Stack(this, nv, this.watchOldValue));
+        await this.$Store.dispatch("Designer/AddStack", new Stack(this, nv, this.watchOldValue));
       }
 
       this.watchOldValue = null;
@@ -263,7 +263,7 @@ export default class Control extends DataSourceControl {
       }
     }
 
-    this.$Store.dispatch("SelectControl", controls);
+    this.$Store.dispatch("Designer/SelectControl", controls);
   }
 
   offset: number[] = [];
@@ -523,7 +523,7 @@ export default class Control extends DataSourceControl {
     let i = par.config.$children.findIndex((c) => c.id == this.config.id);
     if (pushStack)
       this.$Store.dispatch(
-        "AddStack",
+        "Designer/AddStack",
         new Stack(this, null, CloneControlConfig(this.config, true), StackAction.Delete)
       );
 

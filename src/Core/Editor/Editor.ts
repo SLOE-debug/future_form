@@ -104,6 +104,10 @@ export default class Editor {
       baseUrl: ".",
       moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
     });
+
+    // let declare = require("!!raw-loader!@/Types/ControlDeclare");
+    // console.log(declare.default);
+
     // 设置TypeScript编译器配置
     monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
     // 设置TypeScript定义提供者
@@ -358,6 +362,11 @@ export default class Editor {
       let dir = dirs.pop();
       for (const file of dir.files) {
         this.GetOrCreateModel(file);
+        if (file.specialFile) {
+          file.children.forEach((f) => {
+            this.GetOrCreateModel(f);
+          });
+        }
       }
       dirs.push(...dir.directories);
     }
@@ -383,7 +392,7 @@ export default class Editor {
    * 释放资源
    */
   Dispose() {
-    this.editor.dispose();
+    this.editor?.dispose();
     this.editor = null;
   }
 }
