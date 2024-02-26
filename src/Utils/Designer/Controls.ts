@@ -1,13 +1,18 @@
-import { ControlDeclare} from "@/Types/ControlDeclare";
+import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import store from "@/Vuex/Store";
 import { GetFields } from "./Designer";
+import { editor } from "@/CoreUI/Editor/EditorPage";
+import * as ts from "typescript";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceControlConfig = ControlDeclare.DataSourceControlConfig;
 
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 
+/**
+ * 控件别名
+ */
 export const ControlAlias = {
   Button: "btn",
   Label: "lbl",
@@ -24,6 +29,9 @@ export const ControlAlias = {
   Table: "tbl",
 };
 
+/**
+ * 控件类型
+ */
 export const baseProps: ConfiguratorItem[] = [
   {
     name: "名称",
@@ -137,6 +145,9 @@ export const baseProps: ConfiguratorItem[] = [
   },
 ];
 
+/**
+ * 控件事件
+ */
 export const baseEvents: ConfiguratorItem[] = [
   {
     name: "单击",
@@ -147,6 +158,10 @@ export const baseEvents: ConfiguratorItem[] = [
   },
 ];
 
+/**
+ * 拍平窗体配置信息
+ * @returns 窗体配置信息
+ */
 function GetFlatConfig() {
   const stack = [store.get.Designer.FormConfig];
   const configs: ControlConfig[] = [];
@@ -164,6 +179,11 @@ function GetFlatConfig() {
   return configs;
 }
 
+/**
+ * 添加数据源属性
+ * @param fieldMap 配置器的字段配置
+ * @param config 控件配置
+ */
 export function AddDataSourceProps(fieldMap: ConfiguratorItem[], config: ControlConfig & DataSourceControlConfig) {
   let option = fieldMap.splice(
     fieldMap.findIndex((m) => m.name == "选项"),

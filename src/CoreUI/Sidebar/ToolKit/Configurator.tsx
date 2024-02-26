@@ -10,6 +10,9 @@ type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 
 @Component
 export default class Configurator extends Vue {
+  @Prop
+  left: number;
+
   SyncConfiguration(m: ConfiguratorItem, isEvent: boolean) {
     if (!isEvent) {
       for (let i = 0; i < this.$Store.get.Designer.SelectedControls.length; i++) {
@@ -19,7 +22,7 @@ export default class Configurator extends Vue {
         }
       }
     }
-    this.$Store.dispatch("RenderControlConfigurator");
+    this.$Store.dispatch("Designer/RenderControlConfigurator");
   }
 
   GetConfigurator(m: ConfiguratorItem, isEvent: boolean = false) {
@@ -153,7 +156,6 @@ export default class Configurator extends Vue {
   }
 
   des: string;
-  left: number;
   render() {
     return (
       <div class={css.configurator}>

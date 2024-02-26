@@ -1,5 +1,6 @@
 import { CompileDeclare } from "@/Types/CompileDeclare";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
+import { GetParentByFile } from "@/Utils/VirtualFileSystem/Index";
 import { Path } from "@/Utils/VirtualFileSystem/Path";
 import store from "@/Vuex/Store";
 import * as monaco from "monaco-editor";
@@ -20,6 +21,10 @@ export default class Editor {
     this.SetTypeScriptTokenizer();
     this.SetTypeScriptProjectConfig();
     this.ConfigureAutoComplete();
+
+    window.addEventListener("resize", () => {
+      this.editor?.layout();
+    });
   }
 
   /**
@@ -48,7 +53,10 @@ export default class Editor {
   }
 
   // 自定义 typescript 提供者
-  async CustomTypeScriptProvider(model: monaco.editor.ITextModel, position: monaco.Position) {
+  async CustomTypeScriptProvider(model: monaco.editor.ITextModel, _position: monaco.Position) {
+    const selection = this.editor.getSelection();
+    const position = selection.getStartPosition();
+
     // 判断当前光标是否停留在 from 的引号中
     let content = model.getLineContent(position.lineNumber);
     let match = content.match(/from\s+['|"](.*)['|"]/); // 例：'./Main'
@@ -105,8 +113,14 @@ export default class Editor {
       moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
     });
 
-    // let declare = require("!!raw-loader!@/Types/ControlDeclare");
-    // console.log(declare.default);
+    let declare = require("!!raw-loader!@/Types/ControlDeclare");
+    let controlDeclare = declare.default;
+    controlDeclare = controlDeclare.replace(/export namespace ControlDeclare \{/, "");
+    controlDeclare = controlDeclare.replace(/export /g, "");
+    let lastIndex = controlDeclare.lastIndexOf("}");
+    controlDeclare = controlDeclare.substring(0, lastIndex);
+
+    monaco.languages.typescript.typescriptDefaults.addExtraLib(controlDeclare, "ControlDeclare.d.ts");
 
     // 设置TypeScript编译器配置
     monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
@@ -233,6 +247,21 @@ export default class Editor {
         this.editor.trigger("anyString", "editor.action.revealDefinition", {});
       },
     });
+    this.editor.addAction({
+      id: "ViewDesigner",
+      label: "查看设计器",
+      contextMenuGroupId: "navigation",
+      contextMenuOrder: 0,
+      keybindings: [monaco.KeyMod.Shift | monaco.KeyCode.F7],
+      run: () => {
+        let parent = GetParentByFile(store.get.VirtualFileSystem.CurrentFile) as IFile;
+        if (parent?.suffix == VritualFileSystemDeclare.FileType.FormDesigner) {
+          store.dispatch("VirtualFileSystem/SelectFile", parent);
+        } else {
+          ElMessage({ message: "出现错误！当前文件貌似没有设计器！", type: "error" });
+        }
+      },
+    });
     this.isConfigured = true;
   }
 
@@ -350,6 +379,17 @@ export default class Editor {
     this.models.set(fullName, model);
     this.model2File.set(model, file);
     return model;
+  }
+
+  /**
+   * 刷新model
+   */
+  RefreshModel(file: IFile) {
+    let fullName = file.GetFullName();
+    let model = this.models.get(fullName);
+    if (model) {
+      model.setValue(file.content);
+    }
   }
 
   /**

@@ -154,7 +154,7 @@ export default class Entity extends Vue {
     if (this.directory?.spread) {
       return <Folder {...{ level: this.level + 1 }} />;
     }
-    if ((this.entity as IFile).specialFile && (this.entity as IFile).spread) {
+    if ((this.entity as IFile).specialFile) {
       return <Folder {...{ level: this.level + 1 }}></Folder>;
     }
   }

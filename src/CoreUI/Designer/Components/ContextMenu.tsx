@@ -1,6 +1,6 @@
 import { ControlDeclare } from "@/Types/ControlDeclare";
-import {  DesignerDeclare} from "@/Types/DesignerDeclare";
-import { UtilsDeclare} from "@/Types/UtilsDeclare";
+import { DesignerDeclare } from "@/Types/DesignerDeclare";
+import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { Component, Emit, Prop, Vue } from "vue-facing-decorator";
 
 type ControlConfig = ControlDeclare.ControlConfig;
@@ -14,7 +14,10 @@ export default class ContextMenu extends Vue {
 
   get style() {
     let { x, y } = this.position;
-    let { left: l, top: t } = this.$Store.get.Designer.$DesignerSpace?.$el?.getBoundingClientRect() || { left: 0, top: 0 };
+    let { left: l, top: t } = this.$Store.get.Designer.$DesignerSpace?.$el?.getBoundingClientRect() || {
+      left: 0,
+      top: 0,
+    };
 
     t -= (this.$Store.get.Designer.$DesignerSpace?.$el as HTMLDivElement)?.scrollTop || 0;
 
@@ -25,7 +28,7 @@ export default class ContextMenu extends Vue {
   }
 
   async ViewCode() {
-    await this.$Store.dispatch("SetCoding", true);
+    this.$Store.dispatch("VirtualFileSystem/SelectFile", this.$Store.get.VirtualFileSystem.CurrentFile.children[0]);
   }
 
   BringFront() {

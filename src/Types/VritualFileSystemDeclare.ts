@@ -16,8 +16,6 @@ export namespace VritualFileSystemDeclare {
     suffix: string;
     content: string;
     specialFile: boolean;
-    spread: boolean;
-    parentFile: IFile;
     children: IFile[];
     AddFile(...files: IFile[]): void;
   }

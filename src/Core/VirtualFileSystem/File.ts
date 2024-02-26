@@ -34,8 +34,7 @@ export default class File extends Basic implements IFile {
 
       if (this.children.length == 0) {
         let tsFile = new File(tsName);
-        tsFile.parentFile = this;
-        tsFile.content = `import Page from "./${prefixname}.form";\r\n\r\nexport default class ${prefixname} extends Page {\r\n\r\n}`;
+        tsFile.content = `import Page from "./${prefixname}.form";\r\n\r\nexport default class ${prefixname} extends Page {\r\n\tconstructor() {\r\n\t\tsuper();\r\n\t}\r\n}`;
         this.AddFile(tsFile);
       } else {
         this.children[0].name = tsName;
@@ -72,16 +71,6 @@ export default class File extends Basic implements IFile {
    * 子文件
    */
   children: IFile[] = [];
-
-  /**
-   * 是否展开
-   */
-  spread: boolean = false;
-
-  /**
-   * 父文件
-   */
-  parentFile: IFile = null;
 
   /**
    * 添加文件

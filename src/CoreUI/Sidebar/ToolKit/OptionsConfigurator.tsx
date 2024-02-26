@@ -1,3 +1,4 @@
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ElButton, ElDialog, ElInput, ElPopconfirm, ElTable, ElTableColumn } from "element-plus";
 import { Component, Prop, Vue } from "vue-facing-decorator";
 
@@ -19,7 +20,7 @@ export default class OptionsConfigurator extends Vue {
           v-model={this.visible}
           title="设置选项"
           onClose={() => {
-            this.$Store.dispatch("RenderControlConfigurator");
+            this.$Store.dispatch("Designer/RenderControlConfigurator");
           }}
         >
           <ElButton
@@ -66,7 +67,9 @@ export default class OptionsConfigurator extends Vue {
             </ElTableColumn>
           </ElTable>
         </ElDialog>
-        <ElButton icon={"Setting"} circle onClick={(_) => (this.visible = true)}></ElButton>
+        <ElButton circle onClick={(_) => (this.visible = true)}>
+          {{ icon: () => <FontAwesomeIcon icon="gear"></FontAwesomeIcon> }}
+        </ElButton>
       </>
     );
   }

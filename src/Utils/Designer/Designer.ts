@@ -3,9 +3,16 @@ import { ControlAlias } from "./Controls";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { Guid } from "../Index";
 import store from "@/Vuex/Store";
+import * as ts from "typescript";
+import { editor } from "@/CoreUI/Editor/EditorPage";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 
+/**
+ * 创建控件通过拖拽事件
+ * @param e 拖拽事件
+ * @returns 控件配置
+ */
 export function CreateControlByDragEvent(e: DragEvent): ControlConfig {
   let rect = (e.target as HTMLElement).getBoundingClientRect();
   let x = e.clientX - rect.x;
@@ -22,6 +29,11 @@ export function CreateControlByDragEvent(e: DragEvent): ControlConfig {
   return config;
 }
 
+/**
+ * 创建控件通过类型
+ * @param type 类型
+ * @returns 控件配置
+ */
 export function CreateControlByType(type: string) {
   let control = this.$.appContext.components[type] as any;
   let config = {
@@ -32,6 +44,16 @@ export function CreateControlByType(type: string) {
   return config;
 }
 
+/**
+ * 通过键值查找控件
+ * @param config 控件配置
+ * @param key 键
+ * @param value 值
+ * @param id 控件id
+ * @param prevTop 父级控件的top
+ * @param prevLeft 父级控件的left
+ * @returns 控件配置
+ */
 export function FindControlsByKeyValue(
   config: ControlConfig,
   key: string,
@@ -54,6 +76,12 @@ export function FindControlsByKeyValue(
   }
 }
 
+/**
+ * 通过类型查找控件
+ * @param config 控件配置
+ * @param type 类型
+ * @returns 控件配置
+ */
 export function FindControlsByType(config: ControlConfig, type = undefined): ControlConfig[] {
   let results = [];
 
@@ -70,8 +98,16 @@ export function FindControlsByType(config: ControlConfig, type = undefined): Con
   return results;
 }
 
+/**
+ * 控件别名
+ */
 let cacheControlName = {};
 
+/**
+ * 自增量命名
+ * @param prefix 前缀
+ * @param config 控件配置
+ */
 function IncreaseName(prefix: string, config: ControlConfig) {
   let prevName = cacheControlName[prefix];
 
@@ -83,6 +119,10 @@ function IncreaseName(prefix: string, config: ControlConfig) {
   cacheControlName[prefix] = config.name;
 }
 
+/**
+ * 创建控件名称
+ * @param config 控件配置
+ */
 export function CreateControlName(config: ControlConfig) {
   config.id = Guid.NewGuid();
   if (FindControlsByKeyValue(store.get.Designer.FormConfig, "name", config.name)) {
@@ -101,6 +141,10 @@ export function CreateControlName(config: ControlConfig) {
   });
 }
 
+/**
+ * 填充控件名称缓存
+ * @param config 控件配置
+ */
 export function FillControlNameCache(config: ControlConfig) {
   if (config.type == "Form") cacheControlName = {};
   config.$children.forEach((c) => {
@@ -119,6 +163,11 @@ export function FillControlNameCache(config: ControlConfig) {
   });
 }
 
+/**
+ * 克隆结构
+ * @param obj 对象
+ * @returns 新对象
+ */
 export function CloneStruct<T>(obj: T): T {
   if (Array.isArray(obj)) {
     let arr = [];
@@ -143,6 +192,11 @@ export function CloneStruct<T>(obj: T): T {
   }
 }
 
+/**
+ * 获取字段
+ * @param sql sql
+ * @returns 字段
+ */
 export function GetFields(sql: string) {
   const selectRegex = /SELECT(?:\sTOP\s\(\d+\))?\s([\s\S]*?)\sFROM/i;
   const match = sql.match(selectRegex);
@@ -166,6 +220,11 @@ export function GetFields(sql: string) {
   }
 }
 
+/**
+ * 获取参数
+ * @param sql sql
+ * @returns 参数
+ */
 export function GetParams(sql: string) {
   return sql.match(/:\w+/gi)?.map((m) => {
     return {
@@ -175,6 +234,11 @@ export function GetParams(sql: string) {
   });
 }
 
+/**
+ * 获取表
+ * @param sql sql
+ * @returns 表
+ */
 export function GetTables(sql: string) {
   let fromRegex = /FROM\s+([\[\]\w\d\.\s,]+)(?=(?:\s+JOIN|WHERE|GROUP BY|ORDER BY|$))/i;
 
@@ -195,4 +259,140 @@ export function GetTables(sql: string) {
   } else {
     return null;
   }
+}
+
+/**
+ * 向设计器代码添加控件声明
+ */
+export function AddControlDeclareToDesignerCode(config: ControlConfig) {
+  let pageCode = store.get.VirtualFileSystem.CurrentFile.content;
+  let sourceFile = ts.createSourceFile("page.ts", pageCode, ts.ScriptTarget.ESNext, true);
+  const visitor =
+    (context: ts.TransformationContext) =>
+    (rootNode: ts.Node): ts.Node => {
+      function visit(node: ts.Node): ts.Node {
+        if (ts.isClassDeclaration(node) && node.name?.text === "Page") {
+          const typeRefNode = ts.factory.createTypeReferenceNode(
+            ts.factory.createIdentifier(`${config.type}Config`),
+            undefined
+          );
+
+          // 创建一个新的属性声明
+          const newMember = ts.factory.createPropertyDeclaration(
+            undefined, // 修饰符
+            config.name, // 属性名
+            undefined, // 类型注解
+            typeRefNode, // 类型
+            undefined // 初始化器
+          );
+
+          // 返回一个新的类声明，包含新的成员
+          return ts.factory.updateClassDeclaration(
+            node,
+            node.modifiers,
+            node.name,
+            node.typeParameters,
+            node.heritageClauses,
+            [...node.members, newMember] // 添加新成员
+          );
+        }
+        return ts.visitEachChild(node, visit, context);
+      }
+      return ts.visitNode(rootNode, visit);
+    };
+
+  const result = ts.transform(sourceFile, [visitor]);
+  const printer = ts.createPrinter();
+
+  const transformedSourceFile = result.transformed[0];
+  const printedResult = printer.printFile(transformedSourceFile as ts.SourceFile);
+  store.get.VirtualFileSystem.CurrentFile.content = printedResult;
+
+  editor.RefreshModel(store.get.VirtualFileSystem.CurrentFile);
+}
+
+/**
+ * 向设计器代码更新控件声明
+ */
+export function UpdateControlDeclareToDesignerCode(oldName: string, config: ControlConfig) {
+  let pageCode = store.get.VirtualFileSystem.CurrentFile.content;
+  let sourceFile = ts.createSourceFile("page.ts", pageCode, ts.ScriptTarget.ESNext, true);
+  const visitor =
+    (context: ts.TransformationContext) =>
+    (rootNode: ts.Node): ts.Node => {
+      function visit(node: ts.Node): ts.Node {
+        if (ts.isClassDeclaration(node) && node.name?.text === "Page") {
+          const typeRefNode = ts.factory.createTypeReferenceNode(
+            ts.factory.createIdentifier(`${config.type}Config`),
+            undefined
+          );
+
+          // 创建一个新的属性声明
+          const newMember = ts.factory.createPropertyDeclaration(
+            undefined, // 修饰符
+            config.name, // 属性名
+            undefined, // 类型注解
+            typeRefNode, // 类型
+            undefined // 初始化器
+          );
+
+          debugger;
+          // 返回一个新的类声明，包含新的成员
+          return ts.factory.updateClassDeclaration(
+            node,
+            node.modifiers,
+            node.name,
+            node.typeParameters,
+            node.heritageClauses,
+            [...node.members.filter((m) => m.name?.getText() != oldName), newMember] // 添加新成员
+          );
+        }
+        return ts.visitEachChild(node, visit, context);
+      }
+      return ts.visitNode(rootNode, visit);
+    };
+
+  const result = ts.transform(sourceFile, [visitor]);
+  const printer = ts.createPrinter();
+
+  const transformedSourceFile = result.transformed[0];
+  const printedResult = printer.printFile(transformedSourceFile as ts.SourceFile);
+  store.get.VirtualFileSystem.CurrentFile.content = printedResult;
+
+  editor.RefreshModel(store.get.VirtualFileSystem.CurrentFile);
+}
+
+/**
+ * 向设计器代码删除控件声明
+ */
+export function RemoveControlDeclareToDesignerCode(name: string) {
+  let pageCode = store.get.VirtualFileSystem.CurrentFile.content;
+  let sourceFile = ts.createSourceFile("page.ts", pageCode, ts.ScriptTarget.ESNext, true);
+  const visitor =
+    (context: ts.TransformationContext) =>
+    (rootNode: ts.Node): ts.Node => {
+      function visit(node: ts.Node): ts.Node {
+        if (ts.isClassDeclaration(node) && node.name?.text === "Page") {
+          return ts.factory.updateClassDeclaration(
+            node,
+            node.modifiers,
+            node.name,
+            node.typeParameters,
+            node.heritageClauses,
+            node.members.filter((m) => m.name?.getText() != name)
+          );
+        }
+        return ts.visitEachChild(node, visit, context);
+      }
+      return ts.visitNode(rootNode, visit);
+    };
+
+  const result = ts.transform(sourceFile, [visitor]);
+  const printer = ts.createPrinter();
+
+  const transformedSourceFile = result.transformed[0];
+  const printedResult = printer.printFile(transformedSourceFile as ts.SourceFile);
+  store.get.VirtualFileSystem.CurrentFile.content = printedResult;
+
+  editor.RefreshModel(store.get.VirtualFileSystem.CurrentFile);
 }

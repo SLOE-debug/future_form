@@ -3,6 +3,7 @@ import FileSidebar from "./VirtualFileSystem/FileSidebar";
 import ControlLibray from "./ToolKit/ControlLibrary";
 import SvgIcon from "@/Components/SvgIcon";
 import Configurator from "./ToolKit/Configurator";
+import { BindEventContext, RegisterEvent } from "@/Utils/Index";
 
 @Component
 export default class Sidebar extends Vue {
@@ -37,20 +38,45 @@ export default class Sidebar extends Vue {
 
   tabs = [
     {
-      name: "项目",
+      name: "项目(1)",
       icon: "project",
+      type: "project",
     },
     {
-      name: "控件库",
+      name: "控件库(2)",
       icon: "controlLibrary",
+      type: "controlLibrary",
     },
     {
-      name: "属性",
+      name: "属性(3)",
       icon: "property",
+      type: "property",
+    },
+    {
+      name: "事件(4)",
+      icon: "event",
+      type: "event",
     },
   ];
 
-  activeTab = "项目";
+  activeTab = "project";
+
+  winEventHandlers = {
+    keydown: function (e: KeyboardEvent) {
+      if (e.key >= "1" && e.key <= "4") {
+        this.activeTab = this.tabs[parseInt(e.key) - 1].type;
+      }
+    },
+  };
+
+  created() {
+    BindEventContext(this.winEventHandlers, this);
+    RegisterEvent.call(window, this.winEventHandlers);
+  }
+
+  unmounted() {
+    RegisterEvent.call(window, this.winEventHandlers, true);
+  }
 
   render() {
     return (
@@ -61,9 +87,9 @@ export default class Sidebar extends Vue {
               <SvgIcon
                 {...{
                   name: t.icon,
-                  class: [css.item, this.activeTab == t.name ? css.active : ""].join(" "),
+                  class: [css.item, this.activeTab == t.type ? css.active : ""].join(" "),
                   onClick: () => {
-                    this.activeTab = t.name;
+                    this.activeTab = t.type;
                   },
                   title: t.name,
                   size: 26,
@@ -72,9 +98,11 @@ export default class Sidebar extends Vue {
             );
           })}
         </div>
-        {this.activeTab == "项目" && <FileSidebar></FileSidebar>}
-        {this.activeTab == "控件库" && <ControlLibray></ControlLibray>}
-        {this.activeTab == "属性" && <Configurator></Configurator>}
+        {this.activeTab == "project" && <FileSidebar></FileSidebar>}
+        {this.activeTab == "controlLibrary" && <ControlLibray></ControlLibray>}
+        {(this.activeTab == "property" || this.activeTab == "event") && (
+          <Configurator {...{ left: this.activeTab == "event" ? 50 : 0 }}></Configurator>
+        )}
         <div class={css.adjustEdge} onMousedown={this.BeginAdjust}></div>
       </div>
     );

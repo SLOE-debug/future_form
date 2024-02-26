@@ -1,6 +1,7 @@
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { GetFields } from "@/Utils/Designer/Designer";
 import { CapitalizeFirstLetter } from "@/Utils/Index";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
   ElButton,
   ElColorPicker,
@@ -217,7 +218,9 @@ export default class ColumnsConfigurator extends Vue {
             </ElTableColumn>
           </ElTable>
         </ElDialog>
-        <ElButton icon={"Setting"} circle onClick={(_) => (this.visible = true)}></ElButton>
+        <ElButton circle onClick={(_) => (this.visible = true)}>
+          {{ icon: () => <FontAwesomeIcon icon="gear"></FontAwesomeIcon> }}
+        </ElButton>
       </>
     );
   }

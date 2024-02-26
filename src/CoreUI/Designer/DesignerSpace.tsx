@@ -12,6 +12,7 @@ import {
 } from "@/Utils/Designer/Designer";
 import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import Control from "./Control";
+import { AddControlDeclareToDesignerCode } from "@/Utils/Designer/Designer";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 
@@ -28,7 +29,9 @@ export default class DesignerSpace extends Vue {
   declare $refs: any;
 
   Drop(e: DragEvent) {
-    this.AddControl(false, CreateControlByDragEvent.call(this, e));
+    let config = CreateControlByDragEvent.call(this, e) as ControlConfig;
+    this.AddControl(false, config);
+    AddControlDeclareToDesignerCode(config);
   }
 
   AddControl(paste: boolean, ...configs: ControlConfig[]) {
@@ -84,7 +87,10 @@ export default class DesignerSpace extends Vue {
   }
 
   async CtrlKeyAControl(e: KeyboardEvent) {
-    await this.$Store.dispatch("Designer/SelectControlByConfig", FindControlsByType(this.$Store.get.Designer.FormConfig));
+    await this.$Store.dispatch(
+      "Designer/SelectControlByConfig",
+      FindControlsByType(this.$Store.get.Designer.FormConfig)
+    );
     e.preventDefault();
   }
 
@@ -104,7 +110,7 @@ export default class DesignerSpace extends Vue {
   }
 
   F7Control(e: KeyboardEvent) {
-    this.$Store.dispatch("Designer/SetCoding", true);
+    this.$Store.dispatch("VirtualFileSystem/SelectFile", this.$Store.get.VirtualFileSystem.CurrentFile.children[0]);
     e.preventDefault();
   }
 

@@ -3,12 +3,16 @@ import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { ComponentBase, Inject, Prop, Vue, Watch } from "vue-facing-decorator";
 import FormControl from "@/Controls/FormControl";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { FindControlsByKeyValue, CreateControlName } from "@/Utils/Designer/Designer";
+import {
+  FindControlsByKeyValue,
+  CreateControlName,
+  UpdateControlDeclareToDesignerCode,
+  RemoveControlDeclareToDesignerCode,
+} from "@/Utils/Designer/Designer";
 import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import { BindEventContext, RegisterEvent } from "@/Utils/Index";
 import DataSourceGroupControl from "@/Controls/DataSourceGroupControl";
 import { JSX } from "vue/jsx-runtime";
-import { de } from "element-plus/es/locale";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceControlConfig = ControlDeclare.DataSourceControlConfig;
@@ -165,6 +169,9 @@ export default class Control extends DataSourceControl {
           this.disableStack = false;
         });
       } else {
+        if (nv.name != ov.name) {
+          UpdateControlDeclareToDesignerCode(this.watchOldValue.name, nv);
+        }
         await this.$Store.dispatch("Designer/AddStack", new Stack(this, nv, this.watchOldValue));
       }
 
@@ -526,6 +533,8 @@ export default class Control extends DataSourceControl {
         "Designer/AddStack",
         new Stack(this, null, CloneControlConfig(this.config, true), StackAction.Delete)
       );
+
+    RemoveControlDeclareToDesignerCode(this.config.name);
 
     return { children: par.config.$children, i, del: par.config.$children.splice(i, 1)[0] };
   }

@@ -62,6 +62,10 @@ export default class EditorPage extends Vue {
     editor.CreateAllFileModel();
   }
 
+  unmouted() {
+    editor.Dispose();
+  }
+
   RenderTabItemIcon(m: IFile) {
     if (m.isUnsaved && !m.showClose) {
       return <FontAwesomeIcon icon={"circle"} class={css.unsaved}></FontAwesomeIcon>;
@@ -76,6 +80,7 @@ export default class EditorPage extends Vue {
               this.$Store.dispatch("VirtualFileSystem/CloseFile", m);
               if (this.$Store.get.VirtualFileSystem.OpenFiles.length == 0) {
                 editor.Dispose();
+                this.isDesigner = false;
               }
               e.stopPropagation();
             },
