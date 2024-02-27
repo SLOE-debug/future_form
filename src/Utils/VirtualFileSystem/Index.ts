@@ -18,6 +18,7 @@ export const suffix2Color = {
   ts: "#007acc",
   txt: "#f1e05a",
   "form.ts": "rgb(165 127 255)",
+  sql: "rgb(217 179 53)",
 };
 
 /**

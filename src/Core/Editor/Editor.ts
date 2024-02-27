@@ -18,7 +18,7 @@ export default class Editor {
 
   constructor() {
     this.DefineTheme();
-    this.SetTypeScriptTokenizer();
+    this.SetTokenizer();
     this.SetTypeScriptProjectConfig();
     this.ConfigureAutoComplete();
 
@@ -46,6 +46,14 @@ export default class Editor {
         { token: "typeIdentifier", foreground: "3dc9b0" },
         { token: "method", foreground: "cdc7a6" },
       ],
+      colors: {
+        "editor.foreground": "#d4d4d4",
+      },
+    });
+    monaco.editor.defineTheme("sql", {
+      base: "vs-dark",
+      inherit: true,
+      rules: [{ token: "params", foreground: "3dc9b0", fontStyle: "bold" }],
       colors: {
         "editor.foreground": "#d4d4d4",
       },
@@ -131,9 +139,9 @@ export default class Editor {
   }
 
   /**
-   * 设置TypeScript语法高亮
+   * 设置各个语法高亮
    */
-  private SetTypeScriptTokenizer() {
+  private SetTokenizer() {
     let ts = monaco.languages.getLanguages().find((m) => m.id == "typescript") as unknown as { loader: Function };
     ts.loader = (function (func: Function) {
       return async function (this: any) {
@@ -158,6 +166,15 @@ export default class Editor {
         return res;
       };
     })(ts.loader);
+
+    let sql = monaco.languages.getLanguages().find((m) => m.id == "sql") as any;
+    sql.loader = (function (func: Function) {
+      return async function (this: any) {
+        let res = await func.apply(this, arguments);
+        (res.language.tokenizer.root as any[]).unshift([/:\w+/, "params"]);
+        return res;
+      };
+    })(sql.loader);
   }
 
   /**
@@ -171,11 +188,25 @@ export default class Editor {
         comments: false, // 在注释中禁用自动完成
         other: true, // 在其他文本中启用自动完成
       },
+      unicodeHighlight: {
+        ambiguousCharacters: false,
+      },
     });
 
     this.editor.onDidChangeModelContent(this.ModelContentChanged.bind(this));
 
     this.ConfigureContextMenuAndShortcut();
+  }
+
+  // 模型改变时回调数组
+  modelChangeCallbacks: Function[] = [];
+
+  /**
+   * 模型内容改变
+   * @param func 回调
+   */
+  OnModelChange(func: Function) {
+    this.modelChangeCallbacks.push(func);
   }
 
   /**
@@ -184,6 +215,7 @@ export default class Editor {
   ModelContentChanged() {
     store.get.VirtualFileSystem.CurrentFile.isUnsaved =
       this.editor.getValue() != store.get.VirtualFileSystem.CurrentFile.content;
+    this.modelChangeCallbacks.forEach((m) => m());
   }
 
   /**
@@ -364,6 +396,21 @@ export default class Editor {
     return suggestions;
   }
 
+  // 后缀对应的语言
+  suffix2Language = {
+    ts: "typescript",
+    txt: "plaintext",
+    "form.ts": "typescript",
+    sql: "sql",
+  };
+
+  // 后缀对应的主题
+  suffix2Theme = {
+    ts: "ts",
+    "form.ts": "ts",
+    sql: "sql",
+  };
+
   /**
    * 获取或创建模型
    * @param file 文件
@@ -371,11 +418,21 @@ export default class Editor {
    */
   GetOrCreateModel(file: IFile) {
     let fullName = file.GetFullName();
+    let theme = this.suffix2Theme[file.suffix];
+    if (theme) {
+      monaco.editor.setTheme(theme);
+    }
 
     let model = this.models.get(fullName);
     if (model) return model;
 
-    model = monaco.editor.createModel(file.content, "typescript", monaco.Uri.parse(`inmemory:///${fullName}`));
+    let language = this.suffix2Language[file.suffix];
+
+    model = monaco.editor.createModel(
+      file.content,
+      language || "plaintext",
+      monaco.Uri.parse(`inmemory:///${fullName}`)
+    );
     this.models.set(fullName, model);
     this.model2File.set(model, file);
     return model;

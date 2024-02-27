@@ -13,6 +13,11 @@ const root = new Directory("");
 let src = new Directory("src");
 root.AddDirectory(src);
 src.spread = true;
+
+let sql = new File("a.sql");
+sql.content = `select a,b,c from a where b = :a`
+src.AddFile(sql);
+
 let test = new File("");
 src.AddFile(test);
 test.name = "test.form.ts";
@@ -86,12 +91,8 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
   SelectFile({ state, dispatch }, file: IFile) {
     state.CurrentDirectory && (state.CurrentDirectory.selected = false);
     state.CurrentFile && (state.CurrentFile.selected = false);
-    // if (state.CurrentFile && !state.CurrentFile.children?.includes(file)) {
-    //   state.CurrentFile && state.CurrentFile.specialFile && (state.CurrentFile.spread = false);
-    // }
     if (file) {
       file.selected = true;
-      // if (file.specialFile) file.spread = true;
       state.CurrentFile = file;
       // 更换完文件后设置右键菜单
       dispatch("SetMenus");

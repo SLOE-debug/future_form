@@ -5,6 +5,10 @@ import { Guid } from "../Index";
 import store from "@/Vuex/Store";
 import * as ts from "typescript";
 import { editor } from "@/CoreUI/Editor/EditorPage";
+import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
+import { GetParentByFile } from "../VirtualFileSystem/Index";
+
+type IFile = VritualFileSystemDeclare.IFile;
 
 type ControlConfig = ControlDeclare.ControlConfig;
 
@@ -395,4 +399,130 @@ export function RemoveControlDeclareToDesignerCode(name: string) {
   store.get.VirtualFileSystem.CurrentFile.content = printedResult;
 
   editor.RefreshModel(store.get.VirtualFileSystem.CurrentFile);
+}
+
+/**
+ * 当前类是否继承自Page
+ * @param node 节点
+ * @returns 是否继承自Page
+ */
+function IsClassInheritFromPage(node: ts.Node): boolean {
+  if (!ts.isClassDeclaration(node) || !node.heritageClauses) {
+    return false;
+  }
+
+  return node.heritageClauses.some((clause) => {
+    // 检查是否为继承（extends）
+    if (clause.token === ts.SyntaxKind.ExtendsKeyword) {
+      return clause.types.some((type) => {
+        // 这里假设类型为标识符，对于更复杂的情况可能需要额外的处理
+        if (ts.isIdentifier(type.expression)) {
+          return type.expression.text === "Page";
+        }
+        return false;
+      });
+    }
+    return false;
+  });
+}
+
+/**
+ * 获取设计器后台文件
+ */
+export function GetDesignerBackgroundFile() {
+  let backgroundFile = store.get.VirtualFileSystem.CurrentFile;
+  if (backgroundFile.suffix == VritualFileSystemDeclare.FileType.FormDesigner) {
+    return backgroundFile.children[0];
+  }
+  backgroundFile = GetParentByFile(backgroundFile) as IFile;
+  if (backgroundFile.suffix == VritualFileSystemDeclare.FileType.FormDesigner) {
+    return backgroundFile.children[0];
+  }
+
+  return;
+}
+
+/**
+ * 向设计器代码添加方法
+ * @param name 方法名
+ * @param params 参数
+ */
+export function AddMethodToDesignerBackground(name: string, params: { name: string; type: string }[]) {
+  let backgroundCode = GetDesignerBackgroundFile().content;
+  let sourceFile = ts.createSourceFile("background.ts", backgroundCode, ts.ScriptTarget.ESNext, true);
+  const visitor =
+    (context: ts.TransformationContext) =>
+    (rootNode: ts.Node): ts.Node => {
+      function visit(node: ts.Node): ts.Node {
+        if (ts.isClassDeclaration(node) && IsClassInheritFromPage(node)) {
+          const paramDecls = params.map((p) => {
+            const typeRefNode = ts.factory.createTypeReferenceNode(ts.factory.createIdentifier(p.type), undefined);
+            return ts.factory.createParameterDeclaration(
+              undefined,
+              undefined,
+              p.name,
+              undefined,
+              typeRefNode,
+              undefined
+            );
+          });
+
+          const method = ts.factory.createMethodDeclaration(
+            undefined,
+            undefined,
+            name,
+            undefined,
+            undefined,
+            paramDecls,
+            undefined,
+            ts.factory.createBlock([], true)
+          );
+
+          return ts.factory.updateClassDeclaration(
+            node,
+            node.modifiers,
+            node.name,
+            node.typeParameters,
+            node.heritageClauses,
+            [...node.members, method]
+          );
+        }
+        return ts.visitEachChild(node, visit, context);
+      }
+      return ts.visitNode(rootNode, visit);
+    };
+
+  const result = ts.transform(sourceFile, [visitor]);
+  const printer = ts.createPrinter();
+  const newCode = printer.printFile(result.transformed[0] as ts.SourceFile);
+  GetDesignerBackgroundFile().content = newCode;
+  editor.RefreshModel(GetDesignerBackgroundFile());
+  LocateMethod(name);
+}
+
+/**
+ * 定位到设计器代码中的方法
+ */
+export async function LocateMethod(name: string) {
+  let backgroundCode = GetDesignerBackgroundFile().content;
+  let sourceFile = ts.createSourceFile("background.ts", backgroundCode, ts.ScriptTarget.ESNext, true);
+  let methodNode: ts.MethodDeclaration;
+  // 递归遍历所有节点，找到方法节点
+  function visit(node: ts.Node) {
+    if (ts.isMethodDeclaration(node) && node.name.getText() === name) {
+      methodNode = node;
+    }
+    ts.forEachChild(node, visit);
+  }
+  ts.forEachChild(sourceFile, visit);
+
+  if (methodNode) {
+    await store.dispatch("VirtualFileSystem/SelectFile", GetDesignerBackgroundFile());
+    let pos = editor.editor.getModel().getPositionAt(methodNode.end);
+    console.log(pos);
+
+    editor.editor.focus();
+    editor.editor.setPosition(pos);
+    editor.editor.revealPositionInCenter(pos);
+  }
 }

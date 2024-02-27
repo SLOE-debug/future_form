@@ -3,8 +3,12 @@ import { ElColorPicker, ElInput, ElInputNumber, ElOption, ElSelect, ElSwitch } f
 import { Component, Prop, Vue } from "vue-facing-decorator";
 import OptionsConfigurator from "./OptionsConfigurator";
 import ColumnsConfigurator from "./ColumnsConfigurator";
-import SvgIcon from "@/Components/SvgIcon";
 import { CapitalizeFirstLetter } from "@/Utils/Index";
+import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
+import { AddMethodToDesignerBackground, GetDesignerBackgroundFile, LocateMethod } from "@/Utils/Designer/Designer";
+import { GetParentByFile } from "@/Utils/VirtualFileSystem/Index";
+
+type IFile = VritualFileSystemDeclare.IFile;
 
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 
@@ -97,7 +101,7 @@ export default class Configurator extends Vue {
             key={m.config.id}
             {...{
               onDblclick: (e) => {
-                this.AppendMethod(m, ref, key);
+                if (isEvent) this.AppendOrLocateMethod(m, ref, key);
               },
             }}
             onChange={(_) => {
@@ -138,21 +142,32 @@ export default class Configurator extends Vue {
     }
   }
 
-  AppendMethod(m: ConfiguratorItem, ref: object, key: string) {
-    if (!this.left) return;
-    if (!ref[key]) {
-      let eventParams = "";
-      if (m.paramTypes) eventParams = `, ${m.paramTypes.map(({ 0: name, 1: type }) => `${name}: ${type}`).join(", ")}`;
-
-      let methodName = `${m.config.name}_${key}Event`;
-      let methodDeclare = `${methodName}(sender: any${eventParams})`;
-
-      ref[key] = methodName;
-      this.$Store.dispatch("SetAppendMethod", methodDeclare);
-    } else {
-      this.$Store.dispatch("SetLocateMethod", ref[key]);
+  /**
+   * 添加或定位方法
+   * @param m 配置项
+   * @param ref 引用对象
+   * @param key 键
+   */
+  AppendOrLocateMethod(m: ConfiguratorItem, ref: object, key: string) {
+    if (!GetDesignerBackgroundFile()) {
+      ElMessage.error("无效操作，当前选择的文件与设计器无关！");
+      return;
     }
-    this.$Store.dispatch("SetCoding", true);
+    if (!ref[key]) {
+      let methodName = `${m.config.name}_${key}Event`;
+
+      let params = [{ name: "sender", type: "any" }];
+      params.concat(
+        m.paramTypes?.map(({ 0: name, 1: type }) => {
+          return { name, type };
+        })
+      );
+
+      AddMethodToDesignerBackground(methodName, params);
+      ref[key] = methodName;
+    } else {
+      LocateMethod(ref[key]);
+    }
   }
 
   des: string;

@@ -73,6 +73,11 @@ export default class File extends Basic implements IFile {
   children: IFile[] = [];
 
   /**
+   * 额外数据
+   */
+  extraData: any = {};
+
+  /**
    * 添加文件
    * @param files 文件
    */

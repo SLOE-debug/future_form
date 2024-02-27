@@ -26,7 +26,7 @@ export default class SvgIcon extends Vue {
         <div
           style={{ width: this.size + "px", height: this.size + "px", fill: this.color }}
           class={css.svgIcon}
-          v-html={require(`!!raw-loader!@/Assets/Icons/Svg/unknownFileSuffix.svg`).default}
+          v-html={require(`!!raw-loader!@/Assets/Icons/Svg/FileSuffix_unknown.svg`).default}
           title={"未知文件"}
         ></div>
       );

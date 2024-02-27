@@ -6,6 +6,7 @@ import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import Editor from "@/Core/Editor/Editor";
 import { Debounce } from "@/Utils/Index";
 import DesignerSpace from "../Designer/DesignerSpace";
+import SqlConfigurator from "../Designer/SqlConfigurator";
 
 type IFile = VritualFileSystemDeclare.IFile;
 
@@ -13,6 +14,8 @@ export const editor = new Editor();
 
 @Component
 export default class EditorPage extends Vue {
+  declare $refs: any;
+
   get Style() {
     return {
       marginLeft: this.$Store.get.Page.SidebarWidth + "px",
@@ -33,6 +36,7 @@ export default class EditorPage extends Vue {
   }
 
   isDesigner: boolean = false;
+  isSqlEditor: boolean = false;
 
   /**
    * 旧文件
@@ -48,18 +52,33 @@ export default class EditorPage extends Vue {
     if (!nv) return;
     this.$nextTick(() => {
       editor.SwitchFile(nv, ov);
+      editor.editor?.layout();
     });
-    if (nv.suffix == VritualFileSystemDeclare.FileType.FormDesigner) {
-      this.isDesigner = true;
-      return;
-    } else {
-      this.isDesigner = false;
+    switch (nv.suffix) {
+      case VritualFileSystemDeclare.FileType.Sql:
+        this.isSqlEditor = true;
+        this.isDesigner = false;
+        this.$nextTick(() => {
+          this.$refs.sqlConfigurator.AnalysisSql();
+        });
+        break;
+      case VritualFileSystemDeclare.FileType.FormDesigner:
+        this.isDesigner = true;
+        this.isSqlEditor = false;
+        break;
+      default:
+        this.isDesigner = false;
+        this.isSqlEditor = false;
+        break;
     }
   }
 
   created() {
     this.$nextTick(() => editor.SetContianer(this.$refs.editor as HTMLElement));
     editor.CreateAllFileModel();
+    editor.OnModelChange(() => {
+      if (this.isSqlEditor) this.$refs.sqlConfigurator.AnalysisSql();
+    });
   }
 
   unmouted() {
@@ -110,7 +129,7 @@ export default class EditorPage extends Vue {
                   m.showClose = false;
                 }}
               >
-                <SvgIcon {...{ name: `${m.suffix}FileSuffix`, color: suffix2Color[m.suffix] }}></SvgIcon>
+                <SvgIcon {...{ name: `FileSuffix_${m.suffix}`, color: suffix2Color[m.suffix] }}></SvgIcon>
                 <span>{m.name}</span>
                 {this.RenderTabItemIcon(m)}
               </div>
@@ -119,7 +138,12 @@ export default class EditorPage extends Vue {
         </div>
         <div class={css.content}>
           <DesignerSpace v-show={this.isDesigner} ref={"designerSpace"}></DesignerSpace>
-          <div ref="editor" class={css.editorInstance}></div>
+          {this.isSqlEditor && <SqlConfigurator ref="sqlConfigurator"></SqlConfigurator>}
+          <div
+            ref="editor"
+            class={css.editorInstance}
+            style={{ width: this.isSqlEditor ? "calc(100% - 280px)" : "100%" }}
+          ></div>
         </div>
       </div>
     );

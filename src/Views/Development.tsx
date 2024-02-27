@@ -9,7 +9,7 @@ export default class Development extends Vue {
     this.$nextTick(() => {
       this.$Store.dispatch(
         "VirtualFileSystem/SelectFile",
-        this.$Store.get.VirtualFileSystem.Root.directories[0].files[0]
+        this.$Store.get.VirtualFileSystem.Root.directories[0].files[1]
       );
     });
   }

@@ -79,7 +79,7 @@ export default class Entity extends Vue {
       );
     } else {
       let entity = this.entity as IFile;
-      return <SvgIcon {...{ name: `${entity.suffix}FileSuffix`, color: suffix2Color[entity.suffix] }}></SvgIcon>;
+      return <SvgIcon {...{ name: `FileSuffix_${entity.suffix}`, color: suffix2Color[entity.suffix] }}></SvgIcon>;
     }
   }
 

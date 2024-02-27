@@ -17,6 +17,7 @@ export namespace VritualFileSystemDeclare {
     content: string;
     specialFile: boolean;
     children: IFile[];
+    extraData: any;
     AddFile(...files: IFile[]): void;
   }
 
@@ -37,5 +38,6 @@ export namespace VritualFileSystemDeclare {
   export enum FileType {
     Ts = "ts",
     FormDesigner = "form.ts",
+    Sql = "sql",
   }
 }
