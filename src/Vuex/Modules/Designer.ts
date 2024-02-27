@@ -8,8 +8,6 @@ import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { FillControlNameCache } from "@/Utils/Designer/Designer";
 import { Module, ActionTree, GetterTree } from "vuex";
 import { GetProps as GetBaseProps } from "@/CoreUI/Designer/Control";
-import * as ts from "typescript";
-// import ToolBar from "@/Core/Designer/ToolBar";
 
 type ToolBar = any;
 
@@ -100,31 +98,6 @@ export function GetAllRefs(obj) {
   return refs;
 }
 
-function GetAllControlDeclare(config: ControlConfig, parentControl: Control, obj: { declare: string }) {
-  config.$children.forEach((c) => {
-    let childControl = parentControl.$refs[c.name] as Control;
-
-    state.ControlNames.push(c.name);
-
-    obj.declare += `\t${c.name}: ${c.type + "Config"}`;
-    let patch = childControl.DeclarationPatch();
-    if (!!patch) obj.declare += ` & ${patch}`;
-    obj.declare += `;\n`;
-
-    if (c.$children?.length) {
-      GetAllControlDeclare(c, childControl, obj);
-    }
-  });
-}
-
-function InheritForFromClass(node: ts.ClassDeclaration) {
-  for (const baseClass of node.heritageClauses) {
-    for (const type of baseClass.types) {
-      if (type.expression.getText() == "Form") return true;
-    }
-  }
-}
-
 function SameType(controls: Control[]) {
   let type;
   for (let i = 0; i < controls.length; i++) {
@@ -160,12 +133,6 @@ const actions: ActionTree<DesignerState, any> = {
   },
   ClearStack({ state }) {
     state.Stacks = [];
-  },
-  GetFormDeclare({ state }) {
-    state.ControlNames = [];
-    let ref = { declare: "" };
-    GetAllControlDeclare(state.FormConfig, state.$FormDesigner, ref);
-    return ref.declare;
   },
   SetDebug({ state }, debug) {
     state.Debug = debug;
@@ -280,54 +247,9 @@ const actions: ActionTree<DesignerState, any> = {
     state.FormConfig = config;
     if (config) FillControlNameCache(config);
   },
-  SetCode({ state }, code: string) {
-    state.Code = code;
-
-    const sourceFile = ts.createSourceFile("dummy.ts", code, ts.ScriptTarget.ESNext, true);
-
-    if (sourceFile) {
-      const methodNames: string[] = [];
-
-      ts.forEachChild(sourceFile, (node) => {
-        if (ts.isClassDeclaration(node)) {
-          if (InheritForFromClass(node)) {
-            for (const member of node.members) {
-              if (ts.isMethodDeclaration(member)) {
-                methodNames.push(member.name.getText());
-              }
-            }
-          }
-        }
-      });
-
-      state.EventNames = methodNames;
-    }
-  },
-  SetCompiledCode({ state }, compiledCode: string) {
-    state.CompiledCode = compiledCode;
-  },
-  SetAppendMethod({ state }, methodDeclare: string) {
-    state.AddMethodName = methodDeclare;
-  },
-  SetLocateMethod({ state }, methodName: string) {
-    state.LocateMethodName = methodName;
-  },
   SetPreview({ state }, preview: boolean) {
     state.Preview = preview;
     state.Debug = !preview;
-  },
-  SetFormSources({ state }, sources: Source[]) {
-    state.FormSources = sources;
-    sessionStorage.FormSources = JSON.stringify(sources);
-  },
-  SetCompiling({ state }, compiling = undefined) {
-    state.Compiling = compiling == undefined ? !state.Compiling : compiling;
-  },
-  SetSubWins({ state }, subWins: SubWin[]) {
-    state.SubWins = subWins;
-  },
-  SetSources({ state }, sources: Source[]) {
-    state.Sources = sources;
   },
   SetCopyControlJson({ state }, json: string) {
     state.CopyControlJson = json;

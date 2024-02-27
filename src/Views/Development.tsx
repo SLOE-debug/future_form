@@ -1,3 +1,4 @@
+import Preview from "@/CoreUI/Designer/Preview";
 import EditorPage from "@/CoreUI/Editor/EditorPage";
 import Sidebar from "@/CoreUI/Sidebar/Sidebar";
 import { Component, Vue } from "vue-facing-decorator";
@@ -6,12 +7,12 @@ import { Component, Vue } from "vue-facing-decorator";
 export default class Development extends Vue {
   created() {
     this.$Store.dispatch("Designer/SetDebug", true);
-    this.$nextTick(() => {
-      this.$Store.dispatch(
-        "VirtualFileSystem/SelectFile",
-        this.$Store.get.VirtualFileSystem.Root.directories[0].files[1]
-      );
-    });
+    // this.$nextTick(() => {
+    //   this.$Store.dispatch(
+    //     "VirtualFileSystem/SelectFile",
+    //     this.$Store.get.VirtualFileSystem.Root.directories[0].files[1]
+    //   );
+    // });
   }
 
   render() {
@@ -19,6 +20,7 @@ export default class Development extends Vue {
       <>
         <Sidebar></Sidebar>
         <EditorPage></EditorPage>
+        {this.$Store.get.Designer.Preview && <Preview></Preview>}
       </>
     );
   }

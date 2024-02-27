@@ -8,22 +8,21 @@ export default class WindowCollection extends Vue {
   declare $refs: { [x: string]: WindowControlBar };
 
   created() {
-    this.$Store.dispatch("SetWindowCollection", this);
+    this.$Store.dispatch("Window/SetWindowCollection", this);
   }
 
   winEventHandlers = {
     keydown: function (e) {
-      let keys = Object.keys(this.$Store.get.Windows).sort(
-        (a, b) => this.$Store.get.Windows[a].focusIndex - this.$Store.get.Windows[b].focusIndex
-      );
-      if (!keys.length) return;
-
-      let id = keys[keys.length - 1];
-      if (e.key == "Escape") {
-        (this.$refs[id] as WindowControlBar).Close();
-      } else {
-        (this.$refs[id + "Form"] as FormControl)?.KeyDown(e);
-      }
+      // let keys = Object.keys(this.$Store.get.Windows).sort(
+      //   (a, b) => this.$Store.get.Windows[a].focusIndex - this.$Store.get.Windows[b].focusIndex
+      // );
+      // if (!keys.length) return;
+      // let id = keys[keys.length - 1];
+      // if (e.key == "Escape") {
+      //   (this.$refs[id] as WindowControlBar).Close();
+      // } else {
+      //   (this.$refs[id + "Form"] as FormControl)?.KeyDown(e);
+      // }
     },
   };
   mounted() {
@@ -34,8 +33,8 @@ export default class WindowCollection extends Vue {
   unmounted() {
     RegisterEvent.call(window, this.winEventHandlers, true);
     this.winEventHandlers = null;
-    this.$Store.dispatch("SetWindowCollection", null);
-    this.$Store.dispatch("ClearWindowConfigs");
+    this.$Store.dispatch("Window/SetWindowCollection", null);
+    this.$Store.dispatch("Window/ClearWindowConfigs");
   }
 
   render() {

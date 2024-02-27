@@ -3,7 +3,7 @@ import { CreateControlByType } from "./Designer";
 import { DataConsistencyProxyCreator } from "@/Core/Designer/DataConsistency/DataConsistencyProxy";
 import { EventDeclare } from "@/Types/EventDeclare";
 import store from "@/Vuex/Store";
-// const CustomAxios = import("@/Plugins/Api/CustomAxios");
+import { GetFileById } from "../VirtualFileSystem/Index";
 
 type BarKit = EventDeclare.BarKit;
 type WindowGlobalVariate = any;
@@ -73,5 +73,15 @@ export class BaseForm {
     for (const k of members) {
       this[k] = null;
     }
+  }
+}
+
+export class BaseWindow {
+  constructor(id: string) {
+    let file = GetFileById(id);
+    console.log(file.extraData);
+  }
+  Show() {
+    console.log("显示");
   }
 }

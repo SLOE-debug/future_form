@@ -16,6 +16,7 @@ import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import { baseProps, baseEvents } from "@/Utils/Designer/Controls";
 import { CreateControlByDragEvent, CreateControlName, CloneStruct } from "@/Utils/Designer/Designer";
 import { Guid } from "@/Utils/Index";
+import { GetAllSqlFiles } from "@/Utils/VirtualFileSystem/Index";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceGroupConfig = ControlDeclare.DataSourceGroupConfig;
@@ -341,6 +342,8 @@ export default class DataSourceGroupControl extends Control {
 }
 
 export function GetProps(config: DataSourceGroupConfig, instance: DataSourceGroupControl) {
+  let sqlFiles = GetAllSqlFiles();
+
   const fieldMap: ConfiguratorItem[] = [
     ...baseProps.filter((p) => p.field != "disabled" && p.field != "required"),
     {
@@ -348,11 +351,9 @@ export function GetProps(config: DataSourceGroupConfig, instance: DataSourceGrou
       des: "该组绑定的数据源",
       type: DesignerDeclare.InputType.ElSelect,
       field: "sourceName",
-      options: instance.$Store.get.Designer.FormSources
-        ? instance.$Store.get.Designer.FormSources.map((s) => {
-            return { label: s.name, value: s.name };
-          })
-        : [],
+      options: sqlFiles.map((s) => {
+        return { label: s.name, value: s.id };
+      }),
     },
   ];
   if (config.sourceName) {

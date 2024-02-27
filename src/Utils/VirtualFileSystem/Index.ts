@@ -52,3 +52,80 @@ export function GetParentByFile(file: IFile) {
   }
   return parent;
 }
+
+/**
+ * 获取设计器后台文件
+ */
+export function GetDesignerBackgroundFile() {
+  let backgroundFile = store.get.VirtualFileSystem.CurrentFile;
+  if (backgroundFile.suffix == VritualFileSystemDeclare.FileType.FormDesigner) {
+    return backgroundFile.children[0];
+  }
+  backgroundFile = GetParentByFile(backgroundFile) as IFile;
+  if (backgroundFile.suffix == VritualFileSystemDeclare.FileType.FormDesigner) {
+    return backgroundFile.children[0];
+  }
+
+  return;
+}
+
+/**
+ * 获取所有sql文件
+ */
+export function GetAllSqlFiles() {
+  let sqlFiles: Array<IFile> = [];
+  let dirs = [store.get.VirtualFileSystem.Root] as Array<IFile | IDirectory>;
+  while (dirs.length > 0) {
+    let dir = dirs.shift();
+    if (IsDirectory(dir)) {
+      dirs.push(...dir.directories);
+      dirs.push(...dir.files);
+    } else {
+      if (dir.suffix == VritualFileSystemDeclare.FileType.Sql) {
+        sqlFiles.push(dir);
+      }
+    }
+  }
+  return sqlFiles;
+}
+
+/**
+ * 获取所有form文件
+ */
+export function GetAllFormFiles() {
+  let formFiles: Array<IFile> = [];
+  let dirs = [store.get.VirtualFileSystem.Root] as Array<IFile | IDirectory>;
+  while (dirs.length > 0) {
+    let dir = dirs.shift();
+    if (IsDirectory(dir)) {
+      dirs.push(...dir.directories);
+      dirs.push(...dir.files);
+    } else {
+      if (dir.suffix == VritualFileSystemDeclare.FileType.FormDesigner) {
+        formFiles.push(dir);
+      }
+    }
+  }
+  return formFiles;
+}
+
+/**
+ * 通过id获取文件
+ */
+export function GetFileById(id: string) {
+  let file: IFile;
+  let dirs = [store.get.VirtualFileSystem.Root] as Array<IFile | IDirectory>;
+  while (dirs.length > 0) {
+    let dir = dirs.shift();
+    if (IsDirectory(dir)) {
+      dirs.push(...dir.directories);
+      dirs.push(...dir.files);
+    } else {
+      if (dir.id == id) {
+        file = dir;
+        break;
+      }
+    }
+  }
+  return file;
+}

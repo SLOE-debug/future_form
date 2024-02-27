@@ -1,6 +1,10 @@
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
+import { BaseWindow } from "./Designer/Form";
 
 type EventHandlers = UtilsDeclare.EventHandlers;
+
+// 窗体基类
+window.BaseWindow = BaseWindow;
 
 export function RegisterEvent(this: any, eventHandlers: EventHandlers, unmount: boolean = false) {
   for (const type in eventHandlers) {

@@ -1,6 +1,5 @@
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import Basic from "./Basic";
-import { Path } from "@/Utils/VirtualFileSystem/Path";
 
 type IFile = VritualFileSystemDeclare.IFile;
 
@@ -28,13 +27,18 @@ export default class File extends Basic implements IFile {
 
     if (this.suffix == VritualFileSystemDeclare.FileType.FormDesigner) {
       this.specialFile = true;
-      this.content = `export default class Page {}`;
+      this.content = `export default class Page extends BaseWindow {
+  constructor() {
+    super('${this.id}');
+  }
+  Show(){}
+}`;
       let prefixname = v.split(".")[0];
       let tsName = prefixname + ".ts";
 
       if (this.children.length == 0) {
         let tsFile = new File(tsName);
-        tsFile.content = `import Page from "./${prefixname}.form";\r\n\r\nexport default class ${prefixname} extends Page {\r\n\tconstructor() {\r\n\t\tsuper();\r\n\t}\r\n}`;
+        tsFile.content = `import Page from "../${prefixname}.form";\r\n\r\nexport default class ${prefixname} extends Page {\r\n\t\r\n}`;
         this.AddFile(tsFile);
       } else {
         this.children[0].name = tsName;
@@ -75,7 +79,7 @@ export default class File extends Basic implements IFile {
   /**
    * 额外数据
    */
-  extraData: any = {};
+  extraData: any;
 
   /**
    * 添加文件
@@ -84,7 +88,8 @@ export default class File extends Basic implements IFile {
   AddFile(...files: IFile[]) {
     for (let i = 0; i < files.length; i++) {
       const f = files[i];
-      f.path = this.path;
+      let prefix = this.name.substring(0, this.name.lastIndexOf("."));
+      f.path = this.path + "/" + prefix;
     }
     this.children.push(...files);
   }

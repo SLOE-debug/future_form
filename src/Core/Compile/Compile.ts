@@ -17,20 +17,12 @@ export default class Compiler {
 
     const JavaScriptObfuscator = require("javascript-obfuscator");
 
-    // 排序 models，确保依赖的模块先编译，StartUp.ts 最先编译
-    models.sort((a, b) => {
-      let aPath = a.uri.path;
-      let bPath = b.uri.path;
-      if (aPath == "/Startup.ts") return -1;
-      if (bPath == "/Startup.ts") return 1;
-      return 0;
-    });
-
     let compiledFiles: CompiledFile[] = [];
 
     // 编译所有模块
     for (let i = 0; i < models.length; i++) {
       const m = models[i];
+      if (m.getLanguageId() == "sql") continue;
 
       let compiledFile: CompiledFile = {
         name: Path.RemoveSuffix(m.uri.path).substring(1),
@@ -53,10 +45,6 @@ export default class Compiler {
             let refAbsolutePath = Path.GetAbsolutePath(currentPath, refPath); // 例：/Main
 
             compiledFile.refs.push({ refPath, absPath: refAbsolutePath });
-            const scriptURL = this.importMap.get(refAbsolutePath);
-            if (scriptURL) {
-              out.outputFiles[0].text = out.outputFiles[0].text.replace(refPath, scriptURL);
-            }
           }
         });
       }
@@ -79,9 +67,18 @@ export default class Compiler {
    * @param compiledFiles 编译后的文件
    */
   async RunCompiledFiles(compiledFiles: CompiledFile[]) {
-    for (let i = 0; i < compiledFiles.length; i++) {
-      const m = compiledFiles[i];
-
+    let files = [...compiledFiles];
+    while (files.length) {
+      let m = files.shift();
+      // 测试当前 file 中的 refs 是否都已经加载
+      let isAllLoaded = m.refs.every((ref) => {
+        return this.importMap.has(ref.absPath);
+      });
+      if (!isAllLoaded) {
+        files.push(m);
+        continue;
+      }
+      // 如果都加载了，则加载当前文件
       m.refs.forEach((ref) => {
         m.content = m.content.replace(ref.refPath, this.importMap.get(ref.absPath));
       });

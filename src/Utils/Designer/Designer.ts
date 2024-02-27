@@ -6,7 +6,7 @@ import store from "@/Vuex/Store";
 import * as ts from "typescript";
 import { editor } from "@/CoreUI/Editor/EditorPage";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
-import { GetParentByFile } from "../VirtualFileSystem/Index";
+import { GetDesignerBackgroundFile, GetParentByFile } from "../VirtualFileSystem/Index";
 
 type IFile = VritualFileSystemDeclare.IFile;
 
@@ -424,22 +424,6 @@ function IsClassInheritFromPage(node: ts.Node): boolean {
     }
     return false;
   });
-}
-
-/**
- * 获取设计器后台文件
- */
-export function GetDesignerBackgroundFile() {
-  let backgroundFile = store.get.VirtualFileSystem.CurrentFile;
-  if (backgroundFile.suffix == VritualFileSystemDeclare.FileType.FormDesigner) {
-    return backgroundFile.children[0];
-  }
-  backgroundFile = GetParentByFile(backgroundFile) as IFile;
-  if (backgroundFile.suffix == VritualFileSystemDeclare.FileType.FormDesigner) {
-    return backgroundFile.children[0];
-  }
-
-  return;
 }
 
 /**

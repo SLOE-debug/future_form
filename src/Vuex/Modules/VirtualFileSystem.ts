@@ -24,7 +24,8 @@ test.name = "test.form.ts";
 test.specialFile = true;
 
 let Startup = new File("Startup.ts", true);
-Startup.content = ``;
+Startup.content = `import test from './src/test.form/test'
+new test()`;
 root.AddFile(Startup);
 
 export type VirtualFileSystemState = {

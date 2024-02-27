@@ -4,11 +4,8 @@ import { Component, Prop, Vue } from "vue-facing-decorator";
 import OptionsConfigurator from "./OptionsConfigurator";
 import ColumnsConfigurator from "./ColumnsConfigurator";
 import { CapitalizeFirstLetter } from "@/Utils/Index";
-import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
-import { AddMethodToDesignerBackground, GetDesignerBackgroundFile, LocateMethod } from "@/Utils/Designer/Designer";
-import { GetParentByFile } from "@/Utils/VirtualFileSystem/Index";
-
-type IFile = VritualFileSystemDeclare.IFile;
+import { AddMethodToDesignerBackground, LocateMethod } from "@/Utils/Designer/Designer";
+import { GetDesignerBackgroundFile } from "@/Utils/VirtualFileSystem/Index";
 
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 

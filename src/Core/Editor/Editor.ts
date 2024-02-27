@@ -378,7 +378,20 @@ export default class Editor {
         let insertPath = Path.GetRelativePath(currentFile.GetFullName(), file.GetFullName());
         let name = Path.RemoveSuffix(file.name);
 
-        console.log(name);
+        if (file.children.length) {
+          for (const f of file.children) {
+            let insertPath = Path.GetRelativePath(currentFile.GetFullName(), f.GetFullName());
+            let name = Path.RemoveSuffix(f.name);
+            suggestions.push({
+              label: name,
+              kind: monaco.languages.CompletionItemKind.File,
+              insertText: insertPath,
+              detail: insertPath,
+              sortText: "0",
+              range,
+            });
+          }
+        }
 
         suggestions.push({
           label: name,
@@ -418,6 +431,7 @@ export default class Editor {
    */
   GetOrCreateModel(file: IFile) {
     let fullName = file.GetFullName();
+
     let theme = this.suffix2Theme[file.suffix];
     if (theme) {
       monaco.editor.setTheme(theme);

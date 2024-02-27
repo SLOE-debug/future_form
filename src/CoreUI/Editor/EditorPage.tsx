@@ -137,7 +137,7 @@ export default class EditorPage extends Vue {
           })}
         </div>
         <div class={css.content}>
-          <DesignerSpace v-show={this.isDesigner} ref={"designerSpace"}></DesignerSpace>
+          {this.isDesigner && <DesignerSpace ref={"designerSpace"}></DesignerSpace>}
           {this.isSqlEditor && <SqlConfigurator ref="sqlConfigurator"></SqlConfigurator>}
           <div
             ref="editor"

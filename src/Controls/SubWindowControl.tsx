@@ -5,6 +5,7 @@ import { baseProps, baseEvents } from "@/Utils/Designer/Controls";
 import { Component } from "vue-facing-decorator";
 import FormControl from "./FormControl";
 import { WindowDeclare } from "@/Types/WindowDeclare";
+import { GetAllFormFiles } from "@/Utils/VirtualFileSystem/Index";
 
 type SubWindowConfig = ControlDeclare.SubWindowConfig;
 
@@ -81,6 +82,7 @@ export default class SubWindowControl extends Control {
 }
 
 export function GetProps(config: SubWindowConfig, instance: SubWindowControl) {
+  let subWins = GetAllFormFiles();
   const fieldMap: ConfiguratorItem[] = [
     ...baseProps.filter(
       (p) =>
@@ -96,8 +98,8 @@ export function GetProps(config: SubWindowConfig, instance: SubWindowControl) {
       des: "子窗体渲染的窗体",
       type: DesignerDeclare.InputType.ElSelect,
       field: "subWin",
-      options: instance.$Store.get.Designer.SubWins.map((s) => {
-        return { label: s.name, value: s.className };
+      options: subWins.map((s) => {
+        return { label: s.name, value: s.id };
       }),
     },
   ];

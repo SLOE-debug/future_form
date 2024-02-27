@@ -13,6 +13,8 @@ import {
 import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import Control from "./Control";
 import { AddControlDeclareToDesignerCode } from "@/Utils/Designer/Designer";
+import { GetDesignerBackgroundFile } from "@/Utils/VirtualFileSystem/Index";
+import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 
@@ -136,13 +138,20 @@ export default class DesignerSpace extends Vue {
   @Provide
   rootConfig;
   created() {
-    this.rootConfig = [FormControl.GetDefaultConfig()];
+    if (!this.$Store.get.VirtualFileSystem.CurrentFile.extraData) {
+      this.$Store.get.VirtualFileSystem.CurrentFile.extraData = FormControl.GetDefaultConfig();
+    }
+    this.rootConfig = [this.$Store.get.VirtualFileSystem.CurrentFile.extraData];
     this.$Store.dispatch("Designer/SetFormConfig", this.rootConfig[0]);
   }
 
   winEventHandlers = {
     keydown: function (e: KeyboardEvent) {
-      if ((e.target as HTMLElement).nodeName == "INPUT") return;
+      if (
+        (e.target as HTMLElement).nodeName == "INPUT" ||
+        this.$Store.get.VirtualFileSystem.CurrentFile?.suffix != VritualFileSystemDeclare.FileType.FormDesigner
+      )
+        return;
 
       let funcName = e.code + "Control";
       if (e.ctrlKey) funcName = "Ctrl" + funcName;
@@ -202,7 +211,6 @@ export default class DesignerSpace extends Vue {
             rt: false,
             move: false,
             locate: { index: 0 },
-            // key: this.$route.query.id.toString(),
             ref: "form",
           }}
         ></FormControl>
