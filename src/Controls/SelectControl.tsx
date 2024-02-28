@@ -161,17 +161,17 @@ export default class SelectControl extends Control {
     );
   }
 
-  DeclarationPatch() {
-    if (!!this.config.dataSource) {
-      let params = this.$Store.get.Designer.Sources.find((s) => s.name == this.config.dataSource).params || [];
-      if (!params.length) return `{ GetSource() }`;
-      else
-        return `{ GetSource(data: {${params.map((p) => {
-          return `${p.name}: ${p.type};`;
-        })}}) }`;
-    }
-    return "";
-  }
+  // DeclarationPatch() {
+  //   if (!!this.config.dataSource) {
+  //     let params = this.$Store.get.Designer.Sources.find((s) => s.name == this.config.dataSource).params || [];
+  //     if (!params.length) return `{ GetSource() }`;
+  //     else
+  //       return `{ GetSource(data: {${params.map((p) => {
+  //         return `${p.name}: ${p.type};`;
+  //       })}}) }`;
+  //   }
+  //   return "";
+  // }
 
   static GetDefaultConfig(): SelectConfig {
     return {

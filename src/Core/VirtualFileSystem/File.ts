@@ -31,7 +31,8 @@ export default class File extends Basic implements IFile {
   constructor() {
     super('${this.id}');
   }
-  Show(){}
+  Show(): void;
+  ShowDialog(): void;
 }`;
       let prefixname = v.split(".")[0];
       let tsName = prefixname + ".ts";

@@ -63,6 +63,8 @@ export default class Sidebar extends Vue {
 
   winEventHandlers = {
     keydown: function (e: KeyboardEvent) {
+      // 如果按下的事件来源是 input 或者 textarea，则不响应
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.key >= "1" && e.key <= "4") {
         this.activeTab = this.tabs[parseInt(e.key) - 1].type;
       }

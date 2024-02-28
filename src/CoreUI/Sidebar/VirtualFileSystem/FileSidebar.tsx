@@ -70,6 +70,7 @@ export default class FileSidebar extends Vue {
             let files = await compiler.GetCompiledFiles();
             compiler.RunCompiledFiles(files);
             this.isRun = false;
+            this.$Store.dispatch("Designer/SetPreview", true);
           },
         }}
       ></FontAwesomeIcon>

@@ -1,3 +1,4 @@
+import { BaseWindow } from "@/Utils/Designer/Form";
 import { ControlDeclare } from "./ControlDeclare";
 
 type ControlConfig = ControlDeclare.ControlConfig;
@@ -19,9 +20,10 @@ export namespace WindowDeclare {
   };
 
   export type DesktopWindowInstances = {
-    config: WindowConfig;
+    config: ControlDeclare.FormConfig;
     focusIndex: number;
     dialog: boolean;
+    instance: BaseWindow;
   };
 
   export enum StartPosition {

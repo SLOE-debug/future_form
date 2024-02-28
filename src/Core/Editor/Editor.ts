@@ -351,7 +351,7 @@ export default class Editor {
       suggestions.push({
         label: "log",
         kind: monaco.languages.CompletionItemKind.Function,
-        insertText: "console.log('${1}')",
+        insertText: "console.log(${1})",
         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
         detail: "输出",
         range,

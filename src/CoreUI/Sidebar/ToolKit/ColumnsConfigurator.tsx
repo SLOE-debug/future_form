@@ -1,6 +1,9 @@
 import { ControlDeclare } from "@/Types/ControlDeclare";
+import { UtilsDeclare } from "@/Types/UtilsDeclare";
+import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { GetFields } from "@/Utils/Designer/Designer";
 import { CapitalizeFirstLetter } from "@/Utils/Index";
+import { GetAllSqlFiles } from "@/Utils/VirtualFileSystem/Index";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
   ElButton,
@@ -243,7 +246,7 @@ export class ColumnOptionsConfigurator extends Vue {
   fields = [];
   SourceChange(v) {
     if (v) {
-      let source = this.$Store.get.Designer.Sources.find((m) => m.name == v);
+      let source = this.sqlFiles.find((m) => m.name == v).extraData as UtilsDeclare.Source;
       this.fields = GetFields(source.sql).map((m) => m.field) as string[];
     } else {
       this.fields = [];
@@ -266,8 +269,8 @@ export class ColumnOptionsConfigurator extends Vue {
           <ElForm inline>
             <ElFormItem label="数据源">
               <ElSelect v-model={this.column.dataSource} filterable onChange={this.SourceChange} clearable>
-                {this.$Store.get.Designer.Sources.map((m) => {
-                  return <ElOption key={m.name} label={m.name} value={m.name}></ElOption>;
+                {this.sqlFiles.map((m) => {
+                  return <ElOption key={m.id} label={m.name} value={m.id}></ElOption>;
                 })}
               </ElSelect>
             </ElFormItem>
@@ -352,6 +355,11 @@ export class ColumnOptionsConfigurator extends Vue {
         </ElTable>
       </>
     );
+  }
+
+  sqlFiles: VritualFileSystemDeclare.IFile[] = [];
+  updated() {
+    this.sqlFiles = GetAllSqlFiles();
   }
 
   CheckOptions() {

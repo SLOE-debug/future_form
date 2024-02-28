@@ -7,6 +7,9 @@ export default class Compiler {
   // 导入映射
   importMap: Map<string, string> = new Map();
 
+  // scriptDom 列表
+  static scriptList: HTMLScriptElement[] = [];
+
   /**
    * 获取编译后的文件
    * @returns 编译后的文件
@@ -89,6 +92,15 @@ export default class Compiler {
       script.type = "module";
       script.src = scriptURL;
       document.body.appendChild(script);
+      Compiler.scriptList.push(script);
     }
+  }
+
+  static Dispose() {
+    Compiler.scriptList.forEach((s) => {
+      document.body.removeChild(s);
+      URL.revokeObjectURL(s.src);
+    });
+    Compiler.scriptList = [];
   }
 }

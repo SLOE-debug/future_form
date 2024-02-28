@@ -309,24 +309,24 @@ export default class DataSourceGroupControl extends Control {
     this.data = null;
   }
 
-  DeclarationPatch() {
-    if (this.config.sourceName) {
-      let source = this.$Store.get.Designer.FormSources.find((s) => s.name == this.config.sourceName);
+  // DeclarationPatch() {
+  //   if (this.config.sourceName) {
+  //     let source = this.$Store.get.Designer.FormSources.find((s) => s.name == this.config.sourceName);
 
-      let declare = `{ \n\t\tSaveSource(sender: any): Promise<void>`;
+  //     let declare = `{ \n\t\tSaveSource(sender: any): Promise<void>`;
 
-      if (source?.params.length)
-        declare += `\n\t\tGetSource(data: { ${source.params.map((p) => {
-          return `${p.name}: ${p.type};`;
-        })} }): Promise<void>\n`;
-      else declare += `\n\t\tGetSource(): Promise<void>\n`;
+  //     if (source?.params.length)
+  //       declare += `\n\t\tGetSource(data: { ${source.params.map((p) => {
+  //         return `${p.name}: ${p.type};`;
+  //       })} }): Promise<void>\n`;
+  //     else declare += `\n\t\tGetSource(): Promise<void>\n`;
 
-      declare += `\t\tSharedData(control: any);`;
-      declare += `\n\t}`;
-      return declare;
-    }
-    return "";
-  }
+  //     declare += `\t\tSharedData(control: any);`;
+  //     declare += `\n\t}`;
+  //     return declare;
+  //   }
+  //   return "";
+  // }
 
   static GetDefaultConfig(): DataSourceGroupConfig {
     return {

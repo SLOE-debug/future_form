@@ -503,7 +503,6 @@ export async function LocateMethod(name: string) {
   if (methodNode) {
     await store.dispatch("VirtualFileSystem/SelectFile", GetDesignerBackgroundFile());
     let pos = editor.editor.getModel().getPositionAt(methodNode.end);
-    console.log(pos);
 
     editor.editor.focus();
     editor.editor.setPosition(pos);

@@ -8,6 +8,7 @@ import { FindControlsByType } from "@/Utils/Designer/Designer";
 import { defineAsyncComponent } from "vue";
 import { Component, Prop, Provide } from "vue-facing-decorator";
 import DataSourceGroupControl from "./DataSourceGroupControl";
+import store from "@/Vuex/Store";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 
@@ -19,17 +20,11 @@ const AsyncSlideSelector = defineAsyncComponent(() => import("@/CoreUI/Designer/
 @Component
 export default class FormControl extends Control {
   @Prop
-  compiledCode: string;
-  @Prop
   id: string;
   @Prop
   instanceId: string;
   @Prop({ default: false })
   preview: boolean;
-  @Prop
-  className: string;
-  @Prop({ default: false })
-  autoRelease: boolean;
 
   slideStartCoord: Coord;
   SlideStart(e: MouseEvent) {
@@ -75,17 +70,11 @@ export default class FormControl extends Control {
       this.windowBar.contentLoading = false;
     }
 
-    this.$Store.get.Designer.Debug && !this.preview && this.$Store.dispatch("Designer/SetFormDesigner", this);
+    this.$Store.get.Designer.Debug && !this.preview && (await this.$Store.dispatch("Designer/SetFormDesigner", this));
 
     if (!this.$Store.get.Designer.Debug || this.preview) {
-      // this.instance = CreateInstance(
-      //   this.compiledCode,
-      //   this,
-      //   this.className,
-      //   WinGlobal,
-      //   this.windowBar ? this.windowBar.baseToolkits : []
-      // );
-      // this.$Store.dispatch("SetWindowInstance", { id: this.instanceId, instance: this.instance });
+      let { instance, config } = this.$Store.get.Window.Windows[this.instanceId];
+      instance.BindWindowEventAndControl(config, this);
     }
     if (this.events.onCreated) {
       this.createEventPromise = this.events.onCreated();
@@ -99,12 +88,14 @@ export default class FormControl extends Control {
     });
   }
 
-  unmounted() {
-    super.unmounted();
+  beforeUnmount() {
     this.$Store.get.Designer.Debug && !this.preview && this.$Store.dispatch("Designer/SetFormDesigner", null);
+  }
+
+  async unmounted() {
+    super.unmounted();
     this.dataSourceControls = null;
     this.windowBar = null;
-    this.autoRelease && this.instance?.Dispose();
     this.instance = null;
   }
 
@@ -136,7 +127,7 @@ export default class FormControl extends Control {
 
   static GetDefaultConfig(): ControlConfig {
     return {
-      name: "PageForm",
+      name: store.get.VirtualFileSystem.CurrentFile.name.replace(".form.ts", ""),
       width: 700,
       height: 500,
       type: "Form",

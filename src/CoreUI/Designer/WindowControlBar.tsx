@@ -8,6 +8,7 @@ import { EventDeclare } from "@/Types/EventDeclare";
 import FormControl from "@/Controls/FormControl";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { JSX } from "vue/jsx-runtime";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 type Coord = UtilsDeclare.Coord;
 
@@ -63,7 +64,7 @@ export default class WindowControlBar extends Vue {
 
   desktopSize: Coord = { x: 0, y: 0 };
   UpdateDesktopSize() {
-    let rect = this.$Store.get.Window.DesktopDom.getBoundingClientRect();
+    let rect = this.$parent.$parent.$el.getBoundingClientRect();
     this.desktopSize.x = rect.width;
     this.desktopSize.y = innerHeight;
   }
@@ -121,7 +122,7 @@ export default class WindowControlBar extends Vue {
   top = 0;
 
   Close() {
-    this.$Store.dispatch("CloseWindow", this.instanceId);
+    this.$Store.dispatch("Window/CloseWindow", this.instanceId);
   }
 
   RenderBarButtons() {
@@ -132,15 +133,9 @@ export default class WindowControlBar extends Vue {
             {...{
               name: "Maximize",
               title: "最大化",
-              onMouseenter: (e: MouseEvent) => {
-                // gsap.to(e.target, { scale: 1, duration: 0.3 });
-              },
-              onMouseleave: (e: MouseEvent) => {
-                // gsap.to(e.target, { scale: 0.8, duration: 0.3 });
-              },
               class: css.max,
               onClick: (_) => {
-                if (!this.$Store.get.Designer.Preview) this.maximize = !this.maximize;
+                this.maximize = !this.maximize;
               },
             }}
           ></SvgIcon>
@@ -150,12 +145,6 @@ export default class WindowControlBar extends Vue {
             {...{
               name: "Close",
               title: "关闭",
-              onMouseenter: (e: MouseEvent) => {
-                // gsap.to(e.target, { scale: 1, duration: 0.3 });
-              },
-              onMouseleave: (e: MouseEvent) => {
-                // gsap.to(e.target, { scale: 0.8, duration: 0.3 });
-              },
               class: css.close,
               onClick: this.Close,
             }}
@@ -210,7 +199,7 @@ export default class WindowControlBar extends Vue {
         this.top = 0;
       }
     });
-    this.rootConfig = [this.$Store.get.Window.Windows[this.instanceId].config.config];
+    this.rootConfig = [this.$Store.get.Window.Windows[this.instanceId].config];
 
     // if (!this.showBaseToolKits) this.baseToolkits = [];
     this.RenderContentJsx();
@@ -433,7 +422,7 @@ export default class WindowControlBar extends Vue {
         style={this.barStyle}
         ref={"windowControl"}
         onMousedown={(e) => {
-          this.$Store.dispatch("SetFocusWindow", this.instanceId);
+          this.$Store.dispatch("Window/SetFocusWindow", this.instanceId);
         }}
       >
         <div

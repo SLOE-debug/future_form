@@ -147,7 +147,8 @@ export default class Control extends DataSourceControl {
   watchOldValue: ControlConfig;
   @Watch("watchConfig")
   ConfigChange(nv, ov) {
-    if (!this.$Store.get.Designer.Debug) return;
+    // 存在疑问，ov 为 false 但 nv 有值时，是否要执行
+    if (!this.$Store.get.Designer.Debug || !ov) return;
 
     if (this.pushTimeOut) clearTimeout(this.pushTimeOut);
     if (!this.selected || this.disableStack) return;
@@ -610,10 +611,6 @@ export default class Control extends DataSourceControl {
     let rect = this.$el.getBoundingClientRect();
     let containerEle = form.$el.parentElement as HTMLDivElement;
     containerEle.scrollTo(0, rect.top);
-  }
-
-  DeclarationPatch(): string {
-    return "";
   }
 
   static GetDefaultConfig(): ControlConfig {

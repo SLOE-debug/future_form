@@ -2,8 +2,8 @@ import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import store from "@/Vuex/Store";
 import { GetFields } from "./Designer";
-import { editor } from "@/CoreUI/Editor/EditorPage";
-import * as ts from "typescript";
+import { GetAllSqlFiles } from "../VirtualFileSystem/Index";
+import { UtilsDeclare } from "@/Types/UtilsDeclare";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceControlConfig = ControlDeclare.DataSourceControlConfig;
@@ -185,6 +185,7 @@ function GetFlatConfig() {
  * @param config 控件配置
  */
 export function AddDataSourceProps(fieldMap: ConfiguratorItem[], config: ControlConfig & DataSourceControlConfig) {
+  let sqlFiles = GetAllSqlFiles();
   let option = fieldMap.splice(
     fieldMap.findIndex((m) => m.name == "选项"),
     1
@@ -197,14 +198,16 @@ export function AddDataSourceProps(fieldMap: ConfiguratorItem[], config: Control
       des: "下拉框的数据源",
       type: DesignerDeclare.InputType.ElSelect,
       field: "dataSource",
-      options: store.get.Designer.Sources.map((m) => {
-        return { label: m.name, value: m.name };
+      options: sqlFiles.map((s) => {
+        return { label: s.name, value: s.id };
       }),
     },
   ];
 
   if (config.dataSource) {
-    let source = store.get.Designer.Sources.find((m) => m.name == config.dataSource);
+    // let source = store.get.Designer.Sources.find((m) => m.name == config.dataSource);
+    let source = sqlFiles.find((m) => m.id == config.dataSource).extraData as UtilsDeclare.Source;
+
     let fields = GetFields(source.sql).map((m) => m.field) as string[];
 
     let paramsMap = source.params.map((m, i) => {

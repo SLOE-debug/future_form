@@ -13,7 +13,6 @@ import {
 import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import Control from "./Control";
 import { AddControlDeclareToDesignerCode } from "@/Utils/Designer/Designer";
-import { GetDesignerBackgroundFile } from "@/Utils/VirtualFileSystem/Index";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 
 type ControlConfig = ControlDeclare.ControlConfig;
@@ -101,15 +100,10 @@ export default class DesignerSpace extends Vue {
     e.preventDefault();
   }
 
-  CtrlKeySControl(e: KeyboardEvent) {
-    this.$Store.get.Designer.$ToolBar.Save();
-    e.preventDefault();
-  }
-
-  EscapeControl(e: KeyboardEvent) {
-    this.$router.push({ path: "/FormList" });
-    e.preventDefault();
-  }
+  // EscapeControl(e: KeyboardEvent) {
+  //   this.$router.push({ path: "/FormList" });
+  //   e.preventDefault();
+  // }
 
   F7Control(e: KeyboardEvent) {
     this.$Store.dispatch("VirtualFileSystem/SelectFile", this.$Store.get.VirtualFileSystem.CurrentFile.children[0]);
@@ -142,6 +136,7 @@ export default class DesignerSpace extends Vue {
       this.$Store.get.VirtualFileSystem.CurrentFile.extraData = FormControl.GetDefaultConfig();
     }
     this.rootConfig = [this.$Store.get.VirtualFileSystem.CurrentFile.extraData];
+    this.$Store.dispatch("Designer/ClearSelected");
     this.$Store.dispatch("Designer/SetFormConfig", this.rootConfig[0]);
   }
 
@@ -165,17 +160,17 @@ export default class DesignerSpace extends Vue {
       this.menu = false;
     },
   };
-  mounted() {
+  async mounted() {
     BindEventContext(this.winEventHandlers, this);
     RegisterEvent.call(window, this.winEventHandlers);
-    this.$Store.dispatch("Designer/SetDesignerSpace", this);
+    await this.$Store.dispatch("Designer/SetDesignerSpace", this);
   }
 
-  unmounted() {
+  async unmounted() {
     RegisterEvent.call(window, this.winEventHandlers, true);
     this.winEventHandlers = null;
     this.$Store.dispatch("Designer/ClearSelected");
-    this.$Store.dispatch("Designer/SetDesignerSpace", null);
+    await this.$Store.dispatch("Designer/SetDesignerSpace", null);
     this.$Store.dispatch("Designer/ClearStack");
   }
 

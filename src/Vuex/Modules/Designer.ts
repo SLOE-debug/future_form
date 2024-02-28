@@ -9,8 +9,6 @@ import { FillControlNameCache } from "@/Utils/Designer/Designer";
 import { Module, ActionTree, GetterTree } from "vuex";
 import { GetProps as GetBaseProps } from "@/CoreUI/Designer/Control";
 
-type ToolBar = any;
-
 type ControlConfig = ControlDeclare.ControlConfig;
 
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
@@ -21,7 +19,6 @@ type Source = UtilsDeclare.Source;
 
 export type DesignerState = {
   Debug: boolean;
-  Coding: boolean;
   FormConfig: ControlConfig;
   SelectedControls: Control[];
   SelectedContainerControls?: Control[];
@@ -30,27 +27,16 @@ export type DesignerState = {
   ControlEvents: ConfiguratorItem[];
   $FormDesigner: FormControl;
   $DesignerSpace: DesignerSpace;
-  $ToolBar: ToolBar;
   Menus: MenuItem[];
-  ControlDeclare: string;
-  Code: string;
-  CompiledCode: string;
   EventNames: string[];
-  AddMethodName: string;
-  LocateMethodName: string;
   Preview: boolean;
-  FormSources: Source[];
   Stacks: Stack[] | Stack[][];
-  Compiling: boolean;
-  SubWins: SubWin[];
-  Sources: Source[];
   CopyControlJson: string;
   ControlNames: string[];
 };
 
 const state: DesignerState = {
   Debug: false,
-  Coding: false,
   FormConfig: null,
   SelectedControls: [],
   BigShotControl: null,
@@ -58,24 +44,19 @@ const state: DesignerState = {
   ControlEvents: [],
   $FormDesigner: null,
   $DesignerSpace: null,
-  $ToolBar: null,
   Menus: [],
-  ControlDeclare: "",
-  Code: "",
-  CompiledCode: "",
   EventNames: [],
-  AddMethodName: "",
-  LocateMethodName: "",
   Preview: false,
-  FormSources: [],
   Stacks: [],
-  Compiling: false,
-  SubWins: [],
-  Sources: [],
   CopyControlJson: "",
   ControlNames: [],
 };
 
+/**
+ * 获取当前窗体的所有引用
+ * @param obj 窗体的vue对象
+ * @returns 所有引用
+ */
 export function GetAllRefs(obj) {
   const stack = [obj];
   const refs = {};
@@ -137,20 +118,11 @@ const actions: ActionTree<DesignerState, any> = {
   SetDebug({ state }, debug) {
     state.Debug = debug;
   },
-  async SetCoding({ state, dispatch }, coding) {
-    if (coding && !state.Coding) {
-      state.ControlDeclare = await dispatch("GetFormDeclare");
-    }
-    state.Coding = coding;
-  },
   SetDesignerSpace({ state }, designerSpace: DesignerSpace) {
     state.$DesignerSpace = designerSpace;
   },
   SetFormDesigner({ state }, formDesigner) {
     state.$FormDesigner = formDesigner;
-  },
-  SetToolBar({ state }, toolBar) {
-    state.$ToolBar = toolBar;
   },
   RenderControlConfigurator({ state }) {
     let props: ConfiguratorItem[] = [];
@@ -258,33 +230,22 @@ const actions: ActionTree<DesignerState, any> = {
 
 const getters: GetterTree<DesignerState, any> = {
   Debug: (state) => state.Debug,
-  Coding: (state) => state.Coding,
   ControlProps: (state) => state.ControlProps,
   ControlEvents: (state) => state.ControlEvents,
   FormConfig: (state) => state.FormConfig,
   SelectedControls: (state) => state.SelectedControls,
   $FormDesigner: (state) => state.$FormDesigner,
   $DesignerSpace: (state) => state.$DesignerSpace,
-  $ToolBar: (state) => state.$ToolBar,
   Menus: (state) => state.Menus,
-  ControlDeclare: (state) => state.ControlDeclare,
-  Code: (state) => state.Code,
   EventNames: (state) => state.EventNames,
-  AddMethodName: (state) => state.AddMethodName,
-  LocateMethodName: (state) => state.LocateMethodName,
   Preview: (state) => state.Preview,
-  CompiledCode: (state) => state.CompiledCode,
   BigShotControl: (state) => state.BigShotControl,
-  FormSources: (state) => state.FormSources,
   SelectedContainerControls: (state) =>
     state.SelectedControls.filter((c) => {
       if (state.BigShotControl) return c.config.fromContainer == state.BigShotControl.config.fromContainer;
       return true;
     }),
   Stacks: (state) => state.Stacks,
-  Compiling: (state) => state.Compiling,
-  SubWins: (state) => state.SubWins,
-  Sources: (state) => state.Sources,
   CopyControlJson: (state) => state.CopyControlJson,
   ControlNames: (state) => state.ControlNames,
 };

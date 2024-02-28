@@ -43,35 +43,28 @@ export default class WindowCollection extends Vue {
     );
 
     return keys.map((instanceId, i) => {
-      let { config: win, dialog } = this.$Store.get.Window.Windows[instanceId];
+      let { config, dialog } = this.$Store.get.Window.Windows[instanceId];
 
       return (
         <WindowControlBar
           {...{
-            formWidth: win.config.width,
-            formHeight: win.config.height,
-            title: win.config.title,
+            formWidth: config.width,
+            formHeight: config.height,
+            title: config.title,
             ref: instanceId,
             zIndex: i + 1,
             instanceId: instanceId,
-            winId: win._id,
             key: instanceId,
-            max: win.maximize,
             dialogWindow: dialog,
-            showBaseToolKits: win.baseToolKits,
             active: i == keys.length - 1,
           }}
         >
           <FormControl
             {...{
-              id: win._id,
               locate: { index: 0 },
               instanceId,
               key: instanceId,
-              compiledCode: win.compiledCode,
-              className: win.className,
               ref: instanceId + "Form",
-              autoRelease: win.fixed || false,
             }}
           ></FormControl>
         </WindowControlBar>

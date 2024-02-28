@@ -86,12 +86,13 @@ export default class EditorPage extends Vue {
   }
 
   RenderTabItemIcon(m: IFile) {
+    let icon = null;
     if (m.isUnsaved && !m.showClose) {
-      return <FontAwesomeIcon icon={"circle"} class={css.unsaved}></FontAwesomeIcon>;
+      icon = <FontAwesomeIcon icon={"circle"} class={css.unsaved}></FontAwesomeIcon>;
     }
 
-    if (m.selected || m.showClose) {
-      return (
+    if (!icon && (m.selected || m.showClose)) {
+      icon = (
         <FontAwesomeIcon
           icon={"xmark"}
           {...{
@@ -108,7 +109,7 @@ export default class EditorPage extends Vue {
       );
     }
 
-    return <div style={{ width: "18px" }}></div>;
+    return <div class={css.close}>{icon}</div>;
   }
 
   render() {
@@ -137,7 +138,9 @@ export default class EditorPage extends Vue {
           })}
         </div>
         <div class={css.content}>
-          {this.isDesigner && <DesignerSpace ref={"designerSpace"}></DesignerSpace>}
+          {this.isDesigner && (
+            <DesignerSpace ref={"designerSpace"} key={this.$Store.get.VirtualFileSystem.CurrentFile.id}></DesignerSpace>
+          )}
           {this.isSqlEditor && <SqlConfigurator ref="sqlConfigurator"></SqlConfigurator>}
           <div
             ref="editor"

@@ -15,17 +15,120 @@ root.AddDirectory(src);
 src.spread = true;
 
 let sql = new File("a.sql");
-sql.content = `select a,b,c from a where b = :a`
+sql.content = `select a,b,c from a where b = :a`;
 src.AddFile(sql);
 
 let test = new File("");
 src.AddFile(test);
 test.name = "test.form.ts";
+test.content = `export default class Page extends BaseWindow {
+  constructor() {
+    super('${test.id}');
+  }
+  Show(): void;
+  btn_1: ButtonConfig;
+}`;
+test.extraData = {
+  name: "test",
+  width: 700,
+  height: 500,
+  type: "Form",
+  title: "测试",
+  bgColor: "#F1F1F1",
+  enterBtn: "",
+  $children: [
+    {
+      width: 100,
+      height: 25,
+      left: 100,
+      top: 100,
+      type: "Button",
+      text: "向左移动10px",
+      fontSize: 14,
+      style: "",
+      loading: false,
+      visible: true,
+      name: "btn_1",
+      onClick: "btn_1_OnClick",
+    },
+    {
+      width: 120,
+      height: 25,
+      left: 150,
+      top: 150,
+      type: "Button",
+      text: "打开login窗体",
+      fontSize: 14,
+      style: "",
+      loading: false,
+      visible: true,
+      name: "btn_2",
+      onClick: "btn_2_OnClick",
+    },
+    {
+      width: 200,
+      height: 25,
+      left: 200,
+      top: 200,
+      type: "Button",
+      text: "以对话框形式打开login窗体",
+      fontSize: 14,
+      style: "",
+      loading: false,
+      visible: true,
+      name: "btn_3",
+      onClick: "btn_3_OnClick",
+    },
+  ],
+};
+test.children[0].content = `import Page from "../test.form";
+import login from './../login.form/login';
+export default class test extends Page {
+  btn_1_OnClick(sender: any, e: MouseEvent) {
+    this.btn_1.left -= 10;
+  }
+  btn_2_OnClick(sender: any, e: MouseEvent) {
+    new login().Show();
+  }
+  btn_3_OnClick(sender: any, e: MouseEvent) {
+    new login().ShowDialog();
+  }
+}`;
+
 test.specialFile = true;
+
+let login = new File("");
+src.AddFile(login);
+login.name = "login.form.ts";
+login.specialFile = true;
+login.extraData = {
+  name: "login",
+  width: 300,
+  height: 200,
+  type: "Form",
+  title: "登录",
+  bgColor: "#F1F1F1",
+  enterBtn: "",
+  $children: [
+    {
+      width: 100,
+      height: 25,
+      left: 100,
+      top: 100,
+      type: "Button",
+      text: "登录",
+      fontSize: 14,
+      style: "",
+      loading: false,
+      visible: true,
+      name: "btn_1",
+    },
+  ],
+};
 
 let Startup = new File("Startup.ts", true);
 Startup.content = `import test from './src/test.form/test'
-new test()`;
+new test().Show()`;
 root.AddFile(Startup);
 
 export type VirtualFileSystemState = {
