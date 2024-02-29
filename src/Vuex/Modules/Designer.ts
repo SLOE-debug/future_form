@@ -4,18 +4,16 @@ import DesignerSpace from "@/CoreUI/Designer/DesignerSpace";
 import { Stack } from "@/Core/Designer/UndoStack/Stack";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { FillControlNameCache } from "@/Utils/Designer/Designer";
 import { Module, ActionTree, GetterTree } from "vuex";
 import { GetProps as GetBaseProps } from "@/CoreUI/Designer/Control";
+import * as ts from "typescript";
+import { GetDesignerBackgroundFile } from "@/Utils/VirtualFileSystem/Index";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 type MenuItem = DesignerDeclare.MenuItem;
-type SubWin = DesignerDeclare.SubWin;
-
-type Source = UtilsDeclare.Source;
 
 export type DesignerState = {
   Debug: boolean;
@@ -237,7 +235,22 @@ const getters: GetterTree<DesignerState, any> = {
   $FormDesigner: (state) => state.$FormDesigner,
   $DesignerSpace: (state) => state.$DesignerSpace,
   Menus: (state) => state.Menus,
-  EventNames: (state) => state.EventNames,
+  EventNames: (state, getters, rootState) => {
+    let file = GetDesignerBackgroundFile();
+    if (!file) return [];
+    let code = file.content;
+    let sourceFile = ts.createSourceFile("temp.ts", code, ts.ScriptTarget.ESNext, true);
+    let events = [];
+    // 递归获取所有方法
+    function GetEvents(node) {
+      if (node.kind == ts.SyntaxKind.MethodDeclaration) {
+        events.push(node.name.getText());
+      }
+      ts.forEachChild(node, GetEvents);
+    }
+    ts.forEachChild(sourceFile, GetEvents);
+    return events;
+  },
   Preview: (state) => state.Preview,
   BigShotControl: (state) => state.BigShotControl,
   SelectedContainerControls: (state) =>

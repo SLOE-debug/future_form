@@ -54,7 +54,7 @@ export function GetParentByFile(file: IFile) {
 }
 
 /**
- * 获取设计器后台文件
+ * 获取设计器后台文件，例：tets.form.ts 的关联文件 test.ts
  */
 export function GetDesignerBackgroundFile() {
   let backgroundFile = store.get.VirtualFileSystem.CurrentFile;
@@ -125,6 +125,7 @@ export function GetFileById(id: string) {
         file = dir;
         break;
       }
+      dirs.push(...dir.children);
     }
   }
   return file;

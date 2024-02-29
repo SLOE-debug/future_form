@@ -1,6 +1,7 @@
 export namespace CompileDeclare {
   export type CompiledFile = {
-    name: string;
+    id: string;
+    path: string;
     content: string;
     refs: { refPath: string; absPath: string }[];
   };

@@ -23,8 +23,6 @@ export default class FormControl extends Control {
   id: string;
   @Prop
   instanceId: string;
-  @Prop({ default: false })
-  preview: boolean;
 
   slideStartCoord: Coord;
   SlideStart(e: MouseEvent) {
@@ -70,9 +68,11 @@ export default class FormControl extends Control {
       this.windowBar.contentLoading = false;
     }
 
-    this.$Store.get.Designer.Debug && !this.preview && (await this.$Store.dispatch("Designer/SetFormDesigner", this));
+    this.$Store.get.Designer.Debug &&
+      !this.$Store.get.Designer.Preview &&
+      (await this.$Store.dispatch("Designer/SetFormDesigner", this));
 
-    if (!this.$Store.get.Designer.Debug || this.preview) {
+    if (!this.$Store.get.Designer.Debug || this.$Store.get.Designer.Preview) {
       let { instance, config } = this.$Store.get.Window.Windows[this.instanceId];
       instance.BindWindowEventAndControl(config, this);
     }
@@ -89,7 +89,7 @@ export default class FormControl extends Control {
   }
 
   beforeUnmount() {
-    this.$Store.get.Designer.Debug && !this.preview && this.$Store.dispatch("Designer/SetFormDesigner", null);
+    this.$Store.get.Designer.Debug && !this.$Store.get.Designer.Preview && this.$Store.dispatch("Designer/SetFormDesigner", null);
   }
 
   async unmounted() {

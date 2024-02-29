@@ -3,6 +3,7 @@ import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import Directory from "@/Core/VirtualFileSystem/Directory";
 import File from "@/Core/VirtualFileSystem/File";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
+import { Guid } from "@/Utils/Index";
 
 type IDirectory = VritualFileSystemDeclare.IDirectory;
 type IFile = VritualFileSystemDeclare.IFile;
@@ -50,6 +51,7 @@ test.extraData = {
       visible: true,
       name: "btn_1",
       onClick: "btn_1_OnClick",
+      id: Guid.NewGuid(),
     },
     {
       width: 120,
@@ -63,7 +65,7 @@ test.extraData = {
       loading: false,
       visible: true,
       name: "btn_2",
-      onClick: "btn_2_OnClick",
+      id: Guid.NewGuid(),
     },
     {
       width: 200,
@@ -77,21 +79,14 @@ test.extraData = {
       loading: false,
       visible: true,
       name: "btn_3",
-      onClick: "btn_3_OnClick",
+      id: Guid.NewGuid(),
     },
   ],
 };
 test.children[0].content = `import Page from "../test.form";
-import login from './../login.form/login';
 export default class test extends Page {
   btn_1_OnClick(sender: any, e: MouseEvent) {
     this.btn_1.left -= 10;
-  }
-  btn_2_OnClick(sender: any, e: MouseEvent) {
-    new login().Show();
-  }
-  btn_3_OnClick(sender: any, e: MouseEvent) {
-    new login().ShowDialog();
   }
 }`;
 
@@ -122,6 +117,7 @@ login.extraData = {
       loading: false,
       visible: true,
       name: "btn_1",
+      id: Guid.NewGuid(),
     },
   ],
 };

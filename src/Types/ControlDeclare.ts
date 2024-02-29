@@ -124,7 +124,12 @@ export namespace ControlDeclare {
   } & DataSourceControlConfig &
     ControlConfig;
 
-  export type SubWindowConfig = { subWin: string; form: { [x: string]: ControlConfig & Function } } & ControlConfig;
+  export type SubWindowConfig = {
+    form: { [x: string]: ControlConfig & Function };
+    subWindowId: string;
+    // 实例化时 new 的类名
+    createClassName: string;
+  } & ControlConfig;
 
   export type ColumnItem = {
     title?: string;

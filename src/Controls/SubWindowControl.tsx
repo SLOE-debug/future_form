@@ -2,12 +2,15 @@ import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { baseProps, baseEvents } from "@/Utils/Designer/Controls";
-import { Component } from "vue-facing-decorator";
+import { Component, Provide } from "vue-facing-decorator";
 import FormControl from "./FormControl";
 import { WindowDeclare } from "@/Types/WindowDeclare";
-import { GetAllFormFiles } from "@/Utils/VirtualFileSystem/Index";
+import { GetAllFormFiles, GetFileById } from "@/Utils/VirtualFileSystem/Index";
+import Compiler from "@/Core/Compile/Compile";
+import * as ts from "typescript";
 
 type SubWindowConfig = ControlDeclare.SubWindowConfig;
+type ControlConfig = ControlDeclare.ControlConfig;
 
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 
@@ -18,20 +21,45 @@ export default class SubWindowControl extends Control {
   declare config: SubWindowConfig;
 
   subWinConfig: WindowConfig = null;
+
+  subWinInstanceId: string = null;
+  subWinInstance = null;
+
+  @Provide
+  rootConfig: ControlConfig[];
+
   async created() {
-    if (!this.$Store.get.Designer.Debug) {
-      let res = await this.$Api.GetFormByClassName({ className: this.config.subWin });
-      if (res.data) {
-        this.subWinConfig = res.data;
-        this.$nextTick(() => {
-          this.config.form = (this.$refs.form as FormControl).instance as any;
-        });
-      }
+    if (!this.$Store.get.Designer.Debug || this.$Store.get.Designer.Preview) {
+      // 窗体id
+      let id = this.config.subWindowId;
+      Compiler.LazyLoad(id);
+
+      // let file = GetFileById(this.config.subWin);
+      // if (file) {
+      //   let files = Compiler.CompileByFile(file, file.children[0]);
+      //   Compiler.Install(files[1]);
+
+      //   // this.subWinInstanceId = await this.$Store.dispatch("Window/CreateWindow", {
+      //   //   config: file.extraData,
+      //   //   dialog: false,
+      //   //   instance: this,
+      //   // });
+      //   // this.$nextTick(() => {
+      //   //   this.config.form = (this.$refs.form as FormControl).instance as any;
+      //   // });
+      // }
+
+      // let res = await this.$Api.GetFormByClassName({ className: this.config.subWin });
+      // if (res.data) {
+      //   this.subWinConfig = res.data;
+      //   this.$nextTick(() => {
+      //     this.config.form = (this.$refs.form as FormControl).instance as any;
+      //   });
+      // }
     }
   }
 
   unmounted() {
-    this.config.form = null;
     this.subWinConfig = null;
   }
 
@@ -49,19 +77,16 @@ export default class SubWindowControl extends Control {
           <>
             <span>控件名称：{this.config.name}</span>
             <br />
-            <span>绑定窗体：{this.config.subWin}</span>
+            <span>绑定窗体：{this.config.subWindowId}</span>
           </>
         ) : (
-          this.subWinConfig && (
+          this.subWinInstanceId && (
             <FormControl
               {...{
-                config: this.subWinConfig.config,
-                id: this.subWinConfig._id,
-                key: this.config.id,
-                compiledCode: this.subWinConfig.compiledCode,
-                className: this.subWinConfig.className,
+                locate: { index: 0 },
+                instanceId: this.subWinInstanceId,
+                key: this.subWinInstanceId,
                 ref: "form",
-                autoRelease: true,
               }}
             ></FormControl>
           )
@@ -75,7 +100,8 @@ export default class SubWindowControl extends Control {
       width: 240,
       height: 240,
       type: "SubWindow",
-      subWin: "",
+      subWindowId: "",
+      createClassName: "",
       form: null,
     };
   }
@@ -99,8 +125,33 @@ export function GetProps(config: SubWindowConfig, instance: SubWindowControl) {
       type: DesignerDeclare.InputType.ElSelect,
       field: "subWin",
       options: subWins.map((s) => {
-        return { label: s.name, value: s.id };
+        return { label: s.name, value: s.children[0].id };
       }),
+      onChange: (value: string) => {
+        let file = GetFileById(value);
+        if (!file) return;
+        let sourceFile = ts.createSourceFile("temp.ts", file.content, ts.ScriptTarget.ESNext, true);
+        // 递归通过 ts 来寻找继承自 Page 的类名
+        let className = "";
+        function GetClassName(node) {
+          if (node.kind == ts.SyntaxKind.ClassDeclaration) {
+            let heritageClauses = node.heritageClauses;
+            if (heritageClauses) {
+              heritageClauses.forEach((h) => {
+                h.types.forEach((t) => {
+                  if (t.expression.getText() == "Page") {
+                    className = node.name.getText();
+                  }
+                });
+              });
+            }
+          }
+          ts.forEachChild(node, GetClassName);
+        }
+        ts.forEachChild(sourceFile, GetClassName);
+        instance.config.createClassName = className;
+        console.log(className);
+      },
     },
   ];
   return fieldMap;

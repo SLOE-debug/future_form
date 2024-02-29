@@ -4,7 +4,6 @@ import { WindowDeclare } from "@/Types/WindowDeclare";
 import { CloneStruct } from "@/Utils/Designer/Designer";
 import { BaseWindow } from "@/Utils/Designer/Form";
 import { Guid } from "@/Utils/Index";
-import { ElMessageBox } from "element-plus";
 import { Module, ActionTree, GetterTree } from "vuex";
 
 type WindowConfig = WindowDeclare.WindowConfig;

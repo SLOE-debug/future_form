@@ -66,11 +66,10 @@ export default class FileSidebar extends Vue {
         {...{
           onClick: async () => {
             this.isRun = true;
-            let compiler = new Compiler();
-            let files = await compiler.GetCompiledFiles();
-            compiler.RunCompiledFiles(files);
+            await Compiler.Compile();
+            Compiler.Install(Compiler.StartupFile);
+            await this.$Store.dispatch("Designer/SetPreview", true);
             this.isRun = false;
-            this.$Store.dispatch("Designer/SetPreview", true);
           },
         }}
       ></FontAwesomeIcon>

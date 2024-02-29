@@ -103,6 +103,7 @@ export default class Configurator extends Vue {
             }}
             onChange={(_) => {
               this.SyncConfiguration(m, isEvent);
+              m.onChange && m.onChange(ref[key]);
             }}
           >
             {isEvent

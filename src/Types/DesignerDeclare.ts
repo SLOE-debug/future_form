@@ -26,6 +26,7 @@ export namespace DesignerDeclare {
     type: InputType;
     config?: ControlConfig;
     options?: { label: string; value: string | number | boolean | object }[];
+    onChange?: (value: any) => void;
     paramTypes?: string[][];
     multiple?: boolean;
     field: string | RefValue;

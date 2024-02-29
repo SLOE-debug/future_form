@@ -169,7 +169,6 @@ export default class DesignerSpace extends Vue {
   async unmounted() {
     RegisterEvent.call(window, this.winEventHandlers, true);
     this.winEventHandlers = null;
-    this.$Store.dispatch("Designer/ClearSelected");
     await this.$Store.dispatch("Designer/SetDesignerSpace", null);
     this.$Store.dispatch("Designer/ClearStack");
   }
