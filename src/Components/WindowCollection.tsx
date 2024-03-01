@@ -38,13 +38,16 @@ export default class WindowCollection extends Vue {
   }
 
   render() {
-    let keys = Object.keys(this.$Store.get.Window.Windows).sort(
-      (a, b) => this.$Store.get.Window.Windows[a].focusIndex - this.$Store.get.Window.Windows[b].focusIndex
-    );
+    let keys = Object.keys(this.$Store.get.Window.Windows)
+      .filter((s) => !this.$Store.get.Window.Windows[s].subWindow)
+      .sort((a, b) => this.$Store.get.Window.Windows[a].focusIndex - this.$Store.get.Window.Windows[b].focusIndex);
+
+    console.log(keys);
 
     return keys.map((instanceId, i) => {
-      let { config, dialog } = this.$Store.get.Window.Windows[instanceId];
+      let { config, dialog, subWindow } = this.$Store.get.Window.Windows[instanceId];
 
+      if (subWindow) return null;
       return (
         <WindowControlBar
           {...{

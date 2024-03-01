@@ -24,6 +24,7 @@ export namespace WindowDeclare {
     focusIndex: number;
     dialog: boolean;
     instance: BaseWindow;
+    subWindow: boolean;
   };
 
   export enum StartPosition {

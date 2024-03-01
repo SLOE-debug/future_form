@@ -8,6 +8,7 @@ import { WindowDeclare } from "@/Types/WindowDeclare";
 import { GetAllFormFiles, GetFileById } from "@/Utils/VirtualFileSystem/Index";
 import Compiler from "@/Core/Compile/Compile";
 import * as ts from "typescript";
+import { BaseWindow } from "@/Utils/Designer/Form";
 
 type SubWindowConfig = ControlDeclare.SubWindowConfig;
 type ControlConfig = ControlDeclare.ControlConfig;
@@ -20,47 +21,35 @@ type WindowConfig = WindowDeclare.WindowConfig;
 export default class SubWindowControl extends Control {
   declare config: SubWindowConfig;
 
-  subWinConfig: WindowConfig = null;
-
   subWinInstanceId: string = null;
-  subWinInstance = null;
 
   @Provide
   rootConfig: ControlConfig[];
 
   async created() {
     if (!this.$Store.get.Designer.Debug || this.$Store.get.Designer.Preview) {
-      // 窗体id
       let id = this.config.subWindowId;
       Compiler.LazyLoad(id);
 
-      // let file = GetFileById(this.config.subWin);
-      // if (file) {
-      //   let files = Compiler.CompileByFile(file, file.children[0]);
-      //   Compiler.Install(files[1]);
+      let url = Compiler.fileId2BlobUrlMap.get(id);
 
-      //   // this.subWinInstanceId = await this.$Store.dispatch("Window/CreateWindow", {
-      //   //   config: file.extraData,
-      //   //   dialog: false,
-      //   //   instance: this,
-      //   // });
-      //   // this.$nextTick(() => {
-      //   //   this.config.form = (this.$refs.form as FormControl).instance as any;
-      //   // });
-      // }
+      import(/* webpackIgnore: true */ url).then(async (m) => {
+        let subWin = m.default as typeof BaseWindow;
+        if (m.default.name != this.config.createClassName) {
+          subWin = m[this.config.createClassName] as typeof BaseWindow;
+        }
+        this.subWinInstanceId = await new subWin(undefined).ShowSubWindow();
 
-      // let res = await this.$Api.GetFormByClassName({ className: this.config.subWin });
-      // if (res.data) {
-      //   this.subWinConfig = res.data;
-      //   this.$nextTick(() => {
-      //     this.config.form = (this.$refs.form as FormControl).instance as any;
-      //   });
-      // }
+        this.rootConfig = [this.$Store.get.Window.Windows[this.subWinInstanceId].config];
+      });
     }
   }
 
   unmounted() {
-    this.subWinConfig = null;
+    // 关闭子窗体
+    if (this.subWinInstanceId) {
+      this.$Store.dispatch("Window/CloseWindow", this.subWinInstanceId);
+    }
   }
 
   render() {
@@ -123,7 +112,7 @@ export function GetProps(config: SubWindowConfig, instance: SubWindowControl) {
       name: "窗体",
       des: "子窗体渲染的窗体",
       type: DesignerDeclare.InputType.ElSelect,
-      field: "subWin",
+      field: "subWindowId",
       options: subWins.map((s) => {
         return { label: s.name, value: s.children[0].id };
       }),
@@ -149,8 +138,7 @@ export function GetProps(config: SubWindowConfig, instance: SubWindowControl) {
           ts.forEachChild(node, GetClassName);
         }
         ts.forEachChild(sourceFile, GetClassName);
-        instance.config.createClassName = className;
-        console.log(className);
+        config.createClassName = className;
       },
     },
   ];

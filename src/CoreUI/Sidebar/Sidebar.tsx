@@ -68,6 +68,15 @@ export default class Sidebar extends Vue {
       if (e.key >= "1" && e.key <= "4") {
         this.activeTab = this.tabs[parseInt(e.key) - 1].type;
       }
+      // 如果等于F5
+      if (e.key == "F5") {
+        this.activeTab = "project";
+        this.$nextTick(() => {
+          this.$refs.fileSidebar.Preview();
+        });
+      }
+      e.stopPropagation();
+      e.preventDefault();
     },
   };
 
@@ -100,7 +109,7 @@ export default class Sidebar extends Vue {
             );
           })}
         </div>
-        {this.activeTab == "project" && <FileSidebar></FileSidebar>}
+        {this.activeTab == "project" && <FileSidebar ref={"fileSidebar"}></FileSidebar>}
         {this.activeTab == "controlLibrary" && <ControlLibray></ControlLibray>}
         {(this.activeTab == "property" || this.activeTab == "event") && (
           <Configurator {...{ left: this.activeTab == "event" ? 50 : 0 }}></Configurator>

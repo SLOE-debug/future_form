@@ -3,6 +3,7 @@ export namespace CompileDeclare {
     id: string;
     path: string;
     content: string;
+    extraData: any;
     refs: { refPath: string; absPath: string }[];
   };
 }

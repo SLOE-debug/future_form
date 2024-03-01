@@ -55,6 +55,14 @@ export default class FileSidebar extends Vue {
     e.preventDefault();
   }
 
+  async Preview() {
+    await this.$Store.dispatch("Designer/SetPreview", true);
+    this.isRun = true;
+    await Compiler.Compile();
+    Compiler.Install(Compiler.StartupFile);
+    this.isRun = false;
+  }
+
   isRun = false;
   RenderRunTool() {
     if (this.isRun) return <FontAwesomeIcon icon={"stop"} style={{ color: "#C85961" }} title="停止"></FontAwesomeIcon>;
@@ -64,13 +72,7 @@ export default class FileSidebar extends Vue {
         style={{ color: "#9AE69A" }}
         title="运行"
         {...{
-          onClick: async () => {
-            this.isRun = true;
-            await Compiler.Compile();
-            Compiler.Install(Compiler.StartupFile);
-            await this.$Store.dispatch("Designer/SetPreview", true);
-            this.isRun = false;
-          },
+          onClick: this.Preview,
         }}
       ></FontAwesomeIcon>
     );

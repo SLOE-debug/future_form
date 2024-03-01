@@ -89,7 +89,9 @@ export default class FormControl extends Control {
   }
 
   beforeUnmount() {
-    this.$Store.get.Designer.Debug && !this.$Store.get.Designer.Preview && this.$Store.dispatch("Designer/SetFormDesigner", null);
+    this.$Store.get.Designer.Debug &&
+      !this.$Store.get.Designer.Preview &&
+      this.$Store.dispatch("Designer/SetFormDesigner", null);
   }
 
   async unmounted() {

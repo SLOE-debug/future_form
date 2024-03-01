@@ -120,12 +120,14 @@ export function GetFileById(id: string) {
     if (IsDirectory(dir)) {
       dirs.push(...dir.directories);
       dirs.push(...dir.files);
+      dir.files.forEach((file) => {
+        dirs.push(...file.children);
+      });
     } else {
       if (dir.id == id) {
         file = dir;
         break;
       }
-      dirs.push(...dir.children);
     }
   }
   return file;

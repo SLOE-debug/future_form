@@ -5,6 +5,7 @@ import { EventDeclare } from "@/Types/EventDeclare";
 import store from "@/Vuex/Store";
 import { GetFileById } from "../VirtualFileSystem/Index";
 import { ControlDeclare } from "@/Types/ControlDeclare";
+import Compiler from "@/Core/Compile/Compile";
 
 type BarKit = EventDeclare.BarKit;
 type WindowGlobalVariate = any;
@@ -87,24 +88,32 @@ export class BaseWindow {
    * @param id 窗体id
    */
   constructor(id: string) {
-    let file = GetFileById(id);
-    if (file) {
-      this.formConfig = file.extraData;
+    let files = Compiler.LazyLoad(id);
+    if (files) {
+      this.formConfig = files[0].extraData;
     }
   }
 
   /**
    * 显示窗体
    */
-  Show(dialog: boolean = false) {
-    store.dispatch("Window/CreateWindow", { config: this.formConfig, dialog, instance: this });
+  async Show(dialog: boolean = false, subWindow: boolean = false) {
+    return await store.dispatch("Window/CreateWindow", { config: this.formConfig, dialog, subWindow, instance: this });
   }
   /**
    * 显示窗体以对话框形式
    */
-  ShowDialog() {
-    this.Show(true);
+  async ShowDialog() {
+    return await this.Show(true);
   }
+
+  /**
+   * 显示子窗体
+   */
+  async ShowSubWindow() {
+    return await this.Show(false, true);
+  }
+
   /**
    * 绑定窗体事件及控件
    * @param config 窗体配置

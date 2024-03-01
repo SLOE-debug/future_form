@@ -4,14 +4,16 @@ import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { Path } from "@/Utils/VirtualFileSystem/Path";
 import store from "@/Vuex/Store";
 import * as monaco from "monaco-editor";
-import * as ts from "typescript";
 
 type CompiledFile = CompileDeclare.CompiledFile;
 type IFile = VritualFileSystemDeclare.IFile;
 
 export default class Compiler {
   // 导入映射
-  private static importMap: Map<string, string> = new Map();
+  private static import2BlobUrlMap: Map<string, string> = new Map();
+
+  // 文件ID与BlobUrl的映射
+  static fileId2BlobUrlMap: Map<string, string> = new Map();
 
   // 编译后的文件列表
   private static CompiledFiles: CompiledFile[] = [];
@@ -40,10 +42,12 @@ export default class Compiler {
       const m = models[i];
       if (m.getLanguageId() == "sql") continue;
 
+      let file = editor.model2File.get(m);
       let compiledFile: CompiledFile = {
-        id: editor.model2File.get(m)!.id,
+        id: file.id,
         path: Path.RemoveSuffix(m.uri.path).substring(1),
         content: "",
+        extraData: file.extraData,
         refs: [],
       };
 
@@ -78,6 +82,7 @@ export default class Compiler {
           let currentPath = path; // 例：/index.ts
           let refAbsolutePath = Path.GetAbsolutePath(currentPath, refPath); // 例：/Main
 
+          // 存在疑问，refs 中是否需要存储文件id
           file.refs.push({ refPath, absPath: refAbsolutePath });
         }
       });
@@ -98,30 +103,33 @@ export default class Compiler {
   /**
    * 安装编译后的文件
    * @param file 文件
-   * @param files 文件列表
+   * @param InstalledFiles 文件列表
    */
-  static Install(file: CompiledFile) {
+  static Install(file: CompiledFile, InstalledFiles: CompiledFile[] = []) {
     for (const ref of file.refs) {
-      if (!this.importMap.has(ref.absPath)) {
+      if (!this.import2BlobUrlMap.has(ref.absPath)) {
         let refFile = this.CompiledFiles.find((f) => f.path == ref.absPath);
         if (refFile) {
-          this.Install(refFile);
+          this.Install(refFile, InstalledFiles);
         }
       }
     }
-    if (!this.importMap.has(file.path)) {
+    if (!this.import2BlobUrlMap.has(file.path)) {
+      InstalledFiles.push(file);
       file.refs.forEach((ref) => {
-        file.content = file.content.replace(ref.refPath, this.importMap.get(ref.absPath));
+        file.content = file.content.replace(ref.refPath, this.import2BlobUrlMap.get(ref.absPath));
       });
-      const blob = new Blob([file.content], { type: "text/javascript" });
+      const blob = new Blob([file.content], { type: "application/javascript" });
       const scriptURL = URL.createObjectURL(blob);
-      this.importMap.set(file.path, scriptURL);
+      this.import2BlobUrlMap.set(file.path, scriptURL);
+      this.fileId2BlobUrlMap.set(file.id, scriptURL);
       const script = document.createElement("script");
       script.type = "module";
       script.src = scriptURL;
       document.body.appendChild(script);
       Compiler.scriptList.push(script);
     }
+    return InstalledFiles;
   }
 
   /**
@@ -129,13 +137,11 @@ export default class Compiler {
    */
   static LazyLoad(id: string) {
     // 如果没有编译文件，待续...
-
     const file = this.CompiledFiles.find((f) => f.id == id);
-    if (file) {
-      console.log(file);
-
-      this.Install(file);
+    if (!this.fileId2BlobUrlMap.has(id)) {
+      return this.Install(file);
     }
+    return [file];
   }
 
   /**
@@ -147,5 +153,8 @@ export default class Compiler {
       URL.revokeObjectURL(s.src);
     });
     Compiler.scriptList = [];
+    Compiler.import2BlobUrlMap.clear();
+    Compiler.fileId2BlobUrlMap.clear();
+    Compiler.CompiledFiles = [];
   }
 }

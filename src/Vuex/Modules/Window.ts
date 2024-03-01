@@ -28,7 +28,12 @@ const state: WindowState = {
 };
 
 let focusIndex = 0;
-type OpenWindowParams = { config: ControlDeclare.FormConfig; dialog: boolean; instance: BaseWindow };
+type OpenWindowParams = {
+  config: ControlDeclare.FormConfig;
+  dialog: boolean;
+  subWindow: boolean;
+  instance: BaseWindow;
+};
 
 const actions: ActionTree<WindowState, any> = {
   AddWindowConfigs({ state }, windowConfig: WindowConfig[]) {
@@ -61,6 +66,7 @@ const actions: ActionTree<WindowState, any> = {
       focusIndex: focusIndex++,
       dialog: p.dialog,
       instance: p.instance,
+      subWindow: p.subWindow,
     };
     dispatch("SetFocusWindow", id);
     return id;
@@ -68,26 +74,14 @@ const actions: ActionTree<WindowState, any> = {
   async CloseWindow({ state }, id) {
     state.Windows[id].instance.Dispose();
     delete state.Windows[id];
-    // try {
-    //   let instance = state.WindowInstances[id];
-    //   let dsgs = instance.$Window.dataSourceControls;
-    //   for (let i = 0; i < dsgs.length; i++) {
-    //     let controlName = dsgs[i].config.name;
-    //     let length = instance.$refs[controlName].diffData.size;
-    //     if (length) {
-    //       await ElMessageBox.confirm("当前窗体还有更改未保存！是否要关闭该窗体？", "警告！", {
-    //         confirmButtonText: "确定",
-    //         cancelButtonText: "取消",
-    //         type: "warning",
-    //         center: true,
-    //       });
-    //     }
-    //   }
-    //   let configId = state.Windows[id].config._id;
-    //   delete state.SingleWindowCreatedFlag[configId];
-    //   delete state.Windows[id];
-    //   delete state.WindowInstances[id];
-    // } catch {}
+  },
+  // 关闭所有窗口
+  async CloseAllWindows({ state }) {
+    for (let id in state.Windows) {
+      if (state.Windows[id].subWindow) continue;
+      state.Windows[id].instance.Dispose();
+      delete state.Windows[id];
+    }
   },
 };
 
