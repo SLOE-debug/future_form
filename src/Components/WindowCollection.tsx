@@ -42,8 +42,6 @@ export default class WindowCollection extends Vue {
       .filter((s) => !this.$Store.get.Window.Windows[s].subWindow)
       .sort((a, b) => this.$Store.get.Window.Windows[a].focusIndex - this.$Store.get.Window.Windows[b].focusIndex);
 
-    console.log(keys);
-
     return keys.map((instanceId, i) => {
       let { config, dialog, subWindow } = this.$Store.get.Window.Windows[instanceId];
 
@@ -54,6 +52,8 @@ export default class WindowCollection extends Vue {
             formWidth: config.width,
             formHeight: config.height,
             title: config.title,
+            // 最大化
+            max: config.maximize,
             ref: instanceId,
             zIndex: i + 1,
             instanceId: instanceId,

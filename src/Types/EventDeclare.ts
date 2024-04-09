@@ -5,29 +5,11 @@ export namespace EventDeclare {
   };
 
   export type BarKit = {
-    type: "IconButton" | "Input" | "select";
-    bindObject?: object;
-    bindField?: string;
-    width?: number;
-    placeholder?: string;
-    displayFields?: DisplayFieldConfig[];
-    options?: { label: string; value: string; obj: any }[];
-
-    icon?: string;
-    title?: string;
-    active?: boolean;
-    disabled?: boolean;
-    readonlyDisabled?: boolean;
-
-    on?: {
-      [x: string]: Function;
-    };
-
-    attr?: {
-      fetchSuggestions?: Function;
-      select?: Function;
-      [x: string]: any;
-    };
+    type: "IconButton";
+    icon: string;
+    title: string;
+    active: boolean;
+    disabled: boolean;
   };
 
   export type CellEventHandlerParams = {

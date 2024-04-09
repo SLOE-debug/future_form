@@ -42,7 +42,7 @@ export default class Preview extends Vue {
   }
 
   render() {
-    if (this.WindowInstancesCount == 0) return null;
+    // if (this.WindowInstancesCount == 0) return null;
     return (
       <div class={css.preview}>
         <WindowCollection></WindowCollection>

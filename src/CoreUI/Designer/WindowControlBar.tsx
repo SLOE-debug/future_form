@@ -12,8 +12,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 type Coord = UtilsDeclare.Coord;
 
-type BarKit = EventDeclare.BarKit;
-
 type ControlConfig = ControlDeclare.ControlConfig;
 
 @Component
@@ -57,6 +55,7 @@ export default class WindowControlBar extends Vue {
   rootConfig: ControlConfig[];
 
   maximize = false;
+
   @Watch("maximize")
   maximizeChange(nv, ov) {
     this.UpdateDesktopSize();
@@ -182,6 +181,7 @@ export default class WindowControlBar extends Vue {
     switch (this.startPosition) {
       case WindowDeclare.StartPosition.Default:
         this.top = this.left = 0;
+        break;
       case WindowDeclare.StartPosition.CenterScreen:
         let { width, height } = this.windowSize;
 
@@ -191,27 +191,14 @@ export default class WindowControlBar extends Vue {
         };
         this.top = rect.height / 2 - height / 2;
         this.left = rect.width / 2 - width / 2;
+        break;
     }
     this.$nextTick(() => {
       if (this.max) {
         this.maximize = true;
-        this.left = 0;
-        this.top = 0;
       }
     });
     this.rootConfig = [this.$Store.get.Window.Windows[this.instanceId].config];
-
-    // if (!this.showBaseToolKits) this.baseToolkits = [];
-    this.RenderContentJsx();
-  }
-
-  RenderContentJsx() {
-    this.contentLoading = true;
-    this.contentJsx = null;
-    // this.baseToolkits = this.showBaseToolKits ? GetBaseToolKit() : [];
-    setTimeout(() => {
-      this.contentJsx = this.$slots.default && this.$slots.default();
-    }, 50);
   }
 
   winEventHandlers = {
@@ -229,169 +216,7 @@ export default class WindowControlBar extends Vue {
   unmounted() {
     RegisterEvent.call(window, this.winEventHandlers, true);
     this.winEventHandlers = null;
-    this.form = null;
-    this.contentJsx = null;
     this.rootConfig = null;
-  }
-
-  // baseToolkits: BarKit[] = GetBaseToolKit();
-
-  IconButtonClick(m: BarKit) {
-    switch (m.icon) {
-      case "WindowBarEdit":
-        m.active = !m.active;
-        this.form.dataSourceControls.forEach((d) => (d.config.readonly = !d.config.readonly));
-        // this.baseToolkits.forEach((otherItem) => {
-        //   if ("readonlyDisabled" in otherItem) {
-        //     otherItem.readonlyDisabled = !m.active;
-        //   }
-        // });
-        break;
-      case "WindowBarSave":
-        // ElMessage({ type: "warning", message: "暂未开通，敬请期待！" });
-        this.form.dataSourceControls.forEach((d) => d.SaveSource(null));
-        break;
-      case "WindowBarRefresh":
-        this.RenderContentJsx();
-        break;
-    }
-  }
-
-  async BaseToolKitEvent(m: BarKit, type: string, e: any) {
-    let methodName = CapitalizeFirstLetter(m.type) + CapitalizeFirstLetter(type) + CapitalizeFirstLetter(m.bindField);
-
-    let res: boolean | Promise<any> = true;
-    if (this.form.events.onBarToolKitEventBus) {
-      res = this.form.events.onBarToolKitEventBus(null, m, type, e) || true;
-      if (res instanceof Promise) {
-        res = await res;
-      }
-    }
-
-    if (res) this[methodName] && this[methodName].apply(this, arguments);
-  }
-
-  tiggerFlag = {};
-  RenderToolKitItem(m: BarKit) {
-    switch (m.type) {
-      case "IconButton":
-        const iconBtn = (
-          <div
-            class={css.item}
-            title={m.title}
-            style={{
-              filter: m.disabled || m.readonlyDisabled ? "grayscale(1)" : "",
-              boxShadow: m.active ? "inset 0 0 5px black" : "",
-              cursor: m.disabled || m.readonlyDisabled ? "not-allowed" : "",
-            }}
-            onClick={(e) => {
-              if (!(m.disabled || m.readonlyDisabled)) this.BaseToolKitEvent(m, "click", e);
-            }}
-          >
-            <SvgIcon {...{ name: m.icon }}></SvgIcon>
-          </div>
-        );
-
-        for (const k in m.on) {
-          iconBtn.props[`on${CapitalizeFirstLetter(k)}`] = m.on[k];
-        }
-
-        return iconBtn;
-      case "Input":
-        const input = (
-          <ElInput
-            placeholder="案号"
-            autocomplete={"on"}
-            v-model={m.bindObject[m.bindField]}
-            onChange={(v) => {
-              this.BaseToolKitEvent(m, "change", { value: v } as unknown as Event);
-            }}
-          ></ElInput>
-        );
-        for (const k in m.on) {
-          input.props[`on${CapitalizeFirstLetter(k)}`] = m.on[k];
-        }
-
-        return input;
-      case "select":
-        const select = (
-          <ElSelectV2
-            v-model={m.bindObject[m.bindField]}
-            filterable={true}
-            remote
-            remoteMethod={(query: string) => {
-              this.BaseToolKitEvent(m, "remoteMethod", { value: query });
-            }}
-            onChange={(v) => {
-              this.BaseToolKitEvent(m, "change", { value: v });
-            }}
-            name={m.bindField}
-            {...{ placeholder: m.placeholder }}
-            popperClass={css.barList}
-            options={m.options}
-            onVisible-change={(v) => {
-              setTimeout(() => {
-                this.tiggerFlag[m.bindField] = v;
-              }, 300);
-            }}
-            {...{
-              onKeyup: (e: KeyboardEvent) => {
-                this.BaseToolKitEvent(m, "keyup", e);
-              },
-            }}
-            style={{ width: m.width + "px", height: "22px", marginRight: "2px" }}
-          >
-            {{
-              default: ({ item }) => {
-                let { obj } = item;
-                if (m.displayFields?.length) {
-                  return m.displayFields.map((df) => (
-                    <span style={{ width: df.width + "px" }} class={css.option}>
-                      {obj[df.field]}
-                    </span>
-                  ));
-                } else {
-                  let keys = Object.keys(obj);
-                  return keys.length ? obj[keys[0]] : "";
-                }
-              },
-              prefix: () => {
-                return (
-                  <ElIcon
-                    size={16}
-                    style={{ position: "absolute", right: 0, cursor: "pointer" }}
-                    color="#666"
-                    {...{
-                      onClick: (e: MouseEvent) => {
-                        this.BaseToolKitEvent(m, "prefixClick", e);
-                      },
-                    }}
-                  >
-                    {() => {
-                      let icon = this.$.appContext.components["CaretBottom"];
-                      return <icon></icon>;
-                    }}
-                  </ElIcon>
-                );
-              },
-            }}
-          </ElSelectV2>
-        );
-
-        for (const k in m.on) {
-          select.props[`on${CapitalizeFirstLetter(k)}`] = m.on[k];
-        }
-
-        return select;
-    }
-  }
-
-  RenderBarToolKit() {
-    return (
-      <div class={css.toolKit} style={this.headStyle} onDblclick={(e) => e.stopPropagation()}>
-        {/* {this.baseToolkits.map((m) => this.RenderToolKitItem(m))} */}
-      </div>
-    );
   }
 
   ShowDialogWindow(jsx: JSX.Element) {
@@ -412,9 +237,7 @@ export default class WindowControlBar extends Vue {
     );
   }
 
-  form: FormControl;
   contentLoading = true;
-  contentJsx;
   render() {
     let window = (
       <div
@@ -430,10 +253,9 @@ export default class WindowControlBar extends Vue {
           style={this.headStyle}
           onMousedown={this.StartMove}
           onDblclick={(_) => {
-            if (this.showMaximize && !this.$Store.get.Designer.Preview) this.maximize = !this.maximize;
+            if (this.showMaximize) this.maximize = !this.maximize;
           }}
         >
-          {this.RenderBarToolKit()}
           {this.title}
           {this.RenderBarButtons()}
         </div>
@@ -442,9 +264,9 @@ export default class WindowControlBar extends Vue {
           style={this.containerStyle}
           v-loading={this.contentLoading}
           element-loading-text="正在加载窗体..."
-          element-loading-background="transparent"
+          element-loading-background="black"
         >
-          {this.contentJsx}
+          {this.$slots.default()}
         </div>
       </div>
     );

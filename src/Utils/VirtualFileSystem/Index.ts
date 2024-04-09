@@ -132,3 +132,33 @@ export function GetFileById(id: string) {
   }
   return file;
 }
+
+/**
+ * 拍平Root，获取所有文件
+ */
+export function FlatRoot(root: IDirectory) {
+  let files: Array<IFile> = [];
+  let dirs = [root] as Array<IFile | IDirectory>;
+  while (dirs.length > 0) {
+    let dir = dirs.shift();
+    if (IsDirectory(dir)) {
+      dirs.push(...dir.directories);
+      dirs.push(...dir.files);
+      dir.files.forEach((file) => {
+        dirs.push(...file.children);
+      });
+    } else {
+      // 将 file 中的 _name 转换为 name
+      let file = { ...dir } as any;
+      file.fileId = file.id;
+      delete file.id;
+      file.name = file._name;
+      file.isProtected = file._isProtected;
+      file.fullPath = dir.GetFullName();
+      delete file._name;
+      delete file._isProtected;
+      files.push(file);
+    }
+  }
+  return files;
+}

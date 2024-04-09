@@ -70,7 +70,7 @@ export default class Sidebar extends Vue {
       }
       // 如果等于F5
       if (e.key == "F5") {
-        this.activeTab = "project";
+        // this.activeTab = "project";
         this.$nextTick(() => {
           this.$refs.fileSidebar.Preview();
         });
@@ -111,8 +111,13 @@ export default class Sidebar extends Vue {
         </div>
         {this.activeTab == "project" && <FileSidebar ref={"fileSidebar"}></FileSidebar>}
         {this.activeTab == "controlLibrary" && <ControlLibray></ControlLibray>}
+
         {(this.activeTab == "property" || this.activeTab == "event") && (
-          <Configurator {...{ left: this.activeTab == "event" ? 50 : 0 }}></Configurator>
+          <Configurator
+            {...{
+              left: this.activeTab == "event" ? 50 : 0,
+            }}
+          ></Configurator>
         )}
         <div class={css.adjustEdge} onMousedown={this.BeginAdjust}></div>
       </div>

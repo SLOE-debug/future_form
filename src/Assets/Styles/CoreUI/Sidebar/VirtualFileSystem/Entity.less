@@ -47,11 +47,20 @@
         padding: 2px;
       }
     }
-    .lock {
+    .rightIcon {
       position: absolute;
       right: 10px;
-      font-size: 0.8rem;
       color: #999;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      svg {
+        font-size: 0.8rem;
+        margin: 0 2px;
+        &:hover {
+          color: #e6e6e6;
+        }
+      }
     }
   }
   .active {

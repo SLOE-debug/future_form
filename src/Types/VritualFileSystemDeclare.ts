@@ -18,6 +18,7 @@ export namespace VritualFileSystemDeclare {
     specialFile: boolean;
     children: IFile[];
     extraData: any;
+    versionDescription: string;
     AddFile(...files: IFile[]): void;
   }
 
@@ -27,6 +28,12 @@ export namespace VritualFileSystemDeclare {
     directories: IDirectory[];
     AddFile(...files: IFile[]): void;
     AddDirectory(...directorys: IDirectory[]): void;
+  }
+
+  // 对比文件
+  export interface ICompareFile extends IFile {
+    originContent: string;
+    originExtraData: any;
   }
 
   export type MenuItem = {

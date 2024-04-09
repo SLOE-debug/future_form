@@ -7,6 +7,7 @@ import Editor from "@/Core/Editor/Editor";
 import { Debounce } from "@/Utils/Index";
 import DesignerSpace from "../Designer/DesignerSpace";
 import SqlConfigurator from "../Designer/SqlConfigurator";
+import ToolBar from "../Designer/Components/ToolBar";
 
 type IFile = VritualFileSystemDeclare.IFile;
 
@@ -71,6 +72,12 @@ export default class EditorPage extends Vue {
         this.isSqlEditor = false;
         break;
     }
+  }
+
+  // 监听 $Store.get.VirtualFileSystem.Root 的变化
+  @Watch("$Store.get.VirtualFileSystem.Root")
+  OnRootChange(nv: any, ov: any) {
+    editor.ReCreateAllFileModel();
   }
 
   created() {
@@ -138,6 +145,7 @@ export default class EditorPage extends Vue {
           })}
         </div>
         <div class={css.content}>
+          {this.$Store.get.Designer.SelectedControls.length > 1 && <ToolBar />}
           {this.isDesigner && (
             <DesignerSpace ref={"designerSpace"} key={this.$Store.get.VirtualFileSystem.CurrentFile.id}></DesignerSpace>
           )}

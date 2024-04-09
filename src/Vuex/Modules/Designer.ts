@@ -169,12 +169,12 @@ const actions: ActionTree<DesignerState, any> = {
     state.SelectedControls = controls;
     dispatch("RenderControlConfigurator");
     if (controls.length == 1) {
-      dispatch("SetMenus", ...controls);
       state.BigShotControl = null;
     } else {
       controls[controls.length - 1].bigShot = true;
       state.BigShotControl = controls[controls.length - 1];
     }
+    dispatch("SetMenus", controls);
 
     return controls;
   },
@@ -192,11 +192,12 @@ const actions: ActionTree<DesignerState, any> = {
     });
     state.SelectedControls = [];
   },
-  SetMenus({ state }, ...control: Control[]) {
+  SetMenus({ state }, control: Control[]) {
     state.Menus = [
       { text: "查看代码", code: "ViewCode", shortcutKey: "F7" },
       { text: "粘贴", code: "Paste", shortcutKey: "Ctrl+C" },
     ];
+
     if (control.length && control[0].config.type != "Form") {
       state.Menus.splice(
         1,
@@ -208,9 +209,60 @@ const actions: ActionTree<DesignerState, any> = {
         ]
       );
       state.Menus.push({ text: "删除", code: "Delete" });
-      if (state.SelectedControls.length == 1) {
-        state.Menus.push({ text: "上移一层", code: "MoveUpLevel" }, { text: "下移一层", code: "MoveDownLevel" });
-      }
+    }
+    if (control.length == 1) {
+      state.Menus.push({ text: "上移一层", code: "MoveUpLevel" }, { text: "下移一层", code: "MoveDownLevel" });
+    }
+
+    if (control.length > 1) {
+      state.Menus.push(
+        ...[
+          {
+            code: "LeftJustify",
+            text: "左对齐",
+          },
+          {
+            code: "RightJustify",
+            text: "右对齐",
+          },
+          {
+            code: "VCJustify",
+            text: "垂直居中对齐",
+          },
+          {
+            code: "TopJustify",
+            text: "上对齐",
+          },
+          {
+            code: "HCJustify",
+            text: "水平居中对齐",
+          },
+          {
+            code: "BottomJustify",
+            text: "下对齐",
+          },
+          {
+            code: "SameHeight",
+            text: "同高",
+          },
+          {
+            code: "SameWidth",
+            text: "同宽",
+          },
+          {
+            code: "SameSize",
+            text: "大小相同",
+          },
+          {
+            code: "VDJustify",
+            text: "水平分布",
+          },
+          {
+            code: "HDJustify",
+            text: "垂直分布",
+          },
+        ]
+      );
     }
   },
   SetFormConfig({ state }, config: ControlConfig) {

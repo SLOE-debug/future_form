@@ -5,12 +5,15 @@ import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import SvgIcon from "../../../Components/SvgIcon";
 import { suffix2Color } from "@/Utils/VirtualFileSystem/Index";
 import { Guid } from "@/Utils/Index";
+import EntityVersion from "./EntityVersion";
 
 type IDirectory = VritualFileSystemDeclare.IDirectory;
 type IFile = VritualFileSystemDeclare.IFile;
 
 @Component
 export default class Entity extends Vue {
+  declare $refs: any;
+
   /**
    * 是否是文件夹
    */
@@ -174,11 +177,26 @@ export default class Entity extends Vue {
             {this.entity.isRename ? this.RenderReanme() : this.entity.name}
             {this.errorMessage && <div class={css.error}>{this.errorMessage}</div>}
           </div>
-          {this.entity.isProtected && (
-            <FontAwesomeIcon icon={"lock"} class={css.lock} title="不可删除和重命名的"></FontAwesomeIcon>
-          )}
+          <div class={css.rightIcon}>
+            {/* {!this.isDirectory && (
+              <FontAwesomeIcon
+                icon="code-branch"
+                class={css.branch}
+                title="历史版本"
+                {...{
+                  onClick: () => {
+                    this.$refs.version.GetVersions(this.entity.id);
+                  },
+                }}
+              ></FontAwesomeIcon>
+            )} */}
+            {this.entity.isProtected && (
+              <FontAwesomeIcon icon={"lock"} class={css.lock} title="不可删除和重命名的"></FontAwesomeIcon>
+            )}
+          </div>
         </div>
         {this.RenderSubDirectory()}
+        {/* <EntityVersion ref={"version"}></EntityVersion> */}
       </div>
     );
   }

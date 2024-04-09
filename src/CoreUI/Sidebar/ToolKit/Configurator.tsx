@@ -6,6 +6,7 @@ import ColumnsConfigurator from "./ColumnsConfigurator";
 import { CapitalizeFirstLetter } from "@/Utils/Index";
 import { AddMethodToDesignerBackground, LocateMethod } from "@/Utils/Designer/Designer";
 import { GetDesignerBackgroundFile } from "@/Utils/VirtualFileSystem/Index";
+import Control from "@/CoreUI/Designer/Control";
 
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 
@@ -16,8 +17,8 @@ export default class Configurator extends Vue {
 
   SyncConfiguration(m: ConfiguratorItem, isEvent: boolean) {
     if (!isEvent) {
-      for (let i = 0; i < this.$Store.get.Designer.SelectedControls.length; i++) {
-        const control = this.$Store.get.Designer.SelectedControls[i];
+      for (let i = 1; i < this.selectedControls.length; i++) {
+        const control = this.selectedControls[i];
         if (control.config.id != m.config.id) {
           control.config[m.field as string] = m.config[m.field as string];
         }
@@ -138,6 +139,13 @@ export default class Configurator extends Vue {
           )
         );
     }
+  }
+
+  // 当前选择的控件数组
+  selectedControls: Control[] = [];
+
+  updated() {
+    this.selectedControls = this.$Store.get.Designer.SelectedControls;
   }
 
   /**

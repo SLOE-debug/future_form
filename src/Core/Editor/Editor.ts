@@ -1,4 +1,3 @@
-import { CompileDeclare } from "@/Types/CompileDeclare";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { GetParentByFile } from "@/Utils/VirtualFileSystem/Index";
 import { Path } from "@/Utils/VirtualFileSystem/Path";
@@ -7,7 +6,7 @@ import * as monaco from "monaco-editor";
 import * as actions from "monaco-editor/esm/vs/platform/actions/common/actions";
 
 type IFile = VritualFileSystemDeclare.IFile;
-type CompiledFile = CompileDeclare.CompiledFile;
+type ICompareFile = VritualFileSystemDeclare.ICompareFile;
 
 export default class Editor {
   ele: HTMLElement;
@@ -109,6 +108,24 @@ export default class Editor {
   }
 
   /**
+   * 加载声明文件
+   */
+  LoadDeclareFile(declareModule: any, namespace: string) {
+    let declare = declareModule.default;
+    let namespaceRegex = new RegExp(`export namespace ${namespace} \\{`, "g");
+
+    declare = declare.replace(namespaceRegex, "");
+    declare = declare.replace(/export /g, "");
+    let lastIndex = declare.lastIndexOf("}");
+    declare = declare.substring(0, lastIndex);
+
+    // 将 declare 字符串中的 "BarKit[]" 替换成 BarKit[]
+    declare = declare.replace(`"BarKit[]"`, "BarKit[]");
+
+    monaco.languages.typescript.typescriptDefaults.addExtraLib(declare, namespace + ".d.ts");
+  }
+
+  /**
    * 设置TypeScript项目配置
    */
   private SetTypeScriptProjectConfig() {
@@ -121,14 +138,10 @@ export default class Editor {
       moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
     });
 
-    let declare = require("!!raw-loader!@/Types/ControlDeclare");
-    let controlDeclare = declare.default;
-    controlDeclare = controlDeclare.replace(/export namespace ControlDeclare \{/, "");
-    controlDeclare = controlDeclare.replace(/export /g, "");
-    let lastIndex = controlDeclare.lastIndexOf("}");
-    controlDeclare = controlDeclare.substring(0, lastIndex);
-
-    monaco.languages.typescript.typescriptDefaults.addExtraLib(controlDeclare, "ControlDeclare.d.ts");
+    // 加载控件声明文件
+    this.LoadDeclareFile(require("!!raw-loader!@/Types/ControlDeclare"), "ControlDeclare");
+    // 加载事件声明文件
+    this.LoadDeclareFile(require("!!raw-loader!@/Types/EventDeclare"), "EventDeclare");
 
     // 设置TypeScript编译器配置
     monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
@@ -243,6 +256,15 @@ export default class Editor {
   isConfigured = false;
 
   /**
+   * 保存文件
+   */
+  Save() {
+    store.get.VirtualFileSystem.CurrentFile.content = this.editor.getValue();
+    store.get.VirtualFileSystem.CurrentFile.isUnsaved = false;
+    store.dispatch("VirtualFileSystem/SaveRoot");
+  }
+
+  /**
    * 配置右键菜单和快捷键
    */
   ConfigureContextMenuAndShortcut() {
@@ -250,12 +272,14 @@ export default class Editor {
     // 删除格式化文档和跳转到定义
     this.RemoveContextMenuById(["editor.action.formatDocument", "editor.action.revealDefinition"]);
 
-    this.editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-      store.get.VirtualFileSystem.CurrentFile.content = this.editor.getValue();
-      store.get.VirtualFileSystem.CurrentFile.isUnsaved = false;
-      store.dispatch("VirtualFileSystem/SaveRoot");
-    });
+    this.editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, this.Save.bind(this));
     this.editor.addCommand(monaco.KeyMod.Alt | monaco.KeyMod.Shift | monaco.KeyCode.KeyF, function () {}, "");
+    // F5 运行
+    this.editor.addCommand(monaco.KeyCode.F5, () => {
+      this.Save();
+      let event = new KeyboardEvent("keydown", { key: "F5" });
+      window.dispatchEvent(event);
+    });
 
     this.editor.addAction({
       id: "FormattedDocument",
@@ -484,6 +508,14 @@ export default class Editor {
   }
 
   /**
+   * 重新创建所有模型
+   */
+  ReCreateAllFileModel() {
+    this.DisposeAllModel();
+    this.CreateAllFileModel();
+  }
+
+  /**
    * 切换文件
    * @param newFile 新文件
    * @param oldFile 旧文件
@@ -499,10 +531,83 @@ export default class Editor {
     if (state) this.editor.restoreViewState(state);
   }
 
+  // 对比文件的ele
+  compareEle: HTMLElement;
+  // 对比文件的编辑器
+  compareEditor: monaco.editor.IStandaloneDiffEditor;
+
+  /**
+   * 对比文件
+   */
+  CompareFile(file: ICompareFile) {
+    // 通过当前ele克隆出一个新的ele，插入到ele同层
+
+    let codeType = "typescript";
+    let originContent = file.originContent;
+    let content = file.content;
+
+    if (file.suffix == VritualFileSystemDeclare.FileType.FormDesigner) {
+      codeType = "json";
+      originContent = JSON.stringify(file.originExtraData, null, "\t");
+      content = JSON.stringify(file.extraData, null, "\t");
+    }
+
+    this.compareEle = document.createElement("div");
+    this.compareEle.style.position = "absolute";
+    this.compareEle.style.zIndex = "99999";
+    this.compareEle.style.top = "0";
+    this.compareEle.style.left = "0";
+    this.compareEle.style.width = "100%";
+    this.compareEle.style.height = "100%";
+    this.ele.parentElement.appendChild(this.compareEle);
+    const originalModel = monaco.editor.createModel(originContent, codeType);
+    const modifiedModel = monaco.editor.createModel(content, codeType);
+
+    this.compareEditor = monaco.editor.createDiffEditor(this.compareEle, {
+      originalEditable: true,
+      automaticLayout: true,
+    });
+    this.compareEditor.setModel({
+      original: originalModel,
+      modified: modifiedModel,
+    });
+
+    const originalEditor = this.compareEditor.getOriginalEditor();
+    const modifiedEditor = this.compareEditor.getModifiedEditor();
+
+    originalEditor.updateOptions({ readOnly: true });
+    modifiedEditor.updateOptions({ readOnly: true });
+  }
+
+  /**
+   * 释放对比文件
+   */
+  DisposeCompareFile() {
+    // 删除对比文件的ele
+    this.compareEle.remove();
+    // 释放对比编辑器的所有model
+    this.compareEditor.getOriginalEditor().getModel()?.dispose();
+    this.compareEditor.getModifiedEditor().getModel()?.dispose();
+
+    this.compareEditor.dispose();
+    this.compareEle.remove();
+  }
+
+  /**
+   * 释放所有model资源
+   */
+  DisposeAllModel() {
+    this.models.forEach((model) => model.dispose());
+    this.models.clear();
+    this.model2File.clear();
+    this.modelStates.clear();
+  }
+
   /**
    * 释放资源
    */
   Dispose() {
+    this.DisposeAllModel();
     this.editor?.dispose();
     this.editor = null;
   }

@@ -8,11 +8,18 @@ export default class File extends Basic implements IFile {
    * 构造函数
    * @param _name 文件名称
    * @param _isProtected 是否是受保护的，意味着不可修改和删除的
+   * @param _isNewFile 是否是新文件
    */
-  constructor(_name: string, _isProtected: boolean = false) {
+  constructor(_name: string, _isProtected: boolean = false, _isNewFile: boolean = true) {
     super(_isProtected);
     this.name = _name;
+    this.isNewFile = _isNewFile;
   }
+
+  /**
+   * 是否新文件
+   */
+  isNewFile: boolean;
 
   /**
    * 文件名称
@@ -25,21 +32,19 @@ export default class File extends Basic implements IFile {
     this._name = v;
     this.suffix = v.substring(v.indexOf(".") + 1);
 
-    if (this.suffix == VritualFileSystemDeclare.FileType.FormDesigner) {
+    if (this.isNewFile && this.suffix == VritualFileSystemDeclare.FileType.FormDesigner) {
       this.specialFile = true;
       this.content = `export default class Page extends BaseWindow {
   constructor() {
     super('${this.id}');
   }
-  Show(): void;
-  ShowDialog(): void;
 }`;
       let prefixname = v.split(".")[0];
       let tsName = prefixname + ".ts";
 
       if (this.children.length == 0) {
         let tsFile = new File(tsName);
-        tsFile.content = `import Page from "../${prefixname}.form";\r\n\r\nexport default class ${prefixname} extends Page {\r\n\t\r\n}`;
+        tsFile.content = `import Page from "../${prefixname}.form";\r\n\r\nexport default class ${prefixname} extends Page {\r\n\tconstructor() {\r\n\t\tsuper();\r\n\t}\r\n}`;
         this.AddFile(tsFile);
       } else {
         this.children[0].name = tsName;
@@ -81,6 +86,11 @@ export default class File extends Basic implements IFile {
    * 额外数据
    */
   extraData: any;
+
+  /**
+   * 版本描述
+   */
+  versionDescription: string;
 
   /**
    * 添加文件

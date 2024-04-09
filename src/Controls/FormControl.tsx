@@ -58,15 +58,9 @@ export default class FormControl extends Control {
   rootConfig;
 
   dataSourceControls: DataSourceGroupControl[] = [];
-  windowBar: WindowControlBar;
   createEventPromise: Promise<any>;
   async created() {
     this.rootConfig = this.config.$children;
-    if (this.$parent.$options.__vfdConstructor == WindowControlBar) {
-      this.windowBar = this.$parent as WindowControlBar;
-      this.windowBar.form = this;
-      this.windowBar.contentLoading = false;
-    }
 
     this.$Store.get.Designer.Debug &&
       !this.$Store.get.Designer.Preview &&
@@ -79,6 +73,12 @@ export default class FormControl extends Control {
     if (this.events.onCreated) {
       this.createEventPromise = this.events.onCreated();
       await this.createEventPromise;
+    }
+
+    // 如果父组件是窗体控件，则关闭加载状态
+    if (this.$parent.$options.__vfdConstructor == WindowControlBar) {
+      let windowBar = this.$parent as WindowControlBar;
+      windowBar.contentLoading = false;
     }
   }
 
@@ -97,7 +97,6 @@ export default class FormControl extends Control {
   async unmounted() {
     super.unmounted();
     this.dataSourceControls = null;
-    this.windowBar = null;
     this.instance = null;
   }
 
@@ -168,6 +167,13 @@ export function GetProps(config: ControlConfig) {
           value: m.name,
         };
       }),
+    },
+    // 是否最大化
+    {
+      name: "最大化",
+      des: "窗体是否最大化",
+      type: DesignerDeclare.InputType.ElSwitch,
+      field: "maximize",
     },
   ];
   return fieldMap;

@@ -3,128 +3,24 @@ import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import Directory from "@/Core/VirtualFileSystem/Directory";
 import File from "@/Core/VirtualFileSystem/File";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
-import { Guid } from "@/Utils/Index";
+import CompareFile from "@/Core/VirtualFileSystem/CompareFile";
+import { editor } from "@/CoreUI/Editor/EditorPage";
 
 type IDirectory = VritualFileSystemDeclare.IDirectory;
 type IFile = VritualFileSystemDeclare.IFile;
+type ICompareFile = VritualFileSystemDeclare.ICompareFile;
 type MenuItem = VritualFileSystemDeclare.MenuItem;
 type Coord = UtilsDeclare.Coord;
 
 const root = new Directory("");
-let src = new Directory("src");
-root.AddDirectory(src);
-src.spread = true;
+// src 文件夹
+// let src = new Directory("src");
+// src.id = "614ee488-c450-4e5c-870a-8a072c986495";
+// root.AddDirectory(src);
 
-let sql = new File("a.sql");
-sql.content = `select a,b,c from a where b = :a`;
-src.AddFile(sql);
-
-let test = new File("");
-src.AddFile(test);
-test.name = "test.form.ts";
-test.content = `export default class Page extends BaseWindow {
-  constructor() {
-    super('${test.id}');
-  }
-  Show(): void;
-  btn_1: ButtonConfig;
-}`;
-test.extraData = {
-  name: "test",
-  width: 700,
-  height: 500,
-  type: "Form",
-  title: "测试",
-  bgColor: "#F1F1F1",
-  enterBtn: "",
-  $children: [
-    {
-      width: 100,
-      height: 25,
-      left: 100,
-      top: 100,
-      type: "Button",
-      text: "向左移动10px",
-      fontSize: 14,
-      style: "",
-      loading: false,
-      visible: true,
-      name: "btn_1",
-      onClick: "btn_1_OnClick",
-      id: Guid.NewGuid(),
-    },
-    {
-      width: 120,
-      height: 25,
-      left: 150,
-      top: 150,
-      type: "Button",
-      text: "打开login窗体",
-      fontSize: 14,
-      style: "",
-      loading: false,
-      visible: true,
-      name: "btn_2",
-      id: Guid.NewGuid(),
-    },
-    {
-      width: 200,
-      height: 25,
-      left: 200,
-      top: 200,
-      type: "Button",
-      text: "以对话框形式打开login窗体",
-      fontSize: 14,
-      style: "",
-      loading: false,
-      visible: true,
-      name: "btn_3",
-      id: Guid.NewGuid(),
-    },
-  ],
-};
-test.children[0].content = `import Page from "../test.form";
-export default class test extends Page {
-  btn_1_OnClick(sender: any, e: MouseEvent) {
-    this.btn_1.left -= 10;
-  }
-}`;
-
-test.specialFile = true;
-
-let login = new File("");
-src.AddFile(login);
-login.name = "login.form.ts";
-login.specialFile = true;
-login.extraData = {
-  name: "login",
-  width: 300,
-  height: 200,
-  type: "Form",
-  title: "登录",
-  bgColor: "#F1F1F1",
-  enterBtn: "",
-  $children: [
-    {
-      width: 100,
-      height: 25,
-      left: 100,
-      top: 100,
-      type: "Button",
-      text: "登录",
-      fontSize: 14,
-      style: "",
-      loading: false,
-      visible: true,
-      name: "btn_1",
-      id: Guid.NewGuid(),
-    },
-  ],
-};
-
+// Startup.ts文件
 let Startup = new File("Startup.ts", true);
-Startup.content = `import test from './src/test.form/test'
-new test().Show()`;
+Startup.id = "0f254a1f-70d4-4a40-bf2d-32043638d62d";
 root.AddFile(Startup);
 
 export type VirtualFileSystemState = {
@@ -160,16 +56,20 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
     find(state.Root);
     return parent;
   },
-  // 创建文件夹
-  CreateDirectory({ state, dispatch }) {
-    const directory = new Directory("");
-    directory.isRename = true;
-    state.CurrentDirectory.directories.push(directory);
-  },
-  // 选择文件夹
-  SelectDirectory({ state, dispatch }, directory: IDirectory) {
+  // 取消选择所有文件/文件夹
+  UnSelectAll({ state }) {
     state.CurrentDirectory && (state.CurrentDirectory.selected = false);
     state.CurrentFile && (state.CurrentFile.selected = false);
+  },
+  // 创建文件夹
+  CreateDirectory({ state }) {
+    const directory = new Directory("");
+    directory.isRename = true;
+    state.CurrentDirectory.AddDirectory(directory);
+  },
+  // 选择文件夹
+  async SelectDirectory({ state, dispatch }, directory: IDirectory) {
+    await dispatch("UnSelectAll");
     directory.selected = true;
     state.CurrentDirectory = directory;
     dispatch("SetMenus");
@@ -185,12 +85,16 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
     const file: IFile = new File("");
     file.isRename = true;
     if (!state.CurrentDirectory.spread) state.CurrentDirectory.spread = true;
-    state.CurrentDirectory.files.push(file);
+    state.CurrentDirectory.AddFile(file);
   },
   // 选择文件
-  SelectFile({ state, dispatch }, file: IFile) {
-    state.CurrentDirectory && (state.CurrentDirectory.selected = false);
-    state.CurrentFile && (state.CurrentFile.selected = false);
+  async SelectFile({ state, dispatch }, file: IFile) {
+    if (state.CurrentFile instanceof CompareFile) {
+      editor.DisposeCompareFile();
+      state.OpenFiles.splice(state.OpenFiles.indexOf(state.CurrentFile), 1);
+    }
+
+    await dispatch("UnSelectAll");
     if (file) {
       file.selected = true;
       state.CurrentFile = file;
@@ -234,9 +138,19 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
     if (state.OpenFiles.includes(file)) return;
     state.OpenFiles.push(file);
   },
+  // 打开对比文件
+  async OpenCompareFile({ state, dispatch }, file: ICompareFile) {
+    await dispatch("UnSelectAll");
+    state.CurrentFile = file;
+    state.OpenFiles.push(file);
+  },
   // 关闭文件
   CloseFile({ state, dispatch }, file: IFile) {
     if (file.isUnsaved) state.CurrentFile.content = file.content;
+
+    if (file instanceof CompareFile) {
+      editor.DisposeCompareFile();
+    }
 
     state.OpenFiles.splice(state.OpenFiles.indexOf(file), 1);
 
@@ -245,6 +159,9 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
   },
   SaveRoot({ state }) {
     localStorage.setItem("root", JSON.stringify(state.Root));
+  },
+  SetRoot({ state }, root) {
+    state.Root = root;
   },
 };
 

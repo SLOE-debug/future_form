@@ -1,5 +1,6 @@
 import { BaseWindow } from "@/Utils/Designer/Form";
 import { ControlDeclare } from "./ControlDeclare";
+import { EventDeclare } from "./EventDeclare";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 

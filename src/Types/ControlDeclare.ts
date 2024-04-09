@@ -167,4 +167,11 @@ export namespace ControlDeclare {
     value: string;
     tabs: TabItem[];
   } & ControlConfig;
+
+  export abstract class BaseWindow {
+    constructor(id: string) {}
+    Show(): void {}
+    ShowDialog(): void {}
+    Alert(message: string, type: "success" | "warning" | "info" | "error", duration: number): void {}
+  }
 }

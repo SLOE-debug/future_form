@@ -12,6 +12,7 @@ module.exports = {
       hot: true,
       historyApiFallback: true,
     },
+    devtool: "source-map",
     module: {
       rules: [
         {

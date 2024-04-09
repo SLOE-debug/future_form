@@ -7,12 +7,6 @@ import { Component, Vue } from "vue-facing-decorator";
 export default class Development extends Vue {
   created() {
     this.$Store.dispatch("Designer/SetDebug", true);
-    // this.$nextTick(() => {
-    //   this.$Store.dispatch(
-    //     "VirtualFileSystem/SelectFile",
-    //     this.$Store.get.VirtualFileSystem.Root.directories[0].files[1]
-    //   );
-    // });
   }
 
   render() {
