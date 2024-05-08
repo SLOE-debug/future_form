@@ -75,9 +75,16 @@ export default class EditorPage extends Vue {
   }
 
   // 监听 $Store.get.VirtualFileSystem.Root 的变化
+  // 切换版本时，重新加载所有文件
   @Watch("$Store.get.VirtualFileSystem.Root")
-  OnRootChange(nv: any, ov: any) {
-    editor.ReCreateAllFileModel();
+  async OnRootChange(nv: any, ov: any) {
+    let files = [...this.$Store.get.VirtualFileSystem.OpenFiles];
+    for (let i = 0; i < files.length; i++) {
+      let file = files[i];
+      await this.$Store.dispatch("VirtualFileSystem/CloseFile", file);
+    }
+
+    editor.SwitchVersion();
   }
 
   created() {
@@ -106,7 +113,6 @@ export default class EditorPage extends Vue {
             onClick: async (e: MouseEvent) => {
               this.$Store.dispatch("VirtualFileSystem/CloseFile", m);
               if (this.$Store.get.VirtualFileSystem.OpenFiles.length == 0) {
-                editor.Dispose();
                 this.isDesigner = false;
               }
               e.stopPropagation();
@@ -146,7 +152,7 @@ export default class EditorPage extends Vue {
         </div>
         <div class={css.content}>
           {this.$Store.get.Designer.SelectedControls.length > 1 && <ToolBar />}
-          {this.isDesigner && (
+          {this.isDesigner && this.$Store.get.VirtualFileSystem.CurrentFile && (
             <DesignerSpace ref={"designerSpace"} key={this.$Store.get.VirtualFileSystem.CurrentFile.id}></DesignerSpace>
           )}
           {this.isSqlEditor && <SqlConfigurator ref="sqlConfigurator"></SqlConfigurator>}

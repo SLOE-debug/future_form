@@ -1,16 +1,16 @@
 export namespace EventDeclare {
-  type DisplayFieldConfig = {
-    field: string;
-    width?: number;
-  };
+  // type DisplayFieldConfig = {
+  //   field: string;
+  //   width?: number;
+  // };
 
-  export type BarKit = {
-    type: "IconButton";
-    icon: string;
-    title: string;
-    active: boolean;
-    disabled: boolean;
-  };
+  // export type BarKit = {
+  //   type: "IconButton";
+  //   icon: string;
+  //   title: string;
+  //   active: boolean;
+  //   disabled: boolean;
+  // };
 
   export type CellEventHandlerParams = {
     rowIndex: number;

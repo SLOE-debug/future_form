@@ -38,7 +38,6 @@ export default class Entity extends Vue {
   Open() {
     if (this.isDirectory) {
       this.directory.spread = !this.directory.spread;
-    } else {
     }
   }
 
@@ -120,6 +119,41 @@ export default class Entity extends Vue {
     }
   }
 
+  /**
+   * 验证新名称
+   */
+  ValidateNewName() {
+    if (!this.newName) {
+      this.errorMessage = "必须提供文件或文件夹名称";
+      return false;
+    }
+    if (this.isDirectory) {
+      if (this.Parentdirectory.directories.some((d) => d.name == this.newName)) {
+        this.errorMessage = "文件夹名称已存在";
+        return false;
+      }
+    } else {
+      if (this.Parentdirectory.files.some((f) => f.name == this.newName)) {
+        this.errorMessage = "文件名称已存在";
+        return false;
+      }
+    }
+    this.errorMessage = "";
+    return true;
+  }
+
+  /**
+   * Blur时重命名
+   */
+  RenameBlur() {
+    if (this.newName == "") {
+      this.errorMessage = "";
+      this.Rename(this.entity.name);
+    } else {
+      this.Rename(this.newName);
+    }
+  }
+
   newName = "";
   RenderReanme() {
     return (
@@ -130,24 +164,14 @@ export default class Entity extends Vue {
         key={this.entity.id}
         onKeydown={(e) => {
           if (e.key == "Enter") {
-            this.Rename(this.newName);
+            this.RenameBlur();
           }
         }}
         {...{
           type: "text",
           onClick: (e: MouseEvent) => e.stopPropagation(),
-          onInput: () => {
-            if (this.newName == "") this.errorMessage = "必须提供文件或文件夹名称";
-            else this.errorMessage = "";
-          },
-          onBlur: (e: FocusEvent) => {
-            if (this.newName == "") {
-              this.errorMessage = "";
-              this.Rename(this.entity.name);
-            } else {
-              this.Rename(this.newName);
-            }
-          },
+          onInput: this.ValidateNewName.bind(this),
+          onBlur: this.RenameBlur.bind(this),
         }}
       />
     );
@@ -178,7 +202,7 @@ export default class Entity extends Vue {
             {this.errorMessage && <div class={css.error}>{this.errorMessage}</div>}
           </div>
           <div class={css.rightIcon}>
-            {/* {!this.isDirectory && (
+            {!this.isDirectory && (
               <FontAwesomeIcon
                 icon="code-branch"
                 class={css.branch}
@@ -189,14 +213,14 @@ export default class Entity extends Vue {
                   },
                 }}
               ></FontAwesomeIcon>
-            )} */}
+            )}
             {this.entity.isProtected && (
               <FontAwesomeIcon icon={"lock"} class={css.lock} title="不可删除和重命名的"></FontAwesomeIcon>
             )}
           </div>
         </div>
         {this.RenderSubDirectory()}
-        {/* <EntityVersion ref={"version"}></EntityVersion> */}
+        <EntityVersion ref={"version"}></EntityVersion>
       </div>
     );
   }

@@ -30,6 +30,7 @@ export type VirtualFileSystemState = {
   ContextMenus: MenuItem[];
   ContextMenuPosition: Coord;
   OpenFiles: IFile[];
+  RootVersions: any[];
 };
 
 const state: VirtualFileSystemState = {
@@ -39,6 +40,7 @@ const state: VirtualFileSystemState = {
   ContextMenus: [],
   ContextMenuPosition: null,
   OpenFiles: [],
+  RootVersions: [],
 };
 
 const actions: ActionTree<VirtualFileSystemState, any> = {
@@ -89,6 +91,7 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
   },
   // 选择文件
   async SelectFile({ state, dispatch }, file: IFile) {
+    // 如果文件是比较文件，关闭比较文件
     if (state.CurrentFile instanceof CompareFile) {
       editor.DisposeCompareFile();
       state.OpenFiles.splice(state.OpenFiles.indexOf(state.CurrentFile), 1);
@@ -155,13 +158,24 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
     state.OpenFiles.splice(state.OpenFiles.indexOf(file), 1);
 
     let newFile = state.OpenFiles.length ? state.OpenFiles[state.OpenFiles.length - 1] : null;
+    if (!newFile) {
+      editor.editor?.dispose();
+      editor.isConfigured = false;
+      editor.editor = null;
+    }
+
     dispatch("SelectFile", newFile);
   },
   SaveRoot({ state }) {
     localStorage.setItem("root", JSON.stringify(state.Root));
   },
-  SetRoot({ state }, root) {
+  async SetRoot({ state, dispatch }, root) {
     state.Root = root;
+    state.CurrentDirectory = root;
+  },
+  // 设置Root版本列表
+  SetRootVersions({ state }, versions) {
+    state.RootVersions = versions;
   },
 };
 
@@ -180,6 +194,7 @@ const getters: GetterTree<VirtualFileSystemState, any> = {
     return state.OpenFiles;
   },
   ContextMenuPosition: (state) => state.ContextMenuPosition,
+  RootVersions: (state) => state.RootVersions,
 };
 
 const VirtualFileSystemModule: Module<VirtualFileSystemState, any> = {

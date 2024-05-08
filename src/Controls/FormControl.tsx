@@ -194,17 +194,17 @@ export function GetEvents() {
       type: DesignerDeclare.InputType.ElSelect,
       field: "mounted",
     },
-    {
-      name: "自定义按钮",
-      des: "窗体标题栏的自定义按钮事件总线",
-      type: DesignerDeclare.InputType.ElSelect,
-      field: "barToolKitEventBus",
-      paramTypes: [
-        ["barKit", "BarKit"],
-        ["type", "string"],
-        ["e", "any"],
-      ],
-    },
+    // {
+    //   name: "自定义按钮",
+    //   des: "窗体标题栏的自定义按钮事件总线",
+    //   type: DesignerDeclare.InputType.ElSelect,
+    //   field: "barToolKitEventBus",
+    //   paramTypes: [
+    //     ["barKit", "BarKit"],
+    //     ["type", "string"],
+    //     ["e", "any"],
+    //   ],
+    // },
   ];
   return eventMap;
 }

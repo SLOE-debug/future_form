@@ -15,6 +15,7 @@ import {
   ElRadio,
   ElSelectV2,
   ElPopover,
+  ElPopconfirm,
 } from "element-plus";
 import Directory from "@/Core/VirtualFileSystem/Directory";
 import Basic from "@/Core/VirtualFileSystem/Basic";
@@ -24,6 +25,8 @@ type IDirectory = VritualFileSystemDeclare.IDirectory;
 
 @Component
 export default class FileSidebar extends Vue {
+  declare $refs: any;
+
   get topTools() {
     return [
       {
@@ -47,7 +50,10 @@ export default class FileSidebar extends Vue {
         icon: "cloud-arrow-up",
         title: "保存到云端",
         color: "#409eff",
-        tiggerEventName: () => (this.publishVisible = true),
+        tiggerEventName: () => {
+          this.publishVisible = true;
+          this.versionDescription = this.$Store.get.VirtualFileSystem.RootVersions[1]?.versionDescription;
+        },
       },
     ];
   }
@@ -65,7 +71,12 @@ export default class FileSidebar extends Vue {
 
   @Provide("directory")
   directory: IDirectory = new Directory("");
-  async created() {
+  created() {
+    this.directory = this.$Store.get.VirtualFileSystem.Root;
+  }
+
+  // 初始化文件侧边栏
+  async Load() {
     let res = await this.$Api.GetRootByVersion();
     let { files, versionNumbers } = res.data;
     let root = this.Files2Root(files);
@@ -77,18 +88,15 @@ export default class FileSidebar extends Vue {
       version.value = version.versionNumber;
     }
 
-    this.versionDescription = versionNumbers[1]?.versionDescription;
-    this.rootVersions = versionNumbers;
+    this.$Store.dispatch("VirtualFileSystem/SetRootVersions", versionNumbers);
   }
-
-  // root版本
-  rootVersions = [];
 
   // 选择的root版本
   selectedRootVersion = "last";
   @Watch("selectedRootVersion")
   async OnSelectedRootVersionChange(nv, ov) {
-    this.GetRootByVersion(nv);
+    await this.GetRootByVersion(nv);
+    ElMessage.success("切换版本成功！");
   }
 
   /**
@@ -264,16 +272,63 @@ export default class FileSidebar extends Vue {
           <div class={css.versionSelector}>
             <div>版本：</div>
             <ElSelectV2
-              options={this.rootVersions}
+              options={this.$Store.get.VirtualFileSystem.RootVersions}
               popper-class={css.versionDropDown}
               v-model={this.selectedRootVersion}
             >
               {({ item }) => {
                 return (
-                  <ElPopover placement="right" width={400} trigger="hover" effect="dark" title="版本描述">
+                  <ElPopover
+                    placement="right"
+                    width={400}
+                    effect="dark"
+                    title="版本描述"
+                    hideAfter={0}
+                    ref={item.versionNumber}
+                    offset={-12}
+                    persistent={false}
+                  >
                     {{
-                      reference: () => <div>{item.versionNumber}</div>,
-                      default: () => <div class={css.versionDescription}>{item.versionDescription}</div>,
+                      reference: () => <div onClick={(e) => e.stopPropagation()}>{item.versionNumber}</div>,
+                      default: () => (
+                        <div class={css.versionDescription}>
+                          {item.versionDescription}
+                          <br />
+                          <ElPopconfirm
+                            title="此操作将会覆盖您的文件且不会保存，请谨慎操作！"
+                            width={250}
+                            hideAfter={0}
+                            {...{
+                              trigger: "hover",
+                              offset: 0,
+                              effect: "dark",
+                            }}
+                            teleported={false}
+                            persistent={false}
+                            onCancel={(e) => {
+                              this.$refs[item.versionNumber].hide();
+                            }}
+                            onConfirm={(e) => {
+                              this.$refs[item.versionNumber].hide();
+                              this.selectedRootVersion = item.versionNumber;
+                            }}
+                          >
+                            {{
+                              reference: () => (
+                                <ElButton
+                                  type="primary"
+                                  size="small"
+                                  style={{
+                                    marginTop: "10px",
+                                  }}
+                                >
+                                  拉取
+                                </ElButton>
+                              ),
+                            }}
+                          </ElPopconfirm>
+                        </div>
+                      ),
                     }}
                   </ElPopover>
                 );
@@ -311,6 +366,8 @@ export default class FileSidebar extends Vue {
           appendToBody
           title="保存到云端"
           center
+          close-on-click-modal={false}
+          close-on-press-escape={false}
           onClose={() => {
             this.SaveToCloud();
             this.isPublish = false;
@@ -320,7 +377,7 @@ export default class FileSidebar extends Vue {
           {{
             default: () => (
               <ElForm labelWidth={"130px"}>
-                <ElFormItem label="是否发布新版本：">
+                <ElFormItem label="是否创建新版本：">
                   <ElRadioGroup v-model={this.isCreateNewVersion}>
                     <ElRadio value={true}>是</ElRadio>
                     <ElRadio value={false}>否</ElRadio>
@@ -353,7 +410,7 @@ export default class FileSidebar extends Vue {
                     this.isPublish = true;
                   }}
                 >
-                  发布
+                  保存
                 </ElButton>
               </div>
             ),

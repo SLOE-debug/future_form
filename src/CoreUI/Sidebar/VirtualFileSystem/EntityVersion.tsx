@@ -1,7 +1,7 @@
 import CompareFile from "@/Core/VirtualFileSystem/CompareFile";
 import { editor } from "@/CoreUI/Editor/EditorPage";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
-import { ElDialog, ElTable, ElTableColumn, ElPagination, ElLink } from "element-plus";
+import { ElDialog, ElTable, ElTableColumn, ElPagination, ElLink, ElTag } from "element-plus";
 import { Component, Vue } from "vue-facing-decorator";
 
 type IFile = VritualFileSystemDeclare.IFile;
@@ -58,6 +58,21 @@ export default class EntityVersion extends Vue {
     return (
       <ElDialog v-model={this.visible} appendToBody onClose={() => (this.visible = false)} title="历史版本">
         <ElTable data={this.versions} v-loading={!this.versions} emptyText="暂无数据" stripe highlight-current-row>
+          <ElTableColumn prop="versionNumbers" label="版本号">
+            {({ row }) => {
+              if (row.versionNumbers.length)
+                return row.versionNumbers.map((m) => (
+                  <ElTag effect="dark" round type="primary" style={{ margin: "0 2px" }}>
+                    {m}
+                  </ElTag>
+                ));
+              return (
+                <ElTag effect="dark" round type="danger">
+                  最新
+                </ElTag>
+              );
+            }}
+          </ElTableColumn>
           <ElTableColumn prop="versionDescription" label="版本描述"></ElTableColumn>
           <ElTableColumn prop="versionDate" label="版本发布日期"></ElTableColumn>
           <ElTableColumn label="操作">

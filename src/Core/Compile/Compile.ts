@@ -52,6 +52,7 @@ export default class Compiler {
       };
 
       let client = await worker(m.uri);
+
       let out = await client.getEmitOutput(m.uri.toString());
       let code = out.outputFiles[0].text;
 

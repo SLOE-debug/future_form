@@ -4,9 +4,15 @@ import ControlLibray from "./ToolKit/ControlLibrary";
 import SvgIcon from "@/Components/SvgIcon";
 import Configurator from "./ToolKit/Configurator";
 import { BindEventContext, RegisterEvent } from "@/Utils/Index";
+import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
+
+type IDirectory = VritualFileSystemDeclare.IDirectory;
+type IFile = VritualFileSystemDeclare.IFile;
 
 @Component
 export default class Sidebar extends Vue {
+  declare $refs: any;
+
   startAdjustX: number = 0;
   BeginAdjust(e: MouseEvent) {
     this.startAdjustX = e.clientX;
@@ -59,22 +65,40 @@ export default class Sidebar extends Vue {
     },
   ];
 
+  Key_Number(e) {
+    this.activeTab = this.tabs[parseInt(e.key) - 1].type;
+  }
+
+  Key_F5() {
+    this.activeTab = "project";
+    this.$nextTick(() => {
+      this.$refs.fileSidebar.Preview();
+    });
+  }
+  async Key_F2() {
+    let entity = (await this.$Store.dispatch("VirtualFileSystem/GetCurrentEntity")) as IDirectory | IFile;
+    setTimeout(() => {
+      entity.isRename = true;
+    }, 0);
+  }
+
   activeTab = "project";
 
   winEventHandlers = {
     keydown: function (e: KeyboardEvent) {
       // 如果按下的事件来源是 input 或者 textarea，则不响应
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if (e.key >= "1" && e.key <= "4") {
-        this.activeTab = this.tabs[parseInt(e.key) - 1].type;
-      }
-      // 如果等于F5
-      if (e.key == "F5") {
-        // this.activeTab = "project";
-        this.$nextTick(() => {
-          this.$refs.fileSidebar.Preview();
-        });
-      }
+      let methodName = "";
+
+      if (e.ctrlKey) methodName = "Ctrl_";
+      if (e.shiftKey) methodName += "Shift_";
+      if (e.altKey) methodName += "Alt_";
+
+      let key = isNaN(parseInt(e.key)) ? e.key : "Number";
+
+      methodName += `Key_${key}`;
+      this[methodName]?.(e);
+
       e.stopPropagation();
       e.preventDefault();
     },
@@ -83,6 +107,12 @@ export default class Sidebar extends Vue {
   created() {
     BindEventContext(this.winEventHandlers, this);
     RegisterEvent.call(window, this.winEventHandlers);
+  }
+
+  mounted() {
+    this.$nextTick(() => {
+      this.$refs.fileSidebar.Load();
+    });
   }
 
   unmounted() {

@@ -119,8 +119,8 @@ export default class Editor {
     let lastIndex = declare.lastIndexOf("}");
     declare = declare.substring(0, lastIndex);
 
-    // 将 declare 字符串中的 "BarKit[]" 替换成 BarKit[]
-    declare = declare.replace(`"BarKit[]"`, "BarKit[]");
+    // // 将 declare 字符串中的 "BarKit[]" 替换成 BarKit[]
+    // declare = declare.replace(`"BarKit[]"`, "BarKit[]");
 
     monaco.languages.typescript.typescriptDefaults.addExtraLib(declare, namespace + ".d.ts");
   }
@@ -226,6 +226,7 @@ export default class Editor {
    * 模型内容改变
    */
   ModelContentChanged() {
+    if (!store.get.VirtualFileSystem.CurrentFile) return;
     store.get.VirtualFileSystem.CurrentFile.isUnsaved =
       this.editor.getValue() != store.get.VirtualFileSystem.CurrentFile.content;
     this.modelChangeCallbacks.forEach((m) => m());
@@ -471,6 +472,7 @@ export default class Editor {
       language || "plaintext",
       monaco.Uri.parse(`inmemory:///${fullName}`)
     );
+
     this.models.set(fullName, model);
     this.model2File.set(model, file);
     return model;
@@ -508,11 +510,56 @@ export default class Editor {
   }
 
   /**
-   * 重新创建所有模型
+   * 切换版本
    */
-  ReCreateAllFileModel() {
-    this.DisposeAllModel();
-    this.CreateAllFileModel();
+  SwitchVersion() {
+    this.editor?.dispose();
+
+    let dirs = [store.get.VirtualFileSystem.Root];
+    let path2File = new Map<string, IFile>();
+
+    while (dirs.length) {
+      let dir = dirs.pop();
+      for (const file of dir.files) {
+        let fullName = file.GetFullName();
+        path2File.set(fullName, file);
+
+        if (file.specialFile) {
+          file.children.forEach((f) => {
+            let fullName = f.GetFullName();
+            path2File.set(fullName, f);
+          });
+        }
+      }
+      dirs.push(...dir.directories);
+    }
+
+    let oldVersionPaths = Array.from(this.models.keys());
+    let newVersionPaths = Array.from(path2File.keys());
+
+    // 删除不在新版本的文件
+    for (const fullName of oldVersionPaths) {
+      if (!newVersionPaths.includes(fullName)) {
+        let model = this.models.get(fullName);
+        model.dispose();
+        this.models.delete(fullName);
+        this.model2File.delete(model);
+      }
+    }
+
+    // 添加或更新新版本中的文件对应的模型
+    for (const path of newVersionPaths) {
+      let file = path2File.get(path);
+      if (this.models.has(path)) {
+        // 如果旧模型存在，更新其内容
+        let model = this.models.get(path);
+        model.setValue(file.content);
+        this.model2File.set(model, file);
+      } else {
+        // 如果旧模型不存在，创建新模型
+        this.GetOrCreateModel(file);
+      }
+    }
   }
 
   /**
@@ -522,13 +569,16 @@ export default class Editor {
    */
   SwitchFile(newFile: IFile, oldFile: IFile) {
     if (!this.editor) this.CreateEditor();
-    if (oldFile) this.modelStates.set(oldFile.GetFullName(), this.editor.saveViewState());
 
-    let fullName = newFile.GetFullName();
-    let state = this.modelStates.get(fullName);
-    let model = this.GetOrCreateModel(newFile);
-    this.editor.setModel(model);
-    if (state) this.editor.restoreViewState(state);
+    setTimeout(() => {
+      if (oldFile) this.modelStates.set(oldFile.GetFullName(), this.editor.saveViewState());
+
+      let fullName = newFile.GetFullName();
+      let state = this.modelStates.get(fullName);
+      let model = this.GetOrCreateModel(newFile);
+      this.editor.setModel(model);
+      if (state) this.editor.restoreViewState(state);
+    }, 0);
   }
 
   // 对比文件的ele
@@ -597,7 +647,10 @@ export default class Editor {
    * 释放所有model资源
    */
   DisposeAllModel() {
-    this.models.forEach((model) => model.dispose());
+    for (const { 0: k, 1: model } of this.models) {
+      model.dispose();
+    }
+
     this.models.clear();
     this.model2File.clear();
     this.modelStates.clear();

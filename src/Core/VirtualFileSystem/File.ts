@@ -100,7 +100,7 @@ export default class File extends Basic implements IFile {
     for (let i = 0; i < files.length; i++) {
       const f = files[i];
       let prefix = this.name.substring(0, this.name.lastIndexOf("."));
-      f.path = this.path + "/" + prefix;
+      f.path = this.path + (this.path ? "/" : "") + prefix;
     }
     this.children.push(...files);
   }

@@ -3,7 +3,7 @@ import { DataConsistencyProxyCreator } from "@/Core/Designer/DataConsistency/Dat
 import store from "@/Vuex/Store";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import Compiler from "@/Core/Compile/Compile";
-import { EventDeclare } from "@/Types/EventDeclare";
+// import { EventDeclare } from "@/Types/EventDeclare";
 
 // type BarKit = EventDeclare.BarKit;
 type WindowGlobalVariate = any;
@@ -16,8 +16,13 @@ export class BaseWindow {
    */
   formConfig: ControlDeclare.FormConfig;
 
-  // 窗体控制条上的按钮组
-  barKit: EventDeclare.BarKit[] = [];
+  /**
+   * 窗体控件的引用
+   */
+  $refs: { [x: string]: any } = {};
+
+  // // 窗体控制条上的按钮组
+  // barKit: EventDeclare.BarKit[] = [];
 
   /**
    * 构造函数
@@ -46,6 +51,7 @@ export class BaseWindow {
   async Show(dialog: boolean = false, subWindow: boolean = false) {
     return await store.dispatch("Window/CreateWindow", { config: this.formConfig, dialog, subWindow, instance: this });
   }
+
   /**
    * 显示窗体以对话框形式
    */

@@ -14,4 +14,8 @@ export default {
     method: "GET",
     url: "VirtualFile/GetRootByVersion",
   },
+  GetVersions: {
+    method: "GET",
+    url: "VirtualFile/GetVersions",
+  },
 };

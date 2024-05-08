@@ -172,6 +172,6 @@ export namespace ControlDeclare {
     constructor(id: string) {}
     Show(): void {}
     ShowDialog(): void {}
-    Alert(message: string, type: "success" | "warning" | "info" | "error", duration: number): void {}
+    Alert(message: string, type: "success" | "warning" | "info" | "error" = "info", duration: number = 3000): void {}
   }
 }

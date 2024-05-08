@@ -143,7 +143,8 @@ export default class DesignerSpace extends Vue {
   winEventHandlers = {
     keydown: function (e: KeyboardEvent) {
       if (
-        (e.target as HTMLElement).nodeName == "INPUT" ||
+        (e.target as HTMLElement).nodeName == "INPUT" || // 输入框
+        (e.target as HTMLElement).nodeName == "TEXTAREA" || // 文本框
         this.$Store.get.VirtualFileSystem.CurrentFile?.suffix != VritualFileSystemDeclare.FileType.FormDesigner
       )
         return;
