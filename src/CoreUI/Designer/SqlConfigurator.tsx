@@ -14,14 +14,20 @@ import {
   FormRules,
 } from "element-plus";
 import { Component, Vue } from "vue-facing-decorator";
-import { editor } from "../Editor/EditorPage";
 
 @Component
 export default class SqlConfigurator extends Vue {
   declare $refs: any;
-  get source() {
-    return this.$Store.get.VirtualFileSystem.CurrentFile?.extraData || {};
-  }
+  // get source() {
+  //   return this.$Store.get.VirtualFileSystem.CurrentFile?.extraData;
+  // }
+
+  source = {
+    table: "",
+    fields: [],
+    primaryFields: [],
+    params: [],
+  };
 
   tables = [];
   fields = [];
@@ -67,7 +73,7 @@ export default class SqlConfigurator extends Vue {
       {
         key: `field`,
         dataKey: `field`,
-        title: `field`,
+        title: `名称`,
         width: 150,
         cellRenderer: ({ rowData }) => {
           let str = rowData.field as string;
@@ -106,7 +112,7 @@ export default class SqlConfigurator extends Vue {
         {
           required: true,
           validator: (rule, value, cb) => {
-            if (value.filter((p) => !p.type).length) {
+            if (value.length && value.filter((p) => !p.type).length) {
               cb(new Error("入参参数的类型不得为空！"));
               return;
             }
@@ -117,13 +123,16 @@ export default class SqlConfigurator extends Vue {
     };
   }
 
+  created() {
+    this.source = CloneStruct(this.$Store.get.VirtualFileSystem.CurrentFile?.extraData);
+  }
+
   /**
    * 解析sql
    */
-  AnalysisSql() {
-    let sql = editor.editor.getValue();
-
+  AnalysisSql(sql: string) {
     this.tables = GetTables(sql) || [];
+
     let params = CloneStruct(this.source.params);
     this.source.params = GetParams(sql) || [];
     this.fields = GetFields(sql) || [];
@@ -156,14 +165,14 @@ export default class SqlConfigurator extends Vue {
   RenderTableUpdateConfig() {
     return (
       <>
-        <ElFormItem label="update table" prop="table">
-          <ElSelect style={{ width: "100%" }} v-model={this.source.table} placeholder="Select Table Name" clearable>
+        <ElFormItem label="更新表" prop="table">
+          <ElSelect style={{ width: "100%" }} v-model={this.source.table} placeholder="选择更新表" clearable>
             {this.tables.map((t) => (
               <ElOption key={t} label={t} value={t} />
             ))}
           </ElSelect>
         </ElFormItem>
-        <ElFormItem label="primary Field" prop="primaryFields">
+        <ElFormItem label="主键" prop="primaryFields">
           <ElAutoResizer style={{ height: "20vh" }}>
             {({ width, height }) => {
               let columnConfigs = CloneStruct(this.columnConfigs);
@@ -178,7 +187,7 @@ export default class SqlConfigurator extends Vue {
             }}
           </ElAutoResizer>
         </ElFormItem>
-        <ElFormItem label="update fields" prop="fields">
+        <ElFormItem label="更新键" prop="fields">
           <ElAutoResizer style={{ height: "30vh" }}>
             {({ width, height }) => (
               <ElTableV2 width={width} height={height} columns={this.columnConfigs} data={this.fields}>
@@ -199,7 +208,8 @@ export default class SqlConfigurator extends Vue {
   SaveSource() {
     this.$refs.source.validate((valid) => {
       if (valid) {
-        this.$Store.get.VirtualFileSystem.CurrentFile.extraData = this.source;
+        this.$Store.get.VirtualFileSystem.CurrentFile.extraData = CloneStruct(this.source);
+        ElMessage.success("保存成功！");
       }
     });
   }
@@ -209,10 +219,10 @@ export default class SqlConfigurator extends Vue {
       <div class={css.config}>
         <ElForm model={this.source} rules={this.rules} ref="source" labelPosition="top">
           {this.RenderTableUpdateConfig()}
-          <ElFormItem label="params" prop="params">
+          <ElFormItem label="参数" prop="params">
             <ElTable data={this.source.params} maxHeight="40vh" emptyText="No Data">
-              <ElTableColumn label="name" prop="name" width={70} showOverflowTooltip></ElTableColumn>
-              <ElTableColumn label="type">
+              <ElTableColumn label="名称" prop="name" width={70} showOverflowTooltip></ElTableColumn>
+              <ElTableColumn label="类型">
                 {(scope) => {
                   return (
                     <ElSelect v-model={scope.row.type} clearable placeholder="params type">

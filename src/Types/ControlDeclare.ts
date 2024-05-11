@@ -71,6 +71,8 @@ export namespace ControlDeclare {
   export type DataSourceGroupConfig = {
     sourceName: string;
     sourceType: "Form" | "List";
+    GetSource: (params?: any) => any;
+    SaveSource: (sender: any) => any;
   } & ControlConfig;
 
   export type DateConfig = {
@@ -160,6 +162,15 @@ export namespace ControlDeclare {
     multiple: boolean;
     highlightColumn: boolean;
   } & ControlConfig;
+
+  export enum DataStatus {
+    New = 0,
+    Edit = 1,
+    Delete = 2,
+  }
+
+  // 数据状态标记属性名
+  export const DataStatusField = "_status__$";
 
   type TabItem = { id: string; name: string; visible: boolean };
 

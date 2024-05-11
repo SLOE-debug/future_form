@@ -1,15 +1,8 @@
 import { Store } from "vuex";
 import { RootState } from "./Vuex/Store";
 import VirtualFileSystem from "./Apis/VirtualFileSystem";
+import { Api } from "./Plugins/Api/ExtendApi";
 
-type Response = {
-  code: number;
-  data: any;
-};
-
-type Api<T> = {
-  [K in keyof T]: (data?: any, extraData?: any) => Promise<Response>;
-};
 
 declare module "@vue/runtime-core" {
   interface ComponentCustomProperties {

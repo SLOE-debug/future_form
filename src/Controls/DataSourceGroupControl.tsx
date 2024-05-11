@@ -16,7 +16,7 @@ import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import { baseProps, baseEvents } from "@/Utils/Designer/Controls";
 import { CreateControlByDragEvent, CreateControlName, CloneStruct } from "@/Utils/Designer/Designer";
 import { Guid } from "@/Utils/Index";
-import { GetAllSqlFiles } from "@/Utils/VirtualFileSystem/Index";
+import { GetAllSqlFiles, GetFileById } from "@/Utils/VirtualFileSystem/Index";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceGroupConfig = ControlDeclare.DataSourceGroupConfig;
@@ -43,7 +43,10 @@ export default class DataSourceGroupControl extends Control {
 
     this.config.$children.push(config);
     this.$nextTick(() => {
-      this.$Store.dispatch("AddStack", new Stack(this.$refs[config.name] as Control, null, null, StackAction.Create));
+      this.$Store.dispatch(
+        "Designer/AddStack",
+        new Stack(this.$refs[config.name] as Control, null, null, StackAction.Create)
+      );
     });
     e.stopPropagation();
   }
@@ -63,7 +66,7 @@ export default class DataSourceGroupControl extends Control {
       );
     });
     if (configs.length) {
-      this.$Store.dispatch("SelectControlByConfig", configs);
+      this.$Store.dispatch("Designer/SelectControlByConfig", configs);
     }
   }
 
@@ -126,6 +129,14 @@ export default class DataSourceGroupControl extends Control {
     );
   }
 
+  /**
+   * 跟踪属性变化
+   * @param m 对象
+   * @param p 属性名称
+   * @param nv 新值
+   * @param ov 旧值
+   * @returns
+   */
   TrackPropertyChange(m, p, nv, ov) {
     if (p == "$__check__$" || nv == ov) return;
     let data = this.diffData.get(m);
@@ -135,30 +146,57 @@ export default class DataSourceGroupControl extends Control {
       this.diffData.set(m, data);
     }
 
-    switch (data["#DataType"]) {
-      case "Insert":
-        data[`@Insert#${p}`] = nv;
-        delete data[p];
-        break;
-      case "Delete":
-        break;
-      default:
-        data[`@Modify#${p}`] = nv;
-        data[p] = ov;
-        break;
+    // switch (data["#DataType"]) {
+    //   case "Insert":
+    //     data[`@Insert#${p}`] = nv;
+    //     delete data[p];
+    //     break;
+    //   case "Delete":
+    //     break;
+    //   default:
+    //     data[`@Modify#${p}`] = nv;
+    //     data[p] = ov;
+    //     break;
+    // }
+
+    data[p] = nv;
+    // 如果没有任何标记，则标记为修改
+    if (!data[ControlDeclare.DataStatusField]) {
+      data[ControlDeclare.DataStatusField] = ControlDeclare.DataStatus.Edit;
+      // 记录原始数据
+      data[`#${p}`] = ov;
     }
   }
 
+  /**
+   * 同步数据
+   * @param m 对象
+   * @param p 属性名称
+   * @param nv 新值
+   * @param ov 旧值
+   */
   SyncTrack(m, p, nv, ov) {
     this.TrackPropertyChange(m, p, nv, ov);
     if (this.sharedControl) this.sharedControl.TrackPropertyChange(m, p, nv, ov);
   }
 
   async GetSource(param: any) {
-    let res = await this.$Api.GetDataSourceGroupData({
-      id: this.parentFormControl.id,
-      param: { [this.config.sourceName]: param || {} },
-    });
+    let res;
+    if (this.$Store.get.Designer.Preview) {
+      let sqlFile = GetFileById(this.config.sourceName);
+
+      res = await this.$Api.GetDataSourceGroupDataInDebug({
+        sql: sqlFile.content,
+        param: sqlFile.extraData.params,
+        args: param || {},
+      });
+    } else {
+      res = await this.$Api.GetDataSourceGroupData({
+        id: this.config.sourceName,
+        // param: { [this.config.sourceName]: param || {} },
+        args: param || {},
+      });
+    }
 
     switch (this.config.sourceType) {
       case "List":
@@ -279,12 +317,25 @@ export default class DataSourceGroupControl extends Control {
     if (this.diffData.size) {
       if (sender) sender.config.loading = true;
       try {
-        const response = await this.$Api.SaveDataSourceGroupData({
-          id: this.parentFormControl.id,
-          param: {
-            [this.config.sourceName]: data,
-          },
-        });
+        let response;
+
+        if (this.$Store.get.Designer.Preview) {
+          let sqlFile = GetFileById(this.config.sourceName);
+          response = await this.$Api.SaveDataSourceGroupDataInDebug({
+            sql: sqlFile.content,
+            tableName: sqlFile.extraData.table,
+            fields: sqlFile.extraData.fields,
+            primaryFields: sqlFile.extraData.primaryFields,
+            data,
+          });
+        } else {
+          response = await this.$Api.SaveDataSourceGroupData({
+            id: this.parentFormControl.id,
+            param: {
+              [this.config.sourceName]: data,
+            },
+          });
+        }
 
         const res = response.data;
 
@@ -337,6 +388,8 @@ export default class DataSourceGroupControl extends Control {
       sourceName: "",
       sourceType: "Form",
       readonly: false,
+      GetSource: null,
+      SaveSource: null,
     };
   }
 }

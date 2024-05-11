@@ -11,11 +11,11 @@ export default class Development extends Vue {
 
   render() {
     return (
-      <>
+      <div class={css.dev}>
         <Sidebar></Sidebar>
         <EditorPage></EditorPage>
         {this.$Store.get.Designer.Preview && <Preview></Preview>}
-      </>
+      </div>
     );
   }
 }

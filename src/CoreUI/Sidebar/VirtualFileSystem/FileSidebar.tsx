@@ -3,7 +3,7 @@ import { Component, Provide, Vue, Watch } from "vue-facing-decorator";
 import Folder from "./Folder";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import ContextMenu from "./ContextMenu";
-import Compiler from "@/Core/Compile/Compile";
+import Compiler from "@/Core/Compile/Compiler";
 import { FlatRoot } from "@/Utils/VirtualFileSystem/Index";
 import {
   ElButton,
@@ -16,6 +16,7 @@ import {
   ElSelectV2,
   ElPopover,
   ElPopconfirm,
+  ElMessageBox,
 } from "element-plus";
 import Directory from "@/Core/VirtualFileSystem/Directory";
 import Basic from "@/Core/VirtualFileSystem/Basic";
@@ -51,9 +52,15 @@ export default class FileSidebar extends Vue {
         title: "保存到云端",
         color: "#409eff",
         tiggerEventName: () => {
-          this.publishVisible = true;
+          this.saveVisible = true;
           this.versionDescription = this.$Store.get.VirtualFileSystem.RootVersions[1]?.versionDescription;
         },
+      },
+      {
+        icon: "upload",
+        title: "发布",
+        color: "rgb(65 209 178)",
+        tiggerEventName: "Publish",
       },
     ];
   }
@@ -207,24 +214,54 @@ export default class FileSidebar extends Vue {
     this.isRun = false;
   }
 
-  // 发布弹窗
-  publishVisible = false;
+  async Publish() {
+    // 询问
+    try {
+      await ElMessageBox.confirm(
+        <div>
+          是否发布？
+          <br />
+          请检查当前版本是否是要发布的版本！
+          <br />
+          当前版本：<strong>{this.selectedRootVersion}</strong>
+        </div>,
+        "提示",
+        {
+          confirmButtonText: "发布",
+          cancelButtonText: "取消",
+          type: "warning",
+        }
+      );
 
-  // 是否发布
-  isPublish = false;
+      await Compiler.Compile(false);
+      await this.$Api.Publish(Compiler.CompiledFiles);
+      ElMessage.success("发布成功！");
+    } catch {
+      ElMessage.error("发布失败！");
+    }
+  }
+
+  // 保存弹窗
+  saveVisible = false;
+
+  // 是否保存
+  isSave = false;
   // 版本描述
   versionDescription = "";
   // 是否需要创建新版本
   isCreateNewVersion = false;
 
   async SaveToCloud() {
-    if (!this.isPublish) return;
+    if (!this.isSave) return;
     let files = FlatRoot(this.$Store.get.VirtualFileSystem.Root);
-    await this.$Api.SaveRoot({
-      isCreateNewVersion: this.isCreateNewVersion,
-      Description: this.versionDescription,
-      Files: files,
-    });
+    try {
+      await this.$Api.SaveRoot({
+        isCreateNewVersion: this.isCreateNewVersion,
+        Description: this.versionDescription,
+        Files: files,
+      });
+    } catch {}
+    ElMessage.success("保存成功！");
   }
 
   isRun = false;
@@ -362,7 +399,7 @@ export default class FileSidebar extends Vue {
           ></ContextMenu>
         </div>
         <ElDialog
-          v-model={this.publishVisible}
+          v-model={this.saveVisible}
           appendToBody
           title="保存到云端"
           center
@@ -370,7 +407,7 @@ export default class FileSidebar extends Vue {
           close-on-press-escape={false}
           onClose={() => {
             this.SaveToCloud();
-            this.isPublish = false;
+            this.isSave = false;
             this.versionDescription = "";
           }}
         >
@@ -398,7 +435,7 @@ export default class FileSidebar extends Vue {
               <div class="dialog-footer">
                 <ElButton
                   onClick={(e) => {
-                    this.publishVisible = false;
+                    this.saveVisible = false;
                   }}
                 >
                   取消
@@ -406,8 +443,8 @@ export default class FileSidebar extends Vue {
                 <ElButton
                   type="primary"
                   onClick={(e) => {
-                    this.publishVisible = false;
-                    this.isPublish = true;
+                    this.saveVisible = false;
+                    this.isSave = true;
                   }}
                 >
                   保存

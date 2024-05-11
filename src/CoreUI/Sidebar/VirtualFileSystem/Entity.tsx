@@ -109,7 +109,19 @@ export default class Entity extends Vue {
       }
       return;
     }
+
     this.entity.name = newName;
+    // 如果是 sql 文件
+    if (!this.isDirectory && (this.entity as IFile).suffix == VritualFileSystemDeclare.FileType.Sql) {
+      let file = this.entity as IFile;
+      file.extraData = {
+        table: "",
+        fields: [],
+        primaryFields: [],
+        params: [],
+      };
+    }
+
     this.entity.isRename = false;
     this.FillSpecialFileChildren();
     if (this.isDirectory) {

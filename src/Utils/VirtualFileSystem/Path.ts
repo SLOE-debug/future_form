@@ -52,9 +52,9 @@ export class Path {
   }
 
   /**
-   * 获取文件后缀
+   * 获取文件名，去除后缀
    * @param name 文件名
-   * @returns 文件后缀
+   * @returns 文件名
    */
   static RemoveSuffix(name: string) {
     return name.substring(0, name.lastIndexOf("."));

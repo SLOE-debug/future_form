@@ -6,7 +6,7 @@ import { Component, Provide } from "vue-facing-decorator";
 import FormControl from "./FormControl";
 import { WindowDeclare } from "@/Types/WindowDeclare";
 import { GetAllFormFiles, GetFileById } from "@/Utils/VirtualFileSystem/Index";
-import Compiler from "@/Core/Compile/Compile";
+import Compiler from "@/Core/Compile/Compiler";
 import * as ts from "typescript";
 import { BaseWindow } from "@/Utils/Designer/Form";
 
@@ -29,10 +29,10 @@ export default class SubWindowControl extends Control {
   async created() {
     if (!this.$Store.get.Designer.Debug || this.$Store.get.Designer.Preview) {
       let id = this.config.subWindowId;
-      Compiler.LazyLoad(id);
-
+      // 从服务器懒加载这个文件，并将其安装到当前浏览器中
+      await Compiler.LazyLoad(id);
       let url = Compiler.fileId2BlobUrlMap.get(id);
-
+      // 动态加载子窗体
       import(/* webpackIgnore: true */ url).then(async (m) => {
         let subWin = m.default as typeof BaseWindow;
         if (m.default.name != this.config.createClassName) {

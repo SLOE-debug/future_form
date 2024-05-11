@@ -49,7 +49,7 @@ export default class FormControl extends Control {
   }
 
   instance: {
-    $Window: FormControl;
+    // $Window: FormControl;
     $refs: any;
     Dispose: () => void;
   };
@@ -69,6 +69,7 @@ export default class FormControl extends Control {
     if (!this.$Store.get.Designer.Debug || this.$Store.get.Designer.Preview) {
       let { instance, config } = this.$Store.get.Window.Windows[this.instanceId];
       instance.BindWindowEventAndControl(config, this);
+      this.instance = instance;
     }
     if (this.events.onCreated) {
       this.createEventPromise = this.events.onCreated();

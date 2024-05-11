@@ -2,7 +2,7 @@ import FormControl from "@/Controls/FormControl";
 import { DataConsistencyProxyCreator } from "@/Core/Designer/DataConsistency/DataConsistencyProxy";
 import store from "@/Vuex/Store";
 import { ControlDeclare } from "@/Types/ControlDeclare";
-import Compiler from "@/Core/Compile/Compile";
+import Compiler from "@/Core/Compile/Compiler";
 // import { EventDeclare } from "@/Types/EventDeclare";
 
 // type BarKit = EventDeclare.BarKit;
@@ -24,15 +24,30 @@ export class BaseWindow {
   // // 窗体控制条上的按钮组
   // barKit: EventDeclare.BarKit[] = [];
 
+  // 窗体ID
+  id: string;
+
   /**
    * 构造函数
    * @param id 窗体id
    */
-  constructor(id: string) {
-    let files = Compiler.LazyLoad(id);
+  constructor(_id: string) {
+    this.id = _id;
+  }
+
+  // 是否已经加载过窗体的Config
+  isLoaded: boolean = false;
+
+  /**
+   * 加载窗体的Config
+   */
+  async LoadConfig() {
+    if (this.isLoaded) return;
+    let files = await Compiler.LazyLoad(this.id);
     if (files) {
       this.formConfig = files[0].extraData;
     }
+    this.isLoaded = true;
   }
 
   /**
@@ -49,6 +64,7 @@ export class BaseWindow {
    * 显示窗体
    */
   async Show(dialog: boolean = false, subWindow: boolean = false) {
+    await this.LoadConfig();
     return await store.dispatch("Window/CreateWindow", { config: this.formConfig, dialog, subWindow, instance: this });
   }
 
@@ -95,7 +111,8 @@ export class BaseWindow {
     for (let i = 0; i < config.$children.length; i++) {
       let c = config.$children[i];
       instance[c.name] = c;
-      // instance.$refs[c.name] = container.$refs[c.name];
+      // 为了验证方便，将控件的引用挂载到窗体实例上
+      instance.$refs[c.name] = container.$refs[c.name];
 
       let eventNames = Object.keys(c).filter((k) => k.slice(0, 2) == "on");
       for (let i = 0; i < eventNames.length; i++) {

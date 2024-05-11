@@ -1,11 +1,16 @@
-import Development from "@/Views/Development";
+import Home from "@/Views/Home";
 import { RouteRecordRaw, createRouter, createWebHistory } from "vue-router";
 
 const routes: RouteRecordRaw[] = [
   {
-    path: "/",
+    path: "/Dev",
     name: "Development",
-    component: Development,
+    component: () => import("@/Views/Development"),
+  },
+  {
+    path: "/",
+    name: "Home",
+    component: Home,
   },
 ];
 

@@ -1,5 +1,6 @@
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import Basic from "./Basic";
+import { editor } from "@/CoreUI/Editor/EditorPage";
 
 type IFile = VritualFileSystemDeclare.IFile;
 
@@ -45,6 +46,9 @@ export default class File extends Basic implements IFile {
       if (this.children.length == 0) {
         let tsFile = new File(tsName);
         tsFile.content = `import Page from "../${prefixname}.form";\r\n\r\nexport default class ${prefixname} extends Page {\r\n\tconstructor() {\r\n\t\tsuper();\r\n\t}\r\n}`;
+
+        editor.GetOrCreateModel(tsFile);
+
         this.AddFile(tsFile);
       } else {
         this.children[0].name = tsName;

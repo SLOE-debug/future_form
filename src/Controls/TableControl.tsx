@@ -482,13 +482,20 @@ export default class TableControl extends Control {
         .filter((m) => m.$__check__$)
         .forEach((m) => {
           let index = this.config.data.findIndex((d) => d === m);
-          if (m["#DataType"]) {
-            if (m["#DataType"] == "Insert") {
-              let raw = toRaw(m);
-              this.parentDataSourceControl.diffData.delete(m);
-            }
+          // if (m["#DataType"]) {
+          //   if (m["#DataType"] == "Insert") {
+          //     let raw = toRaw(m);
+          //     this.parentDataSourceControl.diffData.delete(m);
+          //   }
+          // } else {
+          //   m["#DataType"] = "Delete";
+          // }
+
+          // 如果是新增的数据，删除数据源控件中的对比数据
+          if (m[ControlDeclare.DataStatusField] == ControlDeclare.DataStatus.New) {
+            this.parentDataSourceControl.diffData.delete(m);
           } else {
-            m["#DataType"] = "Delete";
+            m[ControlDeclare.DataStatusField] = ControlDeclare.DataStatus.Delete;
           }
 
           this.config.data.splice(index, 1);
@@ -498,11 +505,15 @@ export default class TableControl extends Control {
 
   AddRow(object: object) {
     object = object || {};
-    for (const k in object) {
-      object[`@Insert#${k}`] = object[k];
-      delete object[k];
-    }
-    object["#DataType"] = "Insert";
+    // for (const k in object) {
+    //   object[`@Insert#${k}`] = object[k];
+    //   delete object[k];
+    // }
+    // object["#DataType"] = "Insert";
+
+    // 添加新增标记
+    object[ControlDeclare.DataStatusField] = ControlDeclare.DataStatus.New;
+
     this.config.data.push(
       DataConsistencyProxyCreator(object, this.parentDataSourceControl.SyncTrack.bind(this.parentDataSourceControl))
     );

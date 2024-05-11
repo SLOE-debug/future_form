@@ -53,10 +53,31 @@ export default class DesignerSpace extends Vue {
       this.$nextTick(() => {
         this.$Store.dispatch(
           "Designer/AddStack",
-          new Stack(this.$refs["form"].$refs[c.name] as Control, null, null, StackAction.Create)
+          new Stack(
+            this.GetContainerByContainerName(c.fromContainer)[c.name] as Control,
+            null,
+            null,
+            StackAction.Create
+          )
         );
       });
     });
+  }
+
+  /**
+   * 通过空间配置的 fromContainer 属性获取容器
+   */
+  GetContainerByContainerName(name: string) {
+    if (!name) return this.$refs["form"].$refs;
+
+    // 获取表单下的refs列表
+    let refs = Object.keys(this.$refs["form"].$refs).map((k) => this.$refs["form"].$refs[k]);
+
+    do {
+      let ref = refs.shift();
+      if (ref.config.name == name) return ref.$refs;
+      if (ref.$refs) refs.push(...Object.keys(ref.$refs).map((k) => ref.$refs[k]));
+    } while (refs.length);
   }
 
   DeleteControl(e: KeyboardEvent): ControlConfig[] {

@@ -12,7 +12,16 @@ type ApiConfigItem = {
   cache?: boolean;
 };
 
-const GlobalApi = {};
+type Response = {
+  code: number;
+  data: any;
+};
+
+export type Api<T> = {
+  [K in keyof T]: (data?: any, extraData?: any) => Promise<Response>;
+};
+
+export const GlobalApi: Api<any> = {};
 
 /**
  * 将url中的 :id 替换为 data 中的 id
@@ -27,7 +36,7 @@ function RouterParamsHandler(url: string, data: any) {
 }
 
 function InstallAxiosConfig(name: string, apiConfig: ApiConfigItem, AxiosConfig: AxiosRequestConfig) {
-  GlobalApi[name] = function (data?: any, extraData?: any): Promise<AxiosResponse<any, any>> {
+  GlobalApi[name] = function (data?: any, extraData?: any): Promise<Response> {
     const newConfig = {
       ...AxiosConfig,
       ...apiConfig,
@@ -49,6 +58,7 @@ function InstallAxiosConfig(name: string, apiConfig: ApiConfigItem, AxiosConfig:
         break;
       default:
         newConfig.params = data;
+
         break;
     }
 

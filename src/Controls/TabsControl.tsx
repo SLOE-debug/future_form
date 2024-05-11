@@ -40,7 +40,7 @@ export default class TabsControl extends Control {
 
     this.config.$children.push(config);
     this.$nextTick(() => {
-      this.$Store.dispatch("AddStack", new Stack(this.$refs[config.name] as Control, null, null, StackAction.Create));
+      this.$Store.dispatch("Designer/AddStack", new Stack(this.$refs[config.name] as Control, null, null, StackAction.Create));
     });
     e.stopPropagation();
   }
@@ -95,7 +95,7 @@ export default class TabsControl extends Control {
       );
     });
     if (configs.length) {
-      this.$Store.dispatch("SelectControlByConfig", configs);
+      this.$Store.dispatch("Designer/SelectControlByConfig", configs);
     }
   }
 

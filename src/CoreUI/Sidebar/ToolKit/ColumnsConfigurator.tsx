@@ -110,19 +110,20 @@ export default class ColumnsConfigurator extends Vue {
           v-model={this.visible}
           title="表格列配置"
           onClose={() => {
-            this.$Store.dispatch("RenderControlConfigurator");
+            // this.$Store.dispatch("RenderControlConfigurator");
+            this.$Store.dispatch("Designer/RenderControlConfigurator");
           }}
           width={"80%"}
+          draggable
         >
           <ElButton
             type="primary"
-            icon="Plus"
             style={{ float: "right", marginBottom: "10px" }}
             onClick={(e) => {
               this.AddColumn();
             }}
           >
-            新建
+            {{ icon: () => <FontAwesomeIcon icon="plus"></FontAwesomeIcon>, default: "新建" }}
           </ElButton>
           <ElTable data={this.columns} maxHeight="50vh">
             <ElTableColumn property="title" label="标题" width={160}>
@@ -189,20 +190,22 @@ export default class ColumnsConfigurator extends Vue {
                 return (
                   <>
                     <ElButton
-                      icon="Top"
                       size="small"
                       onClick={(e) => {
                         if (i > 0) [this.columns[i], this.columns[i - 1]] = [this.columns[i - 1], this.columns[i]];
                       }}
-                    ></ElButton>
+                    >
+                      {{ icon: () => <FontAwesomeIcon icon="arrow-up"></FontAwesomeIcon> }}
+                    </ElButton>
                     <ElButton
-                      icon="Bottom"
                       size="small"
                       onClick={(e) => {
                         if (i < this.columns.length - 1)
                           [this.columns[i], this.columns[i + 1]] = [this.columns[i + 1], this.columns[i]];
                       }}
-                    ></ElButton>
+                    >
+                      {{ icon: () => <FontAwesomeIcon icon="arrow-down"></FontAwesomeIcon> }}
+                    </ElButton>
                     <ElPopconfirm
                       confirm-button-text="确认"
                       cancel-button-text="取消"
