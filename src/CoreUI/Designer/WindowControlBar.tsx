@@ -63,7 +63,8 @@ export default class WindowControlBar extends Vue {
 
   desktopSize: Coord = { x: 0, y: 0 };
   UpdateDesktopSize() {
-    let rect = this.$parent.$parent.$el.getBoundingClientRect();
+    //console.log(window);
+    let rect = {width:window.innerWidth , height:window.innerHeight};    // this.$parent.$parent.$el.getBoundingClientRect();
     this.desktopSize.x = rect.width;
     this.desktopSize.y = innerHeight;
   }
