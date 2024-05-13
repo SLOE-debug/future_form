@@ -1,6 +1,10 @@
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { Component, Emit, Prop, Vue } from "vue-facing-decorator";
+import {
+  ElMessage,
+  ElMessageBox,
+} from "element-plus";
 
 type Coord = UtilsDeclare.Coord;
 type IDirectory = VritualFileSystemDeclare.IDirectory;
@@ -31,6 +35,28 @@ export default class ContextMenu extends Vue {
           entity.isRename = true;
         }, 0);
         break;
+      case "delete":
+        ElMessageBox.confirm('确定要删除吗?','系统消息',{
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning',
+          }
+        )
+        .then(async () => {
+          let entity = (await this.$Store.dispatch("VirtualFileSystem/GetCurrentEntity")) as IDirectory | IFile;
+          
+          if ("directories" in entity) {
+            this.$Store.dispatch("VirtualFileSystem/DeleteDirectory", entity);
+          } else {
+            this.$Store.dispatch("VirtualFileSystem/DeleteFile", entity);
+          }
+
+          ElMessage({message: '删除成功！',type: 'success',});
+        })
+        .catch(() => {
+
+        })
+        break; 
       default:
         break;
     }

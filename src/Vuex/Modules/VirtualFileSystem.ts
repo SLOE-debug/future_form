@@ -56,6 +56,7 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
         parent = dir;
         return;
       }
+
       dir.directories.forEach((d) => find(d));
     };
     find(state.Root);
@@ -113,8 +114,18 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
   },
   // 删除文件
   async DeleteFile({ state, dispatch }, file: IFile) {
-    const parent = (await dispatch("FindParent", file)) as IDirectory;
-    parent.files.splice(parent.files.indexOf(file), 1);
+    //debugger;
+    let parent = (await dispatch("FindParent", file)) as IDirectory;
+    if(parent==null){
+      var fileParent = state.Root.files.filter(e=>e.children.includes(file as IFile))[0];
+      if(fileParent!=undefined){
+        state.Root.files.splice(state.Root.files.indexOf(fileParent), 1);
+      }
+      parent = state.Root;
+    }else{
+      parent.files.splice(parent.files.indexOf(file), 1);
+    }
+    
     state.CurrentDirectory = parent;
   },
   // 获取当前选中的文件/文件夹
@@ -128,6 +139,7 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
 
     if (!entity.isProtected) {
       menus.push({ text: "重命名", code: "rename", shortcutKey: "F2" });
+      menus.push({ text: "删除", code: "delete", shortcutKey: "F5" });
     }
     state.ContextMenus = menus;
   },
