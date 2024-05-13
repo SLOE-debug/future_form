@@ -249,8 +249,9 @@ export class ColumnOptionsConfigurator extends Vue {
   fields = [];
   SourceChange(v) {
     if (v) {
-      let source = this.sqlFiles.find((m) => m.name == v).extraData as UtilsDeclare.Source;
-      this.fields = GetFields(source.sql).map((m) => m.field) as string[];
+      let source = this.sqlFiles.find((m) => m.name == v);
+
+      this.fields = GetFields(source.content).map((m) => m.field) as string[];
     } else {
       this.fields = [];
       this.column.dataField = "";

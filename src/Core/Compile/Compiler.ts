@@ -3,8 +3,7 @@ import { GlobalApi } from "@/Plugins/Api/ExtendApi";
 import { CompileDeclare } from "@/Types/CompileDeclare";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { Path } from "@/Utils/VirtualFileSystem/Path";
-import store from "@/Vuex/Store";
-import * as monaco from "monaco-editor";
+const monacoImport = import("monaco-editor");
 
 type CompiledFile = CompileDeclare.CompiledFile;
 type IFile = VritualFileSystemDeclare.IFile;
@@ -32,6 +31,8 @@ export default class Compiler {
    * @returns 编译后的文件
    */
   static async Compile(debug: boolean = true) {
+    let monaco = await monacoImport;
+
     let models = monaco.editor.getModels();
     let worker = await monaco.languages.typescript.getTypeScriptWorker();
 

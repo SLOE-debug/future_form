@@ -330,10 +330,8 @@ export default class DataSourceGroupControl extends Control {
           });
         } else {
           response = await this.$Api.SaveDataSourceGroupData({
-            id: this.parentFormControl.id,
-            param: {
-              [this.config.sourceName]: data,
-            },
+            id: this.config.sourceName,
+            data,
           });
         }
 

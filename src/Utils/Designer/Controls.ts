@@ -206,11 +206,11 @@ export function AddDataSourceProps(fieldMap: ConfiguratorItem[], config: Control
 
   if (config.dataSource) {
     // let source = store.get.Designer.Sources.find((m) => m.name == config.dataSource);
-    let source = sqlFiles.find((m) => m.id == config.dataSource).extraData as UtilsDeclare.Source;
+    let source = sqlFiles.find((m) => m.id == config.dataSource);
+    let fields = GetFields(source.content).map((m) => m.field) as string[];
+    let params = source.extraData.params;
 
-    let fields = GetFields(source.sql).map((m) => m.field) as string[];
-
-    let paramsMap = source.params.map((m, i) => {
+    let paramsMap = params.map((m, i) => {
       return {
         name: m.name,
         des: "该数据源的参数",

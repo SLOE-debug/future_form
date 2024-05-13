@@ -90,9 +90,9 @@ export default class EditorPage extends Vue {
   created() {
     this.$nextTick(() => editor.SetContianer(this.$refs.editor as HTMLElement));
     editor.CreateAllFileModel();
-    // editor.OnModelChange(() => {
-    //   if (this.isSqlEditor) this.$refs.sqlConfigurator.AnalysisSql();
-    // });
+    editor.OnModelChange(() => {
+      if (this.isSqlEditor) this.$refs.sqlConfigurator.AnalysisSql(editor.editor.getValue());
+    });
   }
 
   unmouted() {

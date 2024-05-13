@@ -234,11 +234,11 @@ export default class FileSidebar extends Vue {
       );
 
       await Compiler.Compile(false);
-      await this.$Api.Publish(Compiler.CompiledFiles);
-      ElMessage.success("发布成功！");
-    } catch {
-      ElMessage.error("发布失败！");
-    }
+      this.$Api
+        .Publish(Compiler.CompiledFiles)
+        .then(() => ElMessage.success("发布成功！"))
+        .catch(() => ElMessage.error("发布失败！"));
+    } catch {}
   }
 
   // 保存弹窗

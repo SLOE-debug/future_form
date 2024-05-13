@@ -13,6 +13,7 @@ import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import { BindEventContext, RegisterEvent } from "@/Utils/Index";
 import DataSourceGroupControl from "@/Controls/DataSourceGroupControl";
 import { JSX } from "vue/jsx-runtime";
+import { GetFileById } from "@/Utils/VirtualFileSystem/Index";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceControlConfig = ControlDeclare.DataSourceControlConfig;
@@ -98,11 +99,25 @@ export class DataSourceControl extends Vue {
   }
 
   async GetInnerSource(params) {
-    let req =
-      sourceCache.get(this.config.dataSource) ||
-      this.$Api.GetSource({ name: this.config.dataSource, sourceParams: params });
-    sourceCache.set(this.config.dataSource, req);
+    // let req =
+    //   sourceCache.get(this.config.dataSource) || this.$Api.GetSource({ id: this.config.dataSource, args: params });
+    // sourceCache.set(this.config.dataSource, req);
+    // let data = (await req).data;
+
+    let methodName = "GetSource";
+    // 请求参数
+    let reqParams: any = { id: this.config.dataSource, args: params };
+
+    // 如果是预览模式，则请求 GetSourceInDebug
+    if (this.$Store.get.Designer.Preview) {
+      methodName = "GetSourceInDebug";
+      let file = GetFileById(this.config.dataSource);
+      reqParams = { sql: file.content, param: file.extraData.params, args: params };
+    }
+
+    let req = sourceCache.get(this.config.dataSource) || this.$Api[methodName](reqParams);
     let data = (await req).data;
+
     return data;
   }
 }
