@@ -9,6 +9,7 @@ import {
   ElButton,
   ElColorPicker,
   ElDialog,
+  ElDivider,
   ElForm,
   ElFormItem,
   ElInput,
@@ -123,7 +124,7 @@ export default class ColumnsConfigurator extends Vue {
               this.AddColumn();
             }}
           >
-            {{ icon: () => <FontAwesomeIcon icon="plus"></FontAwesomeIcon>, default: "新建" }}
+            {{ icon: () => <FontAwesomeIcon icon="plus"></FontAwesomeIcon>, default: () => "新建" }}
           </ElButton>
           <ElTable data={this.columns} maxHeight="50vh">
             <ElTableColumn property="title" label="标题" width={160}>
@@ -241,17 +242,33 @@ export class ColumnOptionsConfigurator extends Vue {
   column: ColumnItem;
   visible = false;
 
+  sqlFiles: VritualFileSystemDeclare.IFile[] = [];
+
   created() {
     if (!this.column.options) this.column.options = [];
+    this.GetSqlFilesAndFields();
+  }
+
+  /**
+   * 获取sql文件并解析字段
+   */
+  GetSqlFilesAndFields() {
+    this.sqlFiles = GetAllSqlFiles();
     this.SourceChange(this.column.dataSource);
   }
 
   fields = [];
   SourceChange(v) {
     if (v) {
-      let source = this.sqlFiles.find((m) => m.name == v);
+      let source = this.sqlFiles.find((m) => m.id == v);
 
-      this.fields = GetFields(source.content).map((m) => m.field) as string[];
+      this.fields = source.extraData.fields.map((m) => {
+        // 取最后一个点后的字符串
+        if (m.indexOf(".") >= 0) m = m.split(".")[1];
+        // 去除[和]
+        m = m.replace("[", "").replace("]", "");
+        return m;
+      });
     } else {
       this.fields = [];
       this.column.dataField = "";
@@ -269,6 +286,7 @@ export class ColumnOptionsConfigurator extends Vue {
   SelectOptions() {
     return (
       <>
+        <ElDivider>数据源配置</ElDivider>
         <div class={css.source}>
           <ElForm inline>
             <ElFormItem label="数据源">
@@ -290,16 +308,19 @@ export class ColumnOptionsConfigurator extends Vue {
             </ElFormItem>
           </ElForm>
         </div>
+        <ElDivider>固定选项配置</ElDivider>
         <ElButton
           type="primary"
-          icon="Plus"
           style={{ float: "right", marginBottom: "10px" }}
           onClick={(e) => {
             let option = { label: "选项", value: "值" };
             this.column.options.push(option);
           }}
         >
-          新建
+          {{
+            icon: () => <FontAwesomeIcon icon="plus"></FontAwesomeIcon>,
+            default: () => "新建",
+          }}
         </ElButton>
 
         <ElPopconfirm
@@ -317,8 +338,11 @@ export class ColumnOptionsConfigurator extends Vue {
           {{
             reference: () => {
               return (
-                <ElButton type="danger" icon="Delete">
-                  删除
+                <ElButton type="danger">
+                  {{
+                    icon: () => <FontAwesomeIcon icon="trash"></FontAwesomeIcon>,
+                    default: () => "删除",
+                  }}
                 </ElButton>
               );
             },
@@ -361,11 +385,6 @@ export class ColumnOptionsConfigurator extends Vue {
     );
   }
 
-  sqlFiles: VritualFileSystemDeclare.IFile[] = [];
-  updated() {
-    this.sqlFiles = GetAllSqlFiles();
-  }
-
   CheckOptions() {
     return (
       <ElForm inline>
@@ -385,7 +404,17 @@ export class ColumnOptionsConfigurator extends Vue {
         <ElDialog v-model={this.visible} title="设置选项" append-to-body>
           {this[`${CapitalizeFirstLetter(this.column.type)}Options`]()}
         </ElDialog>
-        <ElButton icon={"Setting"} circle onClick={(_) => (this.visible = true)}></ElButton>
+        <ElButton
+          circle
+          onClick={(_) => {
+            this.visible = true;
+            this.GetSqlFilesAndFields();
+          }}
+        >
+          {{
+            icon: () => <FontAwesomeIcon icon="gear"></FontAwesomeIcon>,
+          }}
+        </ElButton>
       </>
     );
   }

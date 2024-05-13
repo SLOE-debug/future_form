@@ -14,7 +14,7 @@ import TableControl from "./TableControl";
 import { defineAsyncComponent } from "vue";
 import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import { baseProps, baseEvents } from "@/Utils/Designer/Controls";
-import { CreateControlByDragEvent, CreateControlName, CloneStruct } from "@/Utils/Designer/Designer";
+import { CreateControlByDragEvent, CreateControlName, CloneStruct, AddControlDeclareToDesignerCode } from "@/Utils/Designer/Designer";
 import { Guid } from "@/Utils/Index";
 import { GetAllSqlFiles, GetFileById } from "@/Utils/VirtualFileSystem/Index";
 
@@ -48,6 +48,7 @@ export default class DataSourceGroupControl extends Control {
         new Stack(this.$refs[config.name] as Control, null, null, StackAction.Create)
       );
     });
+    AddControlDeclareToDesignerCode(config);
     e.stopPropagation();
   }
 

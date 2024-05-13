@@ -7,6 +7,7 @@ import router from "./Router/Index";
 import { Instruction } from "./Utils/Instruction";
 import RegisterControls from "@/Plugins/RegisterControls";
 import "./Utils/Patch";
+import { VueCustomInstruction } from "./Utils/VueCustomInstruction";
 
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -23,4 +24,5 @@ app
   .use(router)
   .use(vuex)
   .use(ExtendAxios)
+  .use(VueCustomInstruction)
   .mount("#app");

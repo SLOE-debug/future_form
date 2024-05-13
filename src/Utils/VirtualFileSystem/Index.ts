@@ -58,6 +58,7 @@ export function GetParentByFile(file: IFile) {
  */
 export function GetDesignerBackgroundFile() {
   let backgroundFile = store.get.VirtualFileSystem.CurrentFile;
+  if (!backgroundFile) return;
   if (backgroundFile.suffix == VritualFileSystemDeclare.FileType.FormDesigner) {
     return backgroundFile.children[0];
   }

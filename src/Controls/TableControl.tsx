@@ -29,6 +29,7 @@ import { EventDeclare } from "@/Types/EventDeclare";
 import { Guid } from "@/Utils/Index";
 import { DataConsistencyProxyCreator } from "@/Core/Designer/DataConsistency/DataConsistencyProxy";
 import { toRaw } from "vue";
+import { GetFileById } from "@/Utils/VirtualFileSystem/Index";
 
 type ColumnItem = ControlDeclare.ColumnItem;
 type TableConfig = ControlDeclare.TableConfig;
@@ -51,6 +52,11 @@ export default class TableControl extends Control {
   filterConfigs: { [x: string]: FilterConfig } = {};
 
   filterConditionMap: Map<string, Map<string, string>> = new Map();
+  /**
+   * 获取过滤条件的复选框组
+   * @param column 列配置
+   * @returns 复选框组
+   */
   GetFilterCheckBoxsGroup(column: ColumnItem) {
     let { field } = column;
     let map = this.filterConditionMap.get(field);
@@ -174,7 +180,18 @@ export default class TableControl extends Control {
       let data = this.optionsCache.get(key);
       if (!data) {
         this.optionsCache.set(key, []);
-        data = (await this.$Api.GetSource({ name: column.dataSource, sourceParams: {} })).data;
+
+        let mehtodName = "GetSource";
+        let params: any = { id: column.dataSource, args: {} };
+
+        // 如果是预览模式，则请求GetSourceInDebug
+        if (this.$Store.get.Designer.Preview) {
+          mehtodName = "GetSourceInDebug";
+          let file = GetFileById(this.config.dataSource);
+          params = { sql: file.content, param: file.extraData.params, args: params };
+        }
+
+        data = (await this.$Api[mehtodName](params)).data;
 
         let map = this.filterConditionMap.get(column.field);
         if (map) {

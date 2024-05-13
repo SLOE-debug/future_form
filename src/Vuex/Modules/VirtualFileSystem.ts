@@ -31,6 +31,8 @@ export type VirtualFileSystemState = {
   ContextMenuPosition: Coord;
   OpenFiles: IFile[];
   RootVersions: any[];
+  // 当前版本
+  CurrentVersion: string;
 };
 
 const state: VirtualFileSystemState = {
@@ -41,6 +43,7 @@ const state: VirtualFileSystemState = {
   ContextMenuPosition: null,
   OpenFiles: [],
   RootVersions: [],
+  CurrentVersion: "last",
 };
 
 const actions: ActionTree<VirtualFileSystemState, any> = {
@@ -148,7 +151,7 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
     state.OpenFiles.push(file);
   },
   // 关闭文件
-  CloseFile({ state, dispatch }, file: IFile) {
+  async CloseFile({ state, dispatch }, file: IFile) {
     if (file.isUnsaved) state.CurrentFile.content = file.content;
 
     if (file instanceof CompareFile) {
@@ -164,18 +167,35 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
       editor.editor = null;
     }
 
-    dispatch("SelectFile", newFile);
+    await dispatch("SelectFile", newFile);
   },
   SaveRoot({ state }) {
     localStorage.setItem("root", JSON.stringify(state.Root));
   },
+  // 切换版本设置Root
   async SetRoot({ state, dispatch }, root) {
+    // 清空打开文件
+    state.OpenFiles = [];
+    // 释放编辑器
+    editor.editor?.dispose();
+    editor.isConfigured = false;
+    editor.editor = null;
+
+    state.CurrentFile = null;
+
     state.Root = root;
     state.CurrentDirectory = root;
+
+    // 切换 editor 版本
+    editor.SwitchVersion();
   },
   // 设置Root版本列表
   SetRootVersions({ state }, versions) {
     state.RootVersions = versions;
+  },
+  // 设置当前版本
+  SetCurrentVersion({ state }, version) {
+    state.CurrentVersion = version;
   },
 };
 
@@ -195,6 +215,7 @@ const getters: GetterTree<VirtualFileSystemState, any> = {
   },
   ContextMenuPosition: (state) => state.ContextMenuPosition,
   RootVersions: (state) => state.RootVersions,
+  CurrentVersion: (state) => state.CurrentVersion,
 };
 
 const VirtualFileSystemModule: Module<VirtualFileSystemState, any> = {

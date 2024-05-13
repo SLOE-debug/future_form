@@ -513,8 +513,6 @@ export default class Editor {
    * 切换版本
    */
   SwitchVersion() {
-    this.editor?.dispose();
-
     let dirs = [store.get.VirtualFileSystem.Root];
     let path2File = new Map<string, IFile>();
 

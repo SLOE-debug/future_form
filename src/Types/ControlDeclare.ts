@@ -82,7 +82,9 @@ export namespace ControlDeclare {
     endPlaceholder: string;
   } & ControlConfig;
 
-  export type FormConfig = {} & ControlConfig;
+  export type FormConfig = {
+    maximize?: boolean;
+  } & ControlConfig;
 
   export type GroupConfig = {
     sunk: boolean;

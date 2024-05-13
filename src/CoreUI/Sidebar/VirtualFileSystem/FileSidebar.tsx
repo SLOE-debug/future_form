@@ -80,6 +80,7 @@ export default class FileSidebar extends Vue {
   directory: IDirectory = new Directory("");
   created() {
     this.directory = this.$Store.get.VirtualFileSystem.Root;
+    this.selectedRootVersion = this.$Store.get.VirtualFileSystem.CurrentVersion;
   }
 
   // 初始化文件侧边栏
@@ -99,9 +100,12 @@ export default class FileSidebar extends Vue {
   }
 
   // 选择的root版本
-  selectedRootVersion = "last";
+  selectedRootVersion = "";
   @Watch("selectedRootVersion")
   async OnSelectedRootVersionChange(nv, ov) {
+    // 如果是从created中调用的，不需要执行
+    if (!ov) return;
+    this.$Store.dispatch("VirtualFileSystem/SetCurrentVersion", nv);
     await this.GetRootByVersion(nv);
     ElMessage.success("切换版本成功！");
   }

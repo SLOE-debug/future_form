@@ -79,6 +79,7 @@ export default class GroupControl extends Control {
             {...{
               name: "GruopMove",
               class: css.move,
+              size: 22,
               onMousedown: (e) => {
                 this.Pick(e);
                 this.BeginAdjust(e);
