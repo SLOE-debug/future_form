@@ -214,7 +214,9 @@ export default class FileSidebar extends Vue {
     this.isRun = true;
     await Compiler.Compile();
     await this.$Store.dispatch("Designer/SetPreview", true);
-    Compiler.Install(Compiler.StartupFile);
+    // 获取启动文件
+    let file = await Compiler.GetStartupFile();
+    Compiler.Install(file);
     this.isRun = false;
   }
 

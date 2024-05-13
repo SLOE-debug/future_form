@@ -1,3 +1,4 @@
+import store from "@/Vuex/Store";
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import { App } from "vue";
 
@@ -45,6 +46,8 @@ function InstallAxiosConfig(name: string, apiConfig: ApiConfigItem, AxiosConfig:
         "Content-Type": "application/json;charset=utf-8",
         ...(apiConfig.headers || {}),
         // Authorization: "Bearer " + store.get.Token,
+        // 每次请求携带客户端的唯一ID
+        "X-Client-Id": store.get.Window.ClientId,
       },
     };
 

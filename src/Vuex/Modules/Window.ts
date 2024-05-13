@@ -16,6 +16,8 @@ export type WindowState = {
   Windows: { [x: string]: DesktopWindowInstances };
   WindowInstances: { [x: string]: any };
   SingleWindowCreatedFlag: { [x: string]: string };
+  // 每个客户端的唯一ID
+  ClientId: string;
 };
 
 const state: WindowState = {
@@ -25,6 +27,7 @@ const state: WindowState = {
   SingleWindowCreatedFlag: {},
   $WindowCollection: null,
   DesktopDom: null,
+  ClientId: Guid.NewGuid(),
 };
 
 let focusIndex = 0;
@@ -92,6 +95,7 @@ const getters: GetterTree<WindowState, any> = {
   SingleWindowCreatedFlag: (state) => state.SingleWindowCreatedFlag,
   $WindowCollection: (state) => state.$WindowCollection,
   DesktopDom: (state) => state.DesktopDom,
+  ClientId: (state) => state.ClientId,
 };
 
 const WindowModule: Module<WindowState, any> = {

@@ -3,6 +3,7 @@ import { GlobalApi } from "@/Plugins/Api/ExtendApi";
 import { CompileDeclare } from "@/Types/CompileDeclare";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { Path } from "@/Utils/VirtualFileSystem/Path";
+import store from "@/Vuex/Store";
 const monacoImport = import("monaco-editor");
 
 type CompiledFile = CompileDeclare.CompiledFile;
@@ -22,8 +23,17 @@ export default class Compiler {
   private static scriptList: HTMLScriptElement[] = [];
 
   // 获取启动文件
-  static get StartupFile() {
-    return this.CompiledFiles.find((f) => f.fullPath == "Startup");
+  static async GetStartupFile() {
+    // 从编译文件中获取启动文件
+    let file = this.CompiledFiles.find((f) => f.fullPath == "Startup");
+    // 如果没有启动文件，则请求API获取启动文件
+    if (!file) {
+      let files = (await GlobalApi.GetPublishFileByFileID()).data;
+      file = files.find((f) => f.fullPath == "Startup");
+      this.CompiledFiles.push(...files);
+    }
+
+    return file;
   }
 
   /**
@@ -145,18 +155,14 @@ export default class Compiler {
    * 懒加载编译文件
    */
   static async LazyLoad(id?: string) {
-    // 如果没有编译文件，待续...
-    let files = (await GlobalApi.GetPublishFileByFileID({ fileId: id })).data;
-    this.CompiledFiles.push(...files);
-
-    let file;
-    if (!id) {
-      file = this.CompiledFiles.find((f) => f.fullPath == "Startup");
-    } else {
+    let file = this.CompiledFiles.find((f) => f.fileId == id);
+    // 如果不是预览模式并且文件不存在，则请求API获取文件
+    if (!store.get.Designer.Preview && !file) {
+      let files = (await GlobalApi.GetPublishFileByFileID({ fileId: id })).data;
+      this.CompiledFiles.push(...files);
       file = this.CompiledFiles.find((f) => f.fileId == id);
     }
 
-    // const file = this.CompiledFiles.find((f) => f.fileId == id);
     if (!this.fileId2BlobUrlMap.has(id)) {
       return this.Install(file);
     }
