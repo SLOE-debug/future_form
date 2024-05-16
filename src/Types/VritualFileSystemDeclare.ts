@@ -6,13 +6,16 @@ export namespace VritualFileSystemDeclare {
     isProtected: boolean;
     selected: boolean;
     name: string;
+    parent: Basic;
     Delete(): void;
     GetFullName(): string;
+    Rename(): void;
   }
 
   export interface IFile extends Basic {
     showClose: boolean;
     isUnsaved: boolean;
+    isNewFile: boolean;
     suffix: string;
     content: string;
     specialFile: boolean;

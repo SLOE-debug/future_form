@@ -3,11 +3,12 @@ import store from "@/Vuex/Store";
 
 type IFile = VritualFileSystemDeclare.IFile;
 type IDirectory = VritualFileSystemDeclare.IDirectory;
+type Basic = VritualFileSystemDeclare.Basic;
 
 /**
  * 判断是否是文件夹
  */
-export function IsDirectory(entity: IFile | IDirectory): entity is IDirectory {
+export function IsDirectory(entity: Basic): entity is IDirectory {
   return (entity as IDirectory).directories !== undefined;
 }
 
@@ -22,35 +23,51 @@ export const suffix2Color = {
 };
 
 /**
+ * 获取文件夹的父级
+ */
+export function GetParentByDirectory(dir: IDirectory) {
+  const queue: Array<IDirectory> = [store.get.VirtualFileSystem.Root];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (current.directories.includes(dir)) {
+      return current;
+    }
+    queue.push(...current.directories);
+  }
+  return null;
+}
+
+/**
  * 获取文件父级
  * @param file 文件
  * @returns 文件父级
  */
 export function GetParentByFile(file: IFile) {
-  let parent: IFile | IDirectory = null;
-  let dirs = [store.get.VirtualFileSystem.Root] as Array<IFile | IDirectory>;
-  while (dirs.length > 0) {
-    let dir = dirs.shift();
-    if (IsDirectory(dir)) {
-      if (dir.files.includes(file)) {
-        parent = dir;
-        break;
-      } else {
-        dirs.push(...dir.directories);
-        dirs.push(...dir.files);
+  const queue: Array<IFile | IDirectory> = [store.get.VirtualFileSystem.Root];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+
+    // 处理目录类型
+    if (IsDirectory(current)) {
+      // 检查当前目录是否直接包含该文件
+      if (current.files.includes(file)) {
+        return current;
       }
+      // 将子目录和文件加入队列
+      queue.push(...current.directories, ...current.files);
     } else {
-      if (dir.specialFile) {
-        if (dir.children.includes(file)) {
-          parent = dir;
-          break;
-        } else {
-          dirs.push(...dir.children);
-        }
+      // 处理特殊文件类型
+      if (current.specialFile && current.children.includes(file)) {
+        return current;
       }
+      // 将子文件加入队列
+      queue.push(...current.children);
     }
   }
-  return parent;
+
+  return null;
 }
 
 /**
@@ -138,8 +155,9 @@ export function GetFileById(id: string) {
  * 拍平Root，获取所有文件
  */
 export function FlatRoot(root: IDirectory) {
-  let files: Array<IFile> = [];
+  let files = [];
   let dirs = [root] as Array<IFile | IDirectory>;
+
   while (dirs.length > 0) {
     let dir = dirs.shift();
     if (IsDirectory(dir)) {
@@ -150,14 +168,18 @@ export function FlatRoot(root: IDirectory) {
       });
     } else {
       // 将 file 中的 _name 转换为 name
-      let file = { ...dir } as any;
-      file.fileId = file.id;
-      delete file.id;
-      file.name = file._name;
-      file.isProtected = file._isProtected;
-      file.fullPath = dir.GetFullName();
-      delete file._name;
-      delete file._isProtected;
+
+      let m = dir as any;
+      let file = {
+        content: m.content,
+        extraData: m.extraData,
+        fileId: m.id,
+        name: m._name,
+        fullPath: dir.GetFullName(),
+        specialFile: m.specialFile,
+        suffix: m.suffix,
+        isProtected: m.isProtected,
+      };
       files.push(file);
     }
   }

@@ -22,6 +22,7 @@ import {
 import Directory from "@/Core/VirtualFileSystem/Directory";
 import Basic from "@/Core/VirtualFileSystem/Basic";
 import File from "@/Core/VirtualFileSystem/File";
+import { Path } from "@/Utils/VirtualFileSystem/Path";
 import Search from "./Search";
 
 
@@ -147,7 +148,7 @@ export default class FileSidebar extends Vue {
       file.versionDescription = fileInDb.versionDescription;
       file.content = fileInDb.content;
 
-      let path = fileInDb.path;
+      let path = Path.GetPathByFullPath(fileInDb.fullPath);
       if (path) {
         let dir = this.CreateDirByPath(path) as Directory;
         dir.AddFile(file);
@@ -170,7 +171,6 @@ export default class FileSidebar extends Vue {
    */
   CreateDirByPath(filePath: string) {
     let dir = this.dirMap.get(filePath) as Directory;
-    if (!dir) dir = this.dirMap.get(filePath + ".ts") as Directory; // 尝试读取form设计文件
     if (dir) {
       return dir;
     }
@@ -199,6 +199,9 @@ export default class FileSidebar extends Vue {
     return dir;
   }
 
+  /**
+   * 项目工具点击
+   */
   ProjectToolItemClick(m: any) {
     switch (m.title) {
       case "新建文件":
@@ -262,6 +265,23 @@ export default class FileSidebar extends Vue {
     } catch {}
   }
 
+  /**
+   * 文件工具点击
+   */
+  FileToolItemClick(m: any) {
+    if ("active" in m) {
+      this.topTools.forEach((t) => (t.active = false));
+      m.active = true;
+    }
+    let eventName = m.tiggerEventName as any;
+    let type = typeof eventName;
+    if (type == "string") {
+      this[eventName]();
+    } else {
+      eventName && eventName();
+    }
+  }
+
   // 保存弹窗
   saveVisible = false;
 
@@ -281,8 +301,8 @@ export default class FileSidebar extends Vue {
         Description: this.versionDescription,
         Files: files,
       });
+      ElMessage.success("保存成功！");
     } catch {}
-    ElMessage.success("保存成功！");
   }
 
   isRun = false;
@@ -308,18 +328,7 @@ export default class FileSidebar extends Vue {
                 }}
                 {...{
                   onMousedown: (e: MouseEvent) => {
-                    if ("active" in tool) {
-                      this.topTools.forEach((t) => (t.active = false));
-                      tool.active = true;
-                    }
-                    let eventName = tool.tiggerEventName as any;
-                    let type = typeof eventName;
-                    if (type == "string") {
-                      this[eventName]();
-                    } else {
-                      eventName();
-                    }
-
+                    this.FileToolItemClick(tool);
                     e.stopPropagation();
                   },
                 }}
@@ -444,15 +453,17 @@ export default class FileSidebar extends Vue {
                     <ElRadio value={false}>否</ElRadio>
                   </ElRadioGroup>
                 </ElFormItem>
-                <ElFormItem label="版本描述：">
-                  <ElInput
-                    v-model={this.versionDescription}
-                    {...{ rows: 6 }}
-                    style={{ width: "100%" }}
-                    type="textarea"
-                    placeholder="请输入版本描述"
-                  />
-                </ElFormItem>
+                {this.isCreateNewVersion && (
+                  <ElFormItem label="版本描述：">
+                    <ElInput
+                      v-model={this.versionDescription}
+                      {...{ rows: 6 }}
+                      style={{ width: "100%" }}
+                      type="textarea"
+                      placeholder="请输入版本描述"
+                    />
+                  </ElFormItem>
+                )}
               </ElForm>
             ),
             footer: () => (

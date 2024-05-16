@@ -25,8 +25,13 @@ export default {
     url: "VirtualFile/Publish",
   },
   // 通过文件ID获取发布的文件
-  GetPublishFileByFileID: {
+  GetPublishFileByFileId: {
     method: "GET",
-    url: "VirtualFile/GetPublishFileByFileID",
+    url: "VirtualFile/GetPublishFileByFileId",
+  },
+  // 通过文件绝对路径获取发布的文件
+  GetPublishFileByFullPath: {
+    method: "GET",
+    url: "VirtualFile/GetPublishFileByFullPath",
   },
 };

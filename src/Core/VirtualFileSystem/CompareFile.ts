@@ -38,5 +38,6 @@ export default class CompareFile extends Basic implements IComepareFile {
   children: VritualFileSystemDeclare.IFile[] = null;
   extraData: any = null;
   versionDescription: string = "";
+  isNewFile: boolean = false;
   AddFile(...files: VritualFileSystemDeclare.IFile[]): void {}
 }

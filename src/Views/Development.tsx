@@ -7,6 +7,10 @@ import { Component, Vue } from "vue-facing-decorator";
 export default class Development extends Vue {
   created() {
     this.$Store.dispatch("Designer/SetDebug", true);
+    document.addEventListener("click", (e) => {
+      // 设置设计器为非激活状态
+      this.$Store.dispatch("Designer/SetActive", false);
+    });
   }
 
   render() {

@@ -7,6 +7,7 @@ declare global {
   interface Window {
     css: any;
     BaseWindow: typeof BaseWindow;
+    importAsync: Function;
   }
 
   interface Event {

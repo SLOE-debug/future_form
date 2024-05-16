@@ -3,7 +3,7 @@ import { Component, Inject, Prop, Provide, Vue, Watch } from "vue-facing-decorat
 import Folder from "./Folder";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import SvgIcon from "../../../Components/SvgIcon";
-import { suffix2Color } from "@/Utils/VirtualFileSystem/Index";
+import { GetParentByDirectory, GetParentByFile, IsDirectory, suffix2Color } from "@/Utils/VirtualFileSystem/Index";
 import { Guid } from "@/Utils/Index";
 import EntityVersion from "./EntityVersion";
 
@@ -114,7 +114,8 @@ export default class Entity extends Vue {
     // 如果是 sql 文件
     if (!this.isDirectory && (this.entity as IFile).suffix == VritualFileSystemDeclare.FileType.Sql) {
       let file = this.entity as IFile;
-      file.extraData = {
+
+      file.extraData = file.extraData || {
         table: "",
         fields: [],
         primaryFields: [],
@@ -123,12 +124,20 @@ export default class Entity extends Vue {
     }
 
     this.entity.isRename = false;
+    // 如果是特殊文件，则需要填充它的子文件夹
     this.FillSpecialFileChildren();
+
+    // 集合
+    let collection = this.isDirectory ? this.Parentdirectory.directories : this.Parentdirectory.files;
+
     if (this.isDirectory) {
       this.$Store.dispatch("VirtualFileSystem/SelectDirectory", this.entity);
     } else {
       this.$Store.dispatch("VirtualFileSystem/SelectFile", this.entity);
     }
+
+    // 按名称排序 collection
+    collection.sort((a, b) => a.name.localeCompare(b.name));
   }
 
   /**

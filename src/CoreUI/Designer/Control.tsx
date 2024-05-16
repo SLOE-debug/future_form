@@ -14,6 +14,7 @@ import { BindEventContext, RegisterEvent } from "@/Utils/Index";
 import DataSourceGroupControl from "@/Controls/DataSourceGroupControl";
 import { JSX } from "vue/jsx-runtime";
 import { GetFileById } from "@/Utils/VirtualFileSystem/Index";
+import DesignerSpace from "./DesignerSpace";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceControlConfig = ControlDeclare.DataSourceControlConfig;
@@ -95,7 +96,7 @@ export class DataSourceControl extends Vue {
   }
 
   unmounted() {
-    this.config = null;
+    if (!this.$Store.get.Designer.Debug) this.config = null;
   }
 
   async GetInnerSource(params) {
@@ -542,6 +543,12 @@ export default class Control extends DataSourceControl {
   }
 
   Delete(pushStack = true) {
+    // 如果父组件是 DesignerSpace,则意味着当前组件是主Form窗体，不允许删除
+    if (this.$parent.$options.__vfdConstructor == DesignerSpace) {
+      ElMessage({ message: "不允许删除主Form窗体！", type: "error" });
+      return;
+    }
+
     let par = this.$parent as Control;
     let i = par.config.$children.findIndex((c) => c.id == this.config.id);
     if (pushStack)

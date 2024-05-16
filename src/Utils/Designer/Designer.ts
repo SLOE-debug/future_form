@@ -488,7 +488,8 @@ export function AddMethodToDesignerBackground(name: string, params: { name: stri
  * 定位到设计器代码中的方法
  */
 export async function LocateMethod(name: string) {
-  let backgroundCode = GetDesignerBackgroundFile().content;
+  let backgroundFile = GetDesignerBackgroundFile();
+  let backgroundCode = backgroundFile.content;
   let sourceFile = ts.createSourceFile("background.ts", backgroundCode, ts.ScriptTarget.ESNext, true);
   let methodNode: ts.MethodDeclaration;
   // 递归遍历所有节点，找到方法节点
@@ -501,11 +502,13 @@ export async function LocateMethod(name: string) {
   ts.forEachChild(sourceFile, visit);
 
   if (methodNode) {
-    await store.dispatch("VirtualFileSystem/SelectFile", GetDesignerBackgroundFile());
-    let pos = editor.editor.getModel().getPositionAt(methodNode.end);
+    await store.dispatch("VirtualFileSystem/SelectFile", backgroundFile);
+    setTimeout(() => {
+      let pos = editor.editor.getModel().getPositionAt(methodNode.getStart());
 
-    editor.editor.focus();
-    editor.editor.setPosition(pos);
-    editor.editor.revealPositionInCenter(pos);
+      editor.editor.focus();
+      editor.editor.setPosition(pos);
+      editor.editor.revealPositionInCenter(pos);
+    }, 0);
   }
 }

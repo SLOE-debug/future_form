@@ -7,28 +7,37 @@ import store from "@/Vuex/Store";
 const monacoImport = import("monaco-editor");
 
 type CompiledFile = CompileDeclare.CompiledFile;
-type IFile = VritualFileSystemDeclare.IFile;
 
 export default class Compiler {
-  // 导入映射
+  /**
+   * 导入映射
+   */
   private static import2BlobUrlMap: Map<string, string> = new Map();
 
-  // 文件ID与BlobUrl的映射
+  /**
+   * 文件ID与BlobUrl的映射
+   */
   static fileId2BlobUrlMap: Map<string, string> = new Map();
 
-  // 编译后的文件列表
+  /**
+   * 编译后的文件列表
+   */
   public static CompiledFiles: CompiledFile[] = [];
 
-  // scriptDom 列表
+  /**
+   * scriptDom 列表
+   */
   private static scriptList: HTMLScriptElement[] = [];
 
-  // 获取启动文件
+  /**
+   * 获取启动文件
+   */
   static async GetStartupFile() {
     // 从编译文件中获取启动文件
     let file = this.CompiledFiles.find((f) => f.fullPath == "Startup");
     // 如果没有启动文件，则请求API获取启动文件
     if (!file) {
-      let files = (await GlobalApi.GetPublishFileByFileID()).data;
+      let files = (await GlobalApi.GetPublishFileByFileId()).data;
       file = files.find((f) => f.fullPath == "Startup");
       this.CompiledFiles.push(...files);
     }
@@ -70,6 +79,21 @@ export default class Compiler {
 
         let out = await client.getEmitOutput(m.uri.toString());
         let code = out.outputFiles[0].text;
+
+        // 获取 import 方法引用的路径
+        let regex = /import\(['|"](.*)['|"]\)/g;
+        const matches = [...code.matchAll(regex)];
+
+        let res = matches.map((match) => match[1]);
+        if (res.length > 0) {
+          for (let refPath of res) {
+            let absPath = Path.GetAbsolutePath(m.uri.path, refPath);
+            // console.log(refPath, absPath);
+            // 创建regex，内容为 import(['|"]refPath['|"])，用于替换
+            let reg = new RegExp(`import\\(['|"]${refPath}['|"]\\)`, "g");
+            code = code.replace(reg, `importAsync("${absPath}")`);
+          }
+        }
 
         this.ObfuscateAndGenerateRefMap(code, compiledFile, m.uri.path, debug);
       } else {
@@ -154,19 +178,20 @@ export default class Compiler {
   /**
    * 懒加载编译文件
    */
-  static async LazyLoad(id?: string) {
-    let file = this.CompiledFiles.find((f) => f.fileId == id);
+  static async LazyLoad(param?: string, type: "fileId" | "fullPath" = "fileId") {
+    let file = this.CompiledFiles.find((f) => f[type] == param);
     // 如果不是预览模式并且文件不存在，则请求API获取文件
     if (!store.get.Designer.Preview && !file) {
-      let files = (await GlobalApi.GetPublishFileByFileID({ fileId: id })).data;
+      // Api：GetPublishFileByFileId 或 GetPublishFileByFullPath
+      let files = (await GlobalApi[`GetPublishFileBy${type[0].toUpperCase() + type.slice(1)}`]({ [type]: param })).data;
       this.CompiledFiles.push(...files);
-      file = this.CompiledFiles.find((f) => f.fileId == id);
+      file = this.CompiledFiles.find((f) => f[type] == param);
     }
 
-    if (!this.fileId2BlobUrlMap.has(id)) {
-      return this.Install(file);
+    if (!this.fileId2BlobUrlMap.has(file.fileId)) {
+      this.Install(file);
     }
-    return [file];
+    return file;
   }
 
   /**
@@ -183,3 +208,10 @@ export default class Compiler {
     Compiler.CompiledFiles = [];
   }
 }
+
+// 定义 importAsync 函数，用于懒加载
+window.importAsync = async (path: string) => {
+  let file = await Compiler.LazyLoad(path, "fullPath");
+  let url = Compiler.fileId2BlobUrlMap.get(file.fileId);
+  return import(/* webpackIgnore: true */ url);
+};

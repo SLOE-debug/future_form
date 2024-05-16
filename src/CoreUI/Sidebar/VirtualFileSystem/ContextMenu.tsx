@@ -1,10 +1,8 @@
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { Component, Emit, Prop, Vue } from "vue-facing-decorator";
-import {
-  ElMessage,
-  ElMessageBox,
-} from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { GetParentByDirectory, GetParentByFile, IsDirectory } from "@/Utils/VirtualFileSystem/Index";
 
 type Coord = UtilsDeclare.Coord;
 type IDirectory = VritualFileSystemDeclare.IDirectory;
@@ -30,33 +28,11 @@ export default class ContextMenu extends Vue {
   async Select(item: any) {
     switch (item.code) {
       case "rename":
-        let entity = (await this.$Store.dispatch("VirtualFileSystem/GetCurrentEntity")) as IDirectory | IFile;
-        setTimeout(() => {
-          entity.isRename = true;
-        }, 0);
+        ((await this.$Store.dispatch("VirtualFileSystem/GetCurrentEntity")) as IDirectory | IFile).Rename();
         break;
       case "delete":
-        ElMessageBox.confirm('确定要删除吗?','系统消息',{
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning',
-          }
-        )
-        .then(async () => {
-          let entity = (await this.$Store.dispatch("VirtualFileSystem/GetCurrentEntity")) as IDirectory | IFile;
-          
-          if ("directories" in entity) {
-            this.$Store.dispatch("VirtualFileSystem/DeleteDirectory", entity);
-          } else {
-            this.$Store.dispatch("VirtualFileSystem/DeleteFile", entity);
-          }
-
-          ElMessage({message: '删除成功！',type: 'success',});
-        })
-        .catch(() => {
-
-        })
-        break; 
+        ((await this.$Store.dispatch("VirtualFileSystem/GetCurrentEntity")) as IDirectory | IFile).Delete();
+        break;
       default:
         break;
     }

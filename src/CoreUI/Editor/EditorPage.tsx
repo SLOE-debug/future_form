@@ -24,14 +24,6 @@ export default class EditorPage extends Vue {
     };
   }
 
-  @Watch("Style")
-  @Debounce(100)
-  OnStyleChange(nv: any, ov: any) {
-    this.$nextTick(() => {
-      editor.editor?.layout();
-    });
-  }
-
   get File() {
     return this.$Store.get.VirtualFileSystem.CurrentFile;
   }
@@ -57,7 +49,6 @@ export default class EditorPage extends Vue {
     }
     this.$nextTick(() => {
       editor.SwitchFile(nv, ov);
-      editor.editor?.layout();
     });
     switch (nv.suffix) {
       case VritualFileSystemDeclare.FileType.Sql:
