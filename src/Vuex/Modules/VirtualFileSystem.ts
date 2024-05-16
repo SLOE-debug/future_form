@@ -37,9 +37,12 @@ export type VirtualFileSystemState = {
 
 export type SearchTree = {
   label : string,
+  expand : boolean,
   path : string,
   content : string,
-  children : SearchTree[]
+  suffix : string,
+  selected : boolean,
+  children : {label:string,path:string,content_a:string,content_b:string,selected : boolean}[]
 }
 
 const state: VirtualFileSystemState = {
@@ -140,7 +143,7 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
     if(!state.Root.files) return null;
 
     var fileArr = state.Root.files.filter(e=>e.content.includes(text)) as IFile[];
-    var treeArr = fileArr.map(e=>{ return {label:e.name,path:e.path,content:e.content,children:[]} }) as SearchTree[];
+    var treeArr = fileArr.map(e=>{ return {label:e.name,suffix:e.suffix,expand:true,selected:false,path:e.path,content:e.content,children:[]} }) as SearchTree[];
     
     fileArr.forEach(async e=>{
       if(e.children){
@@ -151,22 +154,20 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
     treeArr.forEach(t=>{
       // 通过 split('\n') 将代码字符串拆分成每一行
       const lines = t.content.split('\n');
-      //let count = 0; // 记录字符出现次数的计数器
-      let linesWithChar = []; // 存储包含字符的行号数组
       // 遍历每一行
-      lines.forEach((line, index) => {
+      lines.forEach(async (line, index) => {
           // 判断当前行是否包含目标字符
           if (line.includes(text)) {
-              //count++; // 如果包含，增加计数器
-              linesWithChar.push(index + 1); // 将包含目标字符的行号存入数组，加一是因为行号从 1 开始
-              const charIndex = line.indexOf(text);
-              // 从代码出现位置开始截取
-              const codeFromChar = line.slice(charIndex);
+              const lastOccurrence = line.lastIndexOf(text); // 获取最后一次出现的位置
+              const content_a = line.substring(0, lastOccurrence); // 从开头截取到最后一次出现的位置
+              const content_b = line.substring(lastOccurrence+text.length); // 从最后一次出现的位置截取到结尾
+         
               t.children.push({
-                label: codeFromChar,
-                path: index+1+'',
-                content: "",
-                children: []
+                label : text,
+                path : index+1+'',
+                content_a,
+                content_b,
+                selected : false,
               });
           }
       });
@@ -179,7 +180,7 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
     if(fileArr){
       fileArr = fileArr.filter(e=>e.content.includes(text)) as IFile[];
       fileArr.forEach(f => {
-        treeArr.push({label:f.name,path:f.path,content:f.content,children:[]});
+        treeArr.push({label:f.name,suffix:f.suffix,expand:true,selected:false,path:f.path,content:f.content,children:[]});
       });
 
       fileArr.forEach(async e=>{

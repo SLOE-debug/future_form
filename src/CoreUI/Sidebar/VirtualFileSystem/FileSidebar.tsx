@@ -4,7 +4,7 @@ import Folder from "./Folder";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import ContextMenu from "./ContextMenu";
 import Compiler from "@/Core/Compile/Compiler";
-import { FlatRoot } from "@/Utils/VirtualFileSystem/Index";
+import { FlatRoot, suffix2Color } from "@/Utils/VirtualFileSystem/Index";
 import {
   ElButton,
   ElDialog,
@@ -22,6 +22,8 @@ import {
 import Directory from "@/Core/VirtualFileSystem/Directory";
 import Basic from "@/Core/VirtualFileSystem/Basic";
 import File from "@/Core/VirtualFileSystem/File";
+import Search from "./Search";
+
 
 type IDirectory = VritualFileSystemDeclare.IDirectory;
 
@@ -224,27 +226,10 @@ export default class FileSidebar extends Vue {
   }
 
   isSearch = false;
-  searchText = '';
-  searchRes=[];
   //搜索按钮点击事件
   async SearchFun(){
     this.isSearch = true;
   }
-
-  //搜索框触发事件
-  async SearchChange(){
-    if(this.searchText){
-      this.searchRes = await this.$Store.dispatch("VirtualFileSystem/SearchContent",this.searchText);
-      console.log(this.searchRes);
-    }
-    
-  }
-
-  //树状结果单击事件
-  async HandleNodeClick(data){
-    console.log(data);
-  }
-
   //文件夹按钮点击事件
   async DirectoryFun(){
     this.isSearch = false;
@@ -342,28 +327,9 @@ export default class FileSidebar extends Vue {
             ))}
             {/* {this.RenderRunTool()} */}
           </div>
-          {this.isSearch && (<div>
-            <div class={css.searchSelector}>
-              <ElInput
-                      v-model={this.searchText}
-                      style={{ width: "95%" }}
-                      placeholder="请输入搜索词"
-                      class={css.searchInput}
-                      onChange={this.SearchChange}
-                      clearable
-                      onClear={()=>{this.searchRes=[]}}
-                    />
-            </div>
-            <div class={css.searchTreeDiv}>
-              <ElTree class={css.searchTree}
-                data={this.searchRes}
-                onNode-click={this.HandleNodeClick}
-                default-expand-all = {true}
-                highlight-current = {true}
-                check-on-click-node = {true}
-              />
-            </div>
-          </div>)}
+          
+          <Search v-show={this.isSearch}></Search>
+
           {!this.isSearch && (<div class={css.versionSelector}>
             <div>版本：</div>
             <ElSelectV2
