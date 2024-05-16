@@ -17,6 +17,7 @@ import {
   ElPopover,
   ElPopconfirm,
   ElMessageBox,
+  ElTree
 } from "element-plus";
 import Directory from "@/Core/VirtualFileSystem/Directory";
 import Basic from "@/Core/VirtualFileSystem/Basic";
@@ -35,11 +36,13 @@ export default class FileSidebar extends Vue {
         icon: "folder",
         active: true,
         title: "文件夹",
+        tiggerEventName: "DirectoryFun",
       },
       {
         icon: "magnifying-glass",
         active: false,
         title: "搜索",
+        tiggerEventName: "SearchFun",
       },
       {
         icon: this.isRun ? "stop" : "play",
@@ -223,6 +226,33 @@ export default class FileSidebar extends Vue {
     this.isRun = false;
   }
 
+  isSearch = false;
+  searchText = '';
+  searchRes=[];
+  //搜索按钮点击事件
+  async SearchFun(){
+    this.isSearch = true;
+  }
+
+  //搜索框触发事件
+  async SearchChange(){
+    if(this.searchText){
+      this.searchRes = await this.$Store.dispatch("VirtualFileSystem/SearchContent",this.searchText);
+      console.log(this.searchRes);
+    }
+    
+  }
+
+  //树状结果单击事件
+  async HandleNodeClick(data){
+    console.log(data);
+  }
+
+  //文件夹按钮点击事件
+  async DirectoryFun(){
+    this.isSearch = false;
+  }
+
   async Publish() {
     // 询问
     try {
@@ -321,7 +351,29 @@ export default class FileSidebar extends Vue {
             ))}
             {/* {this.RenderRunTool()} */}
           </div>
-          <div class={css.versionSelector}>
+          {this.isSearch && (<div>
+            <div class={css.searchSelector}>
+              <ElInput
+                      v-model={this.searchText}
+                      style={{ width: "95%" }}
+                      placeholder="请输入搜索词"
+                      class={css.searchInput}
+                      onChange={this.SearchChange}
+                      clearable
+                      onClear={()=>{this.searchRes=[]}}
+                    />
+            </div>
+            <div class={css.searchTreeDiv}>
+              <ElTree class={css.searchTree}
+                data={this.searchRes}
+                onNode-click={this.HandleNodeClick}
+                default-expand-all = {true}
+                highlight-current = {true}
+                check-on-click-node = {true}
+              />
+            </div>
+          </div>)}
+          {!this.isSearch && (<div class={css.versionSelector}>
             <div>版本：</div>
             <ElSelectV2
               options={this.$Store.get.VirtualFileSystem.RootVersions}
@@ -386,8 +438,8 @@ export default class FileSidebar extends Vue {
                 );
               }}
             </ElSelectV2>
-          </div>
-          <div class={css.content}>
+          </div>)}
+          {!this.isSearch && (<div class={css.content}>
             <div class={css.projectTitle}>
               项目名称
               <div class={css.projectTools}>
@@ -408,7 +460,7 @@ export default class FileSidebar extends Vue {
             <div onContextmenu={this.OpenContextMenu}>
               <Folder />
             </div>
-          </div>
+          </div>)}
           <ContextMenu
             {...{ onClose: () => this.$Store.dispatch("VirtualFileSystem/ClearContextMenuPosition") }}
           ></ContextMenu>
