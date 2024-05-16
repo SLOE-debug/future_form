@@ -31,6 +31,8 @@ export type DesignerState = {
   Stacks: Stack[] | Stack[][];
   CopyControlJson: string;
   ControlNames: string[];
+  // 设计器是否是活动的
+  Active: boolean;
 };
 
 const state: DesignerState = {
@@ -48,6 +50,7 @@ const state: DesignerState = {
   Stacks: [],
   CopyControlJson: "",
   ControlNames: [],
+  Active: false,
 };
 
 /**
@@ -276,6 +279,12 @@ const actions: ActionTree<DesignerState, any> = {
   SetCopyControlJson({ state }, json: string) {
     state.CopyControlJson = json;
   },
+  /**
+   * 设置设计器活动状态
+   */
+  SetActive({ state }, active: boolean) {
+    state.Active = active;
+  },
 };
 
 const getters: GetterTree<DesignerState, any> = {
@@ -313,6 +322,7 @@ const getters: GetterTree<DesignerState, any> = {
   Stacks: (state) => state.Stacks,
   CopyControlJson: (state) => state.CopyControlJson,
   ControlNames: (state) => state.ControlNames,
+  Active: (state) => state.Active,
 };
 
 const DesignerModule: Module<DesignerState, any> = {

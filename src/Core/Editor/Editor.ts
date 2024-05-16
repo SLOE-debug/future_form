@@ -20,10 +20,6 @@ export default class Editor {
     this.SetTokenizer();
     this.SetTypeScriptProjectConfig();
     this.ConfigureAutoComplete();
-
-    window.addEventListener("resize", () => {
-      this.editor?.layout();
-    });
   }
 
   /**
@@ -133,7 +129,7 @@ export default class Editor {
     monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
       target: monaco.languages.typescript.ScriptTarget.ESNext,
       allowNonTsExtensions: true,
-      module: monaco.languages.typescript.ModuleKind.ES2015,
+      module: monaco.languages.typescript.ModuleKind.ESNext,
       baseUrl: ".",
       moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
     });
@@ -159,7 +155,7 @@ export default class Editor {
     ts.loader = (function (func: Function) {
       return async function (this: any) {
         let res = (await func.apply(this, arguments)) as {
-          language: { tokenizer: { [x: string]: any[] } };
+          language: { tokenizer: { [x: string]: any[] }; keywords: string[] };
         };
 
         res.language.tokenizer.common.unshift([
@@ -195,7 +191,7 @@ export default class Editor {
    */
   CreateEditor() {
     this.editor = monaco.editor.create(this.ele, {
-      theme: "ts",
+      theme: "typescript",
       quickSuggestions: {
         strings: true, // 在字符串中启用自动完成
         comments: false, // 在注释中禁用自动完成
@@ -204,6 +200,7 @@ export default class Editor {
       unicodeHighlight: {
         ambiguousCharacters: false,
       },
+      automaticLayout: true,
     });
 
     this.editor.onDidChangeModelContent(this.ModelContentChanged.bind(this));
@@ -275,6 +272,7 @@ export default class Editor {
 
     this.editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, this.Save.bind(this));
     this.editor.addCommand(monaco.KeyMod.Alt | monaco.KeyMod.Shift | monaco.KeyCode.KeyF, function () {}, "");
+
     // F5 运行
     this.editor.addCommand(monaco.KeyCode.F5, () => {
       this.Save();
@@ -282,6 +280,19 @@ export default class Editor {
       window.dispatchEvent(event);
     });
 
+    // 为 Ctrl + . 添加一个空的动态绑定，防止默认行为
+    (this.editor as any)._standaloneKeybindingService.addDynamicKeybinding(
+      "-editor.action.quickFix",
+      monaco.KeyMod.CtrlCmd | monaco.KeyCode.Period,
+      () => {}
+    );
+
+    // Alt + . 触发 Quick Fix
+    this.editor.addCommand(monaco.KeyMod.Alt | monaco.KeyCode.Period, () => {
+      this.editor.trigger("anyString", "editor.action.quickFix", {});
+    });
+
+    // Ctrl + K, Ctrl + D 格式化文档
     this.editor.addAction({
       id: "FormattedDocument",
       label: "格式化文档",
@@ -294,6 +305,7 @@ export default class Editor {
         this.editor.trigger("anyString", "editor.action.formatDocument", {});
       },
     });
+    // F12 跳转到定义
     this.editor.addAction({
       id: "GoToDefinition",
       label: "跳转到定义",
@@ -304,6 +316,7 @@ export default class Editor {
         this.editor.trigger("anyString", "editor.action.revealDefinition", {});
       },
     });
+    // Shift + F7 查看设计器
     this.editor.addAction({
       id: "ViewDesigner",
       label: "查看设计器",
@@ -339,6 +352,14 @@ export default class Editor {
 
         let match = content.match(/from\s+['|"]/);
         if (match && (content[position.column - 1] == "'" || content[position.column - 1] == '"')) {
+          return {
+            suggestions: this.CreateFilePathSuggestions(range),
+          };
+        }
+
+        // 尝试匹配 import
+        let importMatch = content.match(/import\s*\(\s*['|"]/);
+        if (importMatch && (content[position.column - 1] == "'" || content[position.column - 1] == '"')) {
           return {
             suggestions: this.CreateFilePathSuggestions(range),
           };
@@ -400,6 +421,9 @@ export default class Editor {
       let dir = dirs.pop();
 
       for (const file of dir.files) {
+        // 如果 file 的后缀是 sql
+        if (file.suffix == VritualFileSystemDeclare.FileType.Sql) continue;
+
         let insertPath = Path.GetRelativePath(currentFile.GetFullName(), file.GetFullName());
         let name = Path.RemoveSuffix(file.name);
 
@@ -507,6 +531,14 @@ export default class Editor {
       }
       dirs.push(...dir.directories);
     }
+  }
+
+  /**
+   * 重建所有模型
+   */
+  RebuildAllModel() {
+    this.DisposeAllModel();
+    this.CreateAllFileModel();
   }
 
   /**

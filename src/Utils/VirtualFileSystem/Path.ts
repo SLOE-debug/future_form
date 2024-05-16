@@ -52,7 +52,7 @@ export class Path {
   }
 
   /**
-   * 获取文件名，去除后缀
+   * 去除文件名后缀
    * @param name 文件名
    * @returns 文件名
    */
@@ -86,5 +86,12 @@ export class Path {
       return path + suffix;
     }
     return path;
+  }
+
+  /**
+   * 通过文件的FullPath获取文件的路径
+   */
+  static GetPathByFullPath(fullPath: string) {
+    return fullPath.substring(0, fullPath.lastIndexOf("/"));
   }
 }

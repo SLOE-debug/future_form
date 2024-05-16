@@ -76,10 +76,13 @@ export default class Sidebar extends Vue {
     });
   }
   async Key_F2() {
-    let entity = (await this.$Store.dispatch("VirtualFileSystem/GetCurrentEntity")) as IDirectory | IFile;
-    setTimeout(() => {
-      entity.isRename = true;
-    }, 0);
+    ((await this.$Store.dispatch("VirtualFileSystem/GetCurrentEntity")) as IDirectory | IFile).Rename();
+  }
+
+  async Key_Delete() {
+    if (this.$Store.get.Designer.Active) return;
+
+    ((await this.$Store.dispatch("VirtualFileSystem/GetCurrentEntity")) as IDirectory | IFile).Delete();
   }
 
   activeTab = "project";

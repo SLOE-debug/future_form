@@ -5,6 +5,7 @@ import File from "@/Core/VirtualFileSystem/File";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import CompareFile from "@/Core/VirtualFileSystem/CompareFile";
 import { editor } from "@/CoreUI/Editor/EditorPage";
+import { FlatRoot, GetParentByDirectory, GetParentByFile, IsDirectory } from "@/Utils/VirtualFileSystem/Index";
 
 type IDirectory = VritualFileSystemDeclare.IDirectory;
 type IFile = VritualFileSystemDeclare.IFile;
@@ -47,21 +48,6 @@ const state: VirtualFileSystemState = {
 };
 
 const actions: ActionTree<VirtualFileSystemState, any> = {
-  // 寻找文件/文件夹父级
-  FindParent({ state }, entity: IDirectory | IFile) {
-    if (state.Root === entity) return null;
-    let parent: IDirectory = null;
-    const find = (dir: IDirectory) => {
-      if (dir.directories.includes(entity as IDirectory) || dir.files.includes(entity as IFile)) {
-        parent = dir;
-        return;
-      }
-
-      dir.directories.forEach((d) => find(d));
-    };
-    find(state.Root);
-    return parent;
-  },
   // 取消选择所有文件/文件夹
   UnSelectAll({ state }) {
     state.CurrentDirectory && (state.CurrentDirectory.selected = false);
@@ -82,7 +68,7 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
   },
   // 删除文件夹
   async DeleteDirectory({ state, dispatch }, directory: IDirectory) {
-    const parent = (await dispatch("FindParent", directory)) as IDirectory;
+    const parent = GetParentByDirectory(directory);
     parent.directories.splice(parent.directories.indexOf(directory), 1);
     state.CurrentDirectory = parent;
   },
@@ -114,18 +100,8 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
   },
   // 删除文件
   async DeleteFile({ state, dispatch }, file: IFile) {
-    //debugger;
-    let parent = (await dispatch("FindParent", file)) as IDirectory;
-    if(parent==null){
-      var fileParent = state.Root.files.filter(e=>e.children.includes(file as IFile))[0];
-      if(fileParent!=undefined){
-        state.Root.files.splice(state.Root.files.indexOf(fileParent), 1);
-      }
-      parent = state.Root;
-    }else{
-      parent.files.splice(parent.files.indexOf(file), 1);
-    }
-    
+    const parent = GetParentByFile(file) as IDirectory;
+    parent.files.splice(parent.files.indexOf(file), 1);
     state.CurrentDirectory = parent;
   },
   // 获取当前选中的文件/文件夹
@@ -139,7 +115,7 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
 
     if (!entity.isProtected) {
       menus.push({ text: "重命名", code: "rename", shortcutKey: "F2" });
-      menus.push({ text: "删除", code: "delete", shortcutKey: "F5" });
+      menus.push({ text: "删除", code: "delete", shortcutKey: "Delete" });
     }
     state.ContextMenus = menus;
   },
@@ -182,7 +158,7 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
     await dispatch("SelectFile", newFile);
   },
   SaveRoot({ state }) {
-    localStorage.setItem("root", JSON.stringify(state.Root));
+    localStorage.setItem("root", JSON.stringify(FlatRoot(state.Root)));
   },
   // 切换版本设置Root
   async SetRoot({ state, dispatch }, root) {

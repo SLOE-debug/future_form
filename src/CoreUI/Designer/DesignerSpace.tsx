@@ -81,7 +81,8 @@ export default class DesignerSpace extends Vue {
   }
 
   DeleteControl(e: KeyboardEvent): ControlConfig[] {
-    let delControls = this.$Store.get.Designer.SelectedContainerControls.map((c) => c.Delete().del);
+    if (!this.$Store.get.Designer.Active) return;
+    let delControls = this.$Store.get.Designer.SelectedContainerControls.map((c) => c.Delete()?.del).filter((c) => c);
     if (delControls.length) this.$Store.dispatch("Designer/ClearSelected");
 
     return delControls;
@@ -209,6 +210,10 @@ export default class DesignerSpace extends Vue {
           this.menu = true;
           this.menuPos = { x: e.clientX, y: e.clientY };
           e.preventDefault();
+        }}
+        onClick={(e) => {
+          this.$Store.dispatch("Designer/SetActive", true);
+          e.stopPropagation();
         }}
       >
         <ContextMenu

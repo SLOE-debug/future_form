@@ -43,9 +43,9 @@ export class BaseWindow {
    */
   async LoadConfig() {
     if (this.isLoaded) return;
-    let files = await Compiler.LazyLoad(this.id);
-    if (files) {
-      this.formConfig = files[0].extraData;
+    let file = await Compiler.LazyLoad(this.id);
+    if (file) {
+      this.formConfig = file.extraData;
     }
     this.isLoaded = true;
   }
