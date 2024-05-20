@@ -38,13 +38,13 @@ export default class FileSidebar extends Vue {
         icon: "folder",
         active: true,
         title: "文件夹",
-        tiggerEventName: "DirectoryFun",
+        tiggerEventName: "ShowDirectory",
       },
       {
         icon: "magnifying-glass",
         active: false,
         title: "搜索",
-        tiggerEventName: "SearchFun",
+        tiggerEventName: "ShowSearch",
       },
       {
         icon: this.isRun ? "stop" : "play",
@@ -230,11 +230,11 @@ export default class FileSidebar extends Vue {
 
   isSearch = false;
   //搜索按钮点击事件
-  async SearchFun(){
+  async ShowSearch(){
     this.isSearch = true;
   }
   //文件夹按钮点击事件
-  async DirectoryFun(){
+  async ShowDirectory(){
     this.isSearch = false;
   }
 
