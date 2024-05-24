@@ -18,9 +18,6 @@ import {
   ElPopconfirm,
   ElMessageBox,
   ElCheckbox,
-  ElRow,
-  ElCol,
-  ElSwitch,
 } from "element-plus";
 import Directory from "@/Core/VirtualFileSystem/Directory";
 import Basic from "@/Core/VirtualFileSystem/Basic";
