@@ -234,11 +234,11 @@ export default class FileSidebar extends Vue {
 
   isSearch = false;
   //搜索按钮点击事件
-  async ShowSearch() {
+  async ShowSearch(){
     this.isSearch = true;
   }
   //文件夹按钮点击事件
-  async ShowDirectory() {
+  async ShowDirectory(){
     this.isSearch = false;
   }
 
@@ -266,7 +266,7 @@ export default class FileSidebar extends Vue {
         center: true,
         draggable: true,
       });
-      
+
       editor.SaveAll();
 
       await Compiler.Compile(false, this.isPublishAll);
