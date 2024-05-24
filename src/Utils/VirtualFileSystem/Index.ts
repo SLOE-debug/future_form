@@ -167,8 +167,6 @@ export function FlatRoot(root: IDirectory) {
         dirs.push(...file.children);
       });
     } else {
-      // 将 file 中的 _name 转换为 name
-
       let m = dir as any;
       let file = {
         content: m.content,
@@ -184,4 +182,14 @@ export function FlatRoot(root: IDirectory) {
     }
   }
   return files;
+}
+
+// 备份的Root
+export let backupRoot = [];
+
+/**
+ * 备份Root
+ */
+export function BackupRoot(root: IDirectory) {
+  backupRoot = FlatRoot(root);
 }

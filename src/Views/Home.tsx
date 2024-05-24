@@ -1,5 +1,7 @@
 import WindowCollection from "@/Components/WindowCollection";
 import Compiler from "@/Core/Compile/Compiler";
+import { Guid } from "@/Utils/Index";
+import { ElNotification } from "element-plus";
 import { Component, Vue } from "vue-facing-decorator";
 
 @Component
@@ -13,17 +15,8 @@ export default class Home extends Vue {
       return confirmationMessage;
     });
 
-    window.addEventListener("unload", (e) => {
-      fetch(process.env.VUE_APP_API_BASE_URL + "VirtualFile/Leave", {
-        method: "GET",
-        headers: {
-          "X-Client-Id": this.$Store.get.Window.ClientId,
-        },
-        keepalive: true,
-      });
-    });
-
     await this.InitDesktop();
+    this.LinkSSE();
   }
 
   /**
@@ -40,6 +33,41 @@ export default class Home extends Vue {
     let file = await Compiler.GetStartupFile();
     Compiler.Install(file);
     loading.close();
+  }
+
+  /**
+   * 链接SSE
+   */
+  async LinkSSE() {
+    let url = process.env.VUE_APP_API_BASE_URL + "VirtualFile/SSE";
+    let eventSource = new EventSource(url + "?id=" + Guid.NewGuid());
+    eventSource.onmessage = (e) => {
+      let { updateFiles, isNotifyUser } = JSON.parse(e.data);
+      console.log("收到以下文件更新：");
+      for (const file of updateFiles) {
+        console.log(file.fullPath);
+      }
+      Compiler.UpdateFileCache(updateFiles);
+      if (isNotifyUser) {
+        ElNotification({
+          title: "版本已更新",
+          message: (
+            <>
+              <p>有新的版本已发布！</p>
+              <p>以防数据丢失，请保存您的工作。</p>
+              <p>并刷新页面以获取最新版本。</p>
+            </>
+          ),
+          type: "warning",
+          position: "bottom-right",
+          duration: 0,
+          zIndex: 9999999,
+        });
+      }
+    };
+    eventSource.onerror = (e) => {
+      console.error("推送更新出错！", e);
+    };
   }
 
   render() {

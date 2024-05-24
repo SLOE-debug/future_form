@@ -43,7 +43,7 @@ export class BaseWindow {
    */
   async LoadConfig() {
     if (this.isLoaded) return;
-    let file = await Compiler.LazyLoad(this.id);
+    let file = Compiler.CompiledFiles.find((f) => f.fileId == this.id);
     if (file) {
       this.formConfig = file.extraData;
     }

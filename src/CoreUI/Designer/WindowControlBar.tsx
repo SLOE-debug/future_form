@@ -102,6 +102,7 @@ export default class WindowControlBar extends Vue {
       top: t + "px",
       width: width + "px",
       height: height + "px",
+      borderRadius: this.maximize ? 0 : "5px",
       zIndex: this.zIndex,
     };
   }

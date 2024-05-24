@@ -31,7 +31,7 @@ export default class EntityVersion extends Vue {
   // 通过文件ID获取版本列表
   async GetVersions(id?: string) {
     !!id && (this.fileId = id);
-    editor.Save();
+    editor.SaveAll();
     let res = await this.$Api.GetVersions({ fileId: this.fileId, page: this.page, pageSize: this.pageSize });
     this.versions = res.data.versions;
     this.total = res.data.total;

@@ -1,9 +1,9 @@
 import { editor } from "@/CoreUI/Editor/EditorPage";
 import { GlobalApi } from "@/Plugins/Api/ExtendApi";
 import { CompileDeclare } from "@/Types/CompileDeclare";
-import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
+import { DeepCompareObject } from "@/Utils/Index";
+import { backupRoot } from "@/Utils/VirtualFileSystem/Index";
 import { Path } from "@/Utils/VirtualFileSystem/Path";
-import store from "@/Vuex/Store";
 const monacoImport = import("monaco-editor");
 
 type CompiledFile = CompileDeclare.CompiledFile;
@@ -37,9 +37,7 @@ export default class Compiler {
     let file = this.CompiledFiles.find((f) => f.fullPath == "Startup");
     // 如果没有启动文件，则请求API获取启动文件
     if (!file) {
-      let files = (await GlobalApi.GetPublishFileByFileId()).data;
-      file = files.find((f) => f.fullPath == "Startup");
-      this.CompiledFiles.push(...files);
+      file = await Compiler.GetPublishFile("Startup", "fullPath");
     }
 
     return file;
@@ -49,7 +47,7 @@ export default class Compiler {
    * 获取编译后的文件
    * @returns 编译后的文件
    */
-  static async Compile(debug: boolean = true) {
+  static async Compile(debug: boolean = true, publishAll: boolean = false) {
     let monaco = await monacoImport;
 
     let models = monaco.editor.getModels();
@@ -66,6 +64,22 @@ export default class Compiler {
 
       let file = editor.model2File.get(m);
 
+      // 对比备份的Root
+      // 如果 file 的 content 和 extraData 和备份的一样
+      // 且如果不是debug模式
+      // 且不是发布所有文件
+      // 则不编译
+      if (!debug && !publishAll) {
+        let backupFile = backupRoot.find((f) => f.fullPath == file.GetFullName());
+        if (
+          backupFile &&
+          backupFile.content == file.content &&
+          DeepCompareObject(backupFile.extraData, file.extraData)
+        ) {
+          continue;
+        }
+      }
+
       let compiledFile: CompiledFile = {
         fileId: file.id,
         fullPath: Path.RemoveSuffix(m.uri.path).substring(1),
@@ -80,18 +94,16 @@ export default class Compiler {
         let out = await client.getEmitOutput(m.uri.toString());
         let code = out.outputFiles[0].text;
 
-        // 获取 import 方法引用的路径
-        let regex = /import\(['|"](.*)['|"]\)/g;
-        const matches = [...code.matchAll(regex)];
-
-        let res = matches.map((match) => match[1]);
-        if (res.length > 0) {
-          for (let refPath of res) {
+        // 获取 code 中所有的 import(...) 行，替换为 importAsync(...)
+        let importFuncReg = /import\(.+?\)/g;
+        let match = code.match(importFuncReg);
+        if (match) {
+          for (let i = 0; i < match.length; i++) {
+            // 获取引用的文件路径
+            let refPath = match[i].match(/['|"](.+)['|"]/)[1];
             let absPath = Path.GetAbsolutePath(m.uri.path, refPath);
-            // console.log(refPath, absPath);
-            // 创建regex，内容为 import(['|"]refPath['|"])，用于替换
-            let reg = new RegExp(`import\\(['|"]${refPath}['|"]\\)`, "g");
-            code = code.replace(reg, `importAsync("${absPath}")`);
+            // 替换 import(...) 为 importAsync(...)
+            code = code.replace(match[i], `importAsync('${absPath}')`);
           }
         }
 
@@ -176,22 +188,78 @@ export default class Compiler {
   }
 
   /**
-   * 懒加载编译文件
+   * 通过绝对路径或文件ID获取服务器的编译后的文件
    */
-  static async LazyLoad(param?: string, type: "fileId" | "fullPath" = "fileId") {
+  static async GetPublishFile(param: string, type: "fullPath" | "fileId") {
     let file = this.CompiledFiles.find((f) => f[type] == param);
-    // 如果不是预览模式并且文件不存在，则请求API获取文件
-    if (!store.get.Designer.Preview && !file) {
-      // Api：GetPublishFileByFileId 或 GetPublishFileByFullPath
-      let files = (await GlobalApi[`GetPublishFileBy${type[0].toUpperCase() + type.slice(1)}`]({ [type]: param })).data;
-      this.CompiledFiles.push(...files);
-      file = this.CompiledFiles.find((f) => f[type] == param);
-    }
-
-    if (!this.fileId2BlobUrlMap.has(file.fileId)) {
-      this.Install(file);
+    if (!file) {
+      let paramObj = { [type]: param };
+      file = (await GlobalApi.GetPublishFile(paramObj)).data as CompiledFile;
+      this.CompiledFiles.push(file);
+      for (const ref of file.refs) {
+        let isExist = this.CompiledFiles.find((f) => f.fullPath == ref.absPath);
+        if (!isExist) {
+          await Compiler.GetPublishFile(ref.absPath, "fullPath");
+        }
+      }
+      if (!this.fileId2BlobUrlMap.has(file.fileId)) {
+        this.Install(file);
+      }
     }
     return file;
+  }
+
+  /**
+   * 通过文件ID删除与编译文件相关的一切
+   */
+  static async DeleteFile(fileId: string) {
+    let file = this.CompiledFiles.find((f) => f.fileId == fileId);
+    if (file) {
+      // 删除编译文件列表中的文件
+      let index = this.CompiledFiles.indexOf(file);
+      this.CompiledFiles.splice(index, 1);
+      // 获取 blobUrl
+      let blobUrl = this.fileId2BlobUrlMap.get(fileId);
+      // 删除 blobUrl
+      URL.revokeObjectURL(blobUrl);
+      // 删除 import2BlobUrlMap 中的映射
+      this.import2BlobUrlMap.delete(file.fullPath);
+      // 删除 fileId2BlobUrlMap 中的映射
+      this.fileId2BlobUrlMap.delete(fileId);
+      // 删除 scriptList 中的 script
+      let script = this.scriptList.find((s) => s.src == blobUrl);
+      if (script) {
+        document.body.removeChild(script);
+        let scriptIndex = this.scriptList.indexOf(script);
+        this.scriptList.splice(scriptIndex, 1);
+      }
+    }
+  }
+
+  // PWA 的文件缓存URL前缀
+  static readonly PWA_CACHE_URL_PREFIX = process.env.VUE_APP_API_BASE_URL + "VirtualFile/GetPublishFile";
+
+  /**
+   * 更新PWA的文件缓存
+   */
+  static async UpdateFileCache(updateFiles: Array<{ fileId: string; fullPath: string }>) {
+    for (const file of updateFiles) {
+      let cache = await caches.open("api-cache-v1");
+      let url = Compiler.PWA_CACHE_URL_PREFIX + "?fileId=" + file.fileId;
+      let response = await cache.match(url);
+      // 如果缓存中没有该文件，则匹配 fullPath
+      if (!response) {
+        url = Compiler.PWA_CACHE_URL_PREFIX + "?fullPath=" + encodeURIComponent(file.fullPath);
+        response = await cache.match(url);
+      }
+      if (response) {
+        // 获取缓存的文件
+        let cacheFile = (await response.json()).data as CompiledFile;
+        Compiler.DeleteFile(cacheFile.fileId);
+        // 删除缓存
+        await cache.delete(response.url);
+      }
+    }
   }
 
   /**
@@ -211,7 +279,7 @@ export default class Compiler {
 
 // 定义 importAsync 函数，用于懒加载
 window.importAsync = async (path: string) => {
-  let file = await Compiler.LazyLoad(path, "fullPath");
+  let file = await Compiler.GetPublishFile(path, "fullPath");
   let url = Compiler.fileId2BlobUrlMap.get(file.fileId);
   return import(/* webpackIgnore: true */ url);
 };

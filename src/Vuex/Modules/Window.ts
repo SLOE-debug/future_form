@@ -1,7 +1,7 @@
 import WindowCollection from "@/Components/WindowCollection";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { WindowDeclare } from "@/Types/WindowDeclare";
-import { CloneStruct } from "@/Utils/Designer/Designer";
+import { CloneStruct } from "@/Utils/Index";
 import { BaseWindow } from "@/Utils/Designer/Form";
 import { Guid } from "@/Utils/Index";
 import { Module, ActionTree, GetterTree } from "vuex";
@@ -16,8 +16,6 @@ export type WindowState = {
   Windows: { [x: string]: DesktopWindowInstances };
   WindowInstances: { [x: string]: any };
   SingleWindowCreatedFlag: { [x: string]: string };
-  // 每个客户端的唯一ID
-  ClientId: string;
 };
 
 const state: WindowState = {
@@ -27,7 +25,6 @@ const state: WindowState = {
   SingleWindowCreatedFlag: {},
   $WindowCollection: null,
   DesktopDom: null,
-  ClientId: Guid.NewGuid(),
 };
 
 let focusIndex = 0;
@@ -95,7 +92,6 @@ const getters: GetterTree<WindowState, any> = {
   SingleWindowCreatedFlag: (state) => state.SingleWindowCreatedFlag,
   $WindowCollection: (state) => state.$WindowCollection,
   DesktopDom: (state) => state.DesktopDom,
-  ClientId: (state) => state.ClientId,
 };
 
 const WindowModule: Module<WindowState, any> = {

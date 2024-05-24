@@ -13,5 +13,8 @@ export const Instruction = {
         el.querySelector("input").focus();
       }, 0);
     });
+    app.directive("onFocus", (el: HTMLElement, binding) => {
+      el.querySelector("input").onfocus = binding.value;
+    });
   },
 };

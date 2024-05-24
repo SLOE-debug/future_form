@@ -168,35 +168,6 @@ export function FillControlNameCache(config: ControlConfig) {
 }
 
 /**
- * 克隆结构
- * @param obj 对象
- * @returns 新对象
- */
-export function CloneStruct<T>(obj: T): T {
-  if (Array.isArray(obj)) {
-    let arr = [];
-    for (const m of obj) {
-      arr.push(CloneStruct(m));
-    }
-    return arr as T;
-  } else if (typeof obj == "object") {
-    let m = {} as T;
-    for (const k in obj) {
-      if (obj[k] == null) {
-        m[k] = null;
-      } else if (typeof obj[k] == "object") {
-        m[k] = CloneStruct(obj[k]);
-      } else {
-        m[k] = obj[k];
-      }
-    }
-    return m;
-  } else {
-    return obj;
-  }
-}
-
-/**
  * 获取字段
  * @param sql sql
  * @returns 字段

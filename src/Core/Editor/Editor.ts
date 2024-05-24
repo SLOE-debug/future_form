@@ -263,6 +263,34 @@ export default class Editor {
   }
 
   /**
+   * 保存所有文件
+   */
+  SaveAll() {
+    let dirs = [store.get.VirtualFileSystem.Root];
+    while (dirs.length) {
+      let dir = dirs.pop();
+      for (const file of dir.files) {
+        if (file.isUnsaved) {
+          let model = this.models.get(file.GetFullName());
+          file.content = model.getValue();
+          file.isUnsaved = false;
+        }
+        if (file.specialFile) {
+          file.children.forEach((f) => {
+            if (f.isUnsaved) {
+              let model = this.models.get(f.GetFullName());
+              f.content = model.getValue();
+              f.isUnsaved = false;
+            }
+          });
+        }
+      }
+      dirs.push(...dir.directories);
+    }
+    store.dispatch("VirtualFileSystem/SaveRoot");
+  }
+
+  /**
    * 配置右键菜单和快捷键
    */
   ConfigureContextMenuAndShortcut() {
@@ -275,7 +303,6 @@ export default class Editor {
 
     // F5 运行
     this.editor.addCommand(monaco.KeyCode.F5, () => {
-      this.Save();
       let event = new KeyboardEvent("keydown", { key: "F5" });
       window.dispatchEvent(event);
     });

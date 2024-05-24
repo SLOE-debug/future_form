@@ -5,7 +5,13 @@ import File from "@/Core/VirtualFileSystem/File";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import CompareFile from "@/Core/VirtualFileSystem/CompareFile";
 import { editor } from "@/CoreUI/Editor/EditorPage";
-import { FlatRoot, GetParentByDirectory, GetParentByFile, IsDirectory } from "@/Utils/VirtualFileSystem/Index";
+import {
+  BackupRoot,
+  FlatRoot,
+  GetParentByDirectory,
+  GetParentByFile,
+  IsDirectory,
+} from "@/Utils/VirtualFileSystem/Index";
 
 type IDirectory = VritualFileSystemDeclare.IDirectory;
 type IFile = VritualFileSystemDeclare.IFile;
@@ -37,14 +43,14 @@ export type VirtualFileSystemState = {
 };
 
 export type SearchTree = {
-  label : string,
-  expand : boolean,
-  path : string,
-  content : string,
-  suffix : string,
-  selected : boolean,
-  children : {label:string,path:string,content_a:string,content_b:string,selected : boolean}[]
-}
+  label: string;
+  expand: boolean;
+  path: string;
+  content: string;
+  suffix: string;
+  selected: boolean;
+  children: { label: string; path: string; content_a: string; content_b: string; selected: boolean }[];
+};
 
 const state: VirtualFileSystemState = {
   Root: root,
@@ -115,52 +121,70 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
     state.CurrentDirectory = parent;
   },
   //搜索方法
-  async SearchContent({state,dispatch},text){
-    if(!state.Root.files) return null;
+  async SearchContent({ state, dispatch }, text) {
+    if (!state.Root.files) return null;
 
-    var fileArr = state.Root.files.filter(e=>e.content.includes(text)) as IFile[];
-    var treeArr = fileArr.map(e=>{ return {label:e.name,suffix:e.suffix,expand:true,selected:false,path:e.path,content:e.content,children:[]} }) as SearchTree[];
-    
-    fileArr.forEach(async e=>{
-      if(e.children){
-        await dispatch("SearchChildrenFun", {text,fileArr:e.children,treeArr});
+    var fileArr = state.Root.files.filter((e) => e.content.includes(text)) as IFile[];
+    var treeArr = fileArr.map((e) => {
+      return {
+        label: e.name,
+        suffix: e.suffix,
+        expand: true,
+        selected: false,
+        path: e.path,
+        content: e.content,
+        children: [],
+      };
+    }) as SearchTree[];
+
+    fileArr.forEach(async (e) => {
+      if (e.children) {
+        await dispatch("SearchChildrenFun", { text, fileArr: e.children, treeArr });
       }
     });
 
-    treeArr.forEach(t=>{
+    treeArr.forEach((t) => {
       // 通过 split('\n') 将代码字符串拆分成每一行
-      const lines = t.content.split('\n');
+      const lines = t.content.split("\n");
       // 遍历每一行
       lines.forEach(async (line, index) => {
-          // 判断当前行是否包含目标字符
-          if (line.includes(text)) {
-              const lastOccurrence = line.lastIndexOf(text); // 获取最后一次出现的位置
-              const content_a = line.substring(0, lastOccurrence); // 从开头截取到最后一次出现的位置
-              const content_b = line.substring(lastOccurrence+text.length); // 从最后一次出现的位置截取到结尾
-         
-              t.children.push({
-                label : text,
-                path : index+1+'',
-                content_a,
-                content_b,
-                selected : false,
-              });
-          }
+        // 判断当前行是否包含目标字符
+        if (line.includes(text)) {
+          const lastOccurrence = line.lastIndexOf(text); // 获取最后一次出现的位置
+          const content_a = line.substring(0, lastOccurrence); // 从开头截取到最后一次出现的位置
+          const content_b = line.substring(lastOccurrence + text.length); // 从最后一次出现的位置截取到结尾
+
+          t.children.push({
+            label: text,
+            path: index + 1 + "",
+            content_a,
+            content_b,
+            selected: false,
+          });
+        }
       });
     });
 
     return treeArr;
   },
   //搜索子项方法
-  async SearchChildrenFun({state,dispatch},{text,fileArr,treeArr}){
-    if(fileArr){
-      fileArr = fileArr.filter(e=>e.content.includes(text)) as IFile[];
-      fileArr.forEach(f => {
-        treeArr.push({label:f.name,suffix:f.suffix,expand:true,selected:false,path:f.path,content:f.content,children:[]});
+  async SearchChildrenFun({ state, dispatch }, { text, fileArr, treeArr }) {
+    if (fileArr) {
+      fileArr = fileArr.filter((e) => e.content.includes(text)) as IFile[];
+      fileArr.forEach((f) => {
+        treeArr.push({
+          label: f.name,
+          suffix: f.suffix,
+          expand: true,
+          selected: false,
+          path: f.path,
+          content: f.content,
+          children: [],
+        });
       });
 
-      fileArr.forEach(async e=>{
-        await dispatch("SearchChildrenFun", {text,fileArr:e.children,treeArr});
+      fileArr.forEach(async (e) => {
+        await dispatch("SearchChildrenFun", { text, fileArr: e.children, treeArr });
       });
     }
   },
@@ -233,6 +257,9 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
 
     state.Root = root;
     state.CurrentDirectory = root;
+
+    // 备份Root
+    BackupRoot(root);
 
     // 切换 editor 版本
     editor.SwitchVersion();

@@ -1,6 +1,9 @@
 import store from "@/Vuex/Store";
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import { App } from "vue";
+import pako from "pako";
+import VirtualFileSystem from "@/Apis/VirtualFileSystem";
+import DataSource from "@/Apis/DataSource";
 
 type ApiConfigItem = {
   url: string;
@@ -22,7 +25,7 @@ export type Api<T> = {
   [K in keyof T]: (data?: any, extraData?: any) => Promise<Response>;
 };
 
-export const GlobalApi: Api<any> = {};
+export const GlobalApi: Api<typeof VirtualFileSystem & typeof DataSource> = {} as any;
 
 /**
  * 将url中的 :id 替换为 data 中的 id
@@ -47,16 +50,18 @@ function InstallAxiosConfig(name: string, apiConfig: ApiConfigItem, AxiosConfig:
         ...(apiConfig.headers || {}),
         // Authorization: "Bearer " + store.get.Token,
         // 每次请求携带客户端的唯一ID
-        "X-Client-Id": store.get.Window.ClientId,
+        // "X-Client-Id": store.get.Window.ClientId,
+        // gzip 压缩
+        "Content-Encoding": "gzip",
       },
     };
 
     switch (apiConfig.method) {
       case "POST":
-        newConfig.data = data;
+        newConfig.data = pako.gzip(JSON.stringify(data));
         break;
       case "PUT":
-        newConfig.data = extraData;
+        newConfig.data = pako.gzip(JSON.stringify(extraData));
         newConfig.url += `/${data}`;
         break;
       default:

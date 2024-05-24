@@ -1,4 +1,5 @@
-import { CloneStruct, GetFields, GetParams, GetTables } from "@/Utils/Designer/Designer";
+import {  GetFields, GetParams, GetTables } from "@/Utils/Designer/Designer";
+import { CloneStruct } from "@/Utils/Index";
 import {
   ElForm,
   ElFormItem,

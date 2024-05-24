@@ -30,7 +30,7 @@ export default class SubWindowControl extends Control {
     if (!this.$Store.get.Designer.Debug || this.$Store.get.Designer.Preview) {
       let id = this.config.subWindowId;
       // 从服务器懒加载这个文件，并将其安装到当前浏览器中
-      await Compiler.LazyLoad(id);
+      await Compiler.GetPublishFile(id, "fileId");
       let url = Compiler.fileId2BlobUrlMap.get(id);
       // 动态加载子窗体
       import(/* webpackIgnore: true */ url).then(async (m) => {

@@ -1,37 +1,44 @@
 export default {
-  // 保存根目录
+  /**
+   * 保存根目录
+   */
   SaveRoot: {
     method: "POST",
     url: "VirtualFile/SaveRoot",
   },
-  // 获取根目录
+  /**
+   * 获取根目录
+   */
   GetRoot: {
     method: "GET",
     url: "VirtualFile/GetRoot",
   },
-  // 获取指定版本的根目录
+  /**
+   * 获取指定版本的根目录
+   */
   GetRootByVersion: {
     method: "GET",
     url: "VirtualFile/GetRootByVersion",
   },
-  // 通过文件ID获取历史版本列表
+  /**
+   * 通过文件ID获取历史版本列表
+   */
   GetVersions: {
     method: "GET",
     url: "VirtualFile/GetVersions",
   },
-  // 发布
+  /**
+   * 发布
+   */
   Publish: {
     method: "POST",
     url: "VirtualFile/Publish",
   },
-  // 通过文件ID获取发布的文件
-  GetPublishFileByFileId: {
+  /**
+   * 通过文件ID获取发布的文件
+   */
+  GetPublishFile: {
     method: "GET",
-    url: "VirtualFile/GetPublishFileByFileId",
-  },
-  // 通过文件绝对路径获取发布的文件
-  GetPublishFileByFullPath: {
-    method: "GET",
-    url: "VirtualFile/GetPublishFileByFullPath",
+    url: "VirtualFile/GetPublishFile",
   },
 };

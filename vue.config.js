@@ -3,6 +3,8 @@ const MonacoWebpackPlugin = require("monaco-editor-webpack-plugin");
 const AutoImport = require("unplugin-auto-import/webpack");
 const Components = require("unplugin-vue-components/webpack");
 const { ElementPlusResolver } = require("unplugin-vue-components/resolvers");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
+const CompressionPlugin = require("compression-webpack-plugin");
 
 module.exports = {
   publicPath: "./",
@@ -38,6 +40,21 @@ module.exports = {
       }),
       Components({
         resolvers: [ElementPlusResolver()],
+      }),
+      new CopyWebpackPlugin({
+        patterns: [
+          {
+            from: path.resolve("src/Plugins/Pwa/serviceWorker.js"),
+            to: path.resolve("dist/serviceWorker.js"),
+          },
+        ],
+      }),
+      new CompressionPlugin({
+        filename: "[path][base].gz", // 生成的文件名
+        algorithm: "gzip", // 使用 gzip 压缩
+        test: /\.(js|css|html|svg)$/, // 匹配要压缩的文件类型
+        threshold: 10240, // 只处理大于 10KB 的文件
+        minRatio: 0.8, // 压缩比例小于 0.8 的文件才会被压缩
       }),
       // new BundleAnalyzerPlugin(),
     ],
