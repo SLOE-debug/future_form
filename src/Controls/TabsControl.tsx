@@ -9,6 +9,7 @@ import { Guid } from "@/Utils/Index";
 import { ElIcon } from "element-plus";
 import { defineAsyncComponent } from "vue";
 import { Component, Provide, Watch } from "vue-facing-decorator";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type TabsConfig = ControlDeclare.TabsConfig;
@@ -25,7 +26,7 @@ export default class TabsControl extends Control {
 
   @Watch("config.value")
   valueChange() {
-    this.$Store.get.Designer.Debug && this.$Store.dispatch("RenderControlConfigurator");
+    this.$Store.get.Designer.Debug && this.$Store.dispatch("Designer/RenderControlConfigurator");
   }
 
   Drop(e: DragEvent) {
@@ -40,7 +41,10 @@ export default class TabsControl extends Control {
 
     this.config.$children.push(config);
     this.$nextTick(() => {
-      this.$Store.dispatch("Designer/AddStack", new Stack(this.$refs[config.name] as Control, null, null, StackAction.Create));
+      this.$Store.dispatch(
+        "Designer/AddStack",
+        new Stack(this.$refs[config.name] as Control, null, null, StackAction.Create)
+      );
     });
     e.stopPropagation();
   }
@@ -153,12 +157,7 @@ export default class TabsControl extends Control {
                     e.stopPropagation();
                   }}
                 >
-                  <ElIcon size={14}>
-                    {() => {
-                      let icon = this.$.appContext.components["ArrowLeft"];
-                      return <icon></icon>;
-                    }}
-                  </ElIcon>
+                  <FontAwesomeIcon icon="angle-left" style={{ fontSize: "14px" }} />
                 </div>
                 <div
                   class={css.navNext}
@@ -174,12 +173,7 @@ export default class TabsControl extends Control {
                     e.stopPropagation();
                   }}
                 >
-                  <ElIcon size={14}>
-                    {() => {
-                      let icon = this.$.appContext.components["ArrowRight"];
-                      return <icon></icon>;
-                    }}
-                  </ElIcon>
+                  <FontAwesomeIcon icon="angle-right" style={{ fontSize: "14px" }} />
                 </div>
               </>
             )}
@@ -198,8 +192,11 @@ export default class TabsControl extends Control {
                   >
                     {t.name}
                     {this.$Store.get.Designer.Debug && (
-                      <ElIcon
-                        color={this.config.value == t.id ? "white" : "#606266"}
+                      <FontAwesomeIcon
+                        icon="circle-xmark"
+                        style={{
+                          color: this.config.value == t.id ? "white" : "#606266",
+                        }}
                         {...{
                           onClick: (e: MouseEvent) => {
                             let index = this.config.tabs.findIndex((m) => m.id == t.id);
@@ -207,12 +204,7 @@ export default class TabsControl extends Control {
                             e.stopPropagation();
                           },
                         }}
-                      >
-                        {() => {
-                          let icon = this.$.appContext.components["CircleCloseFilled"];
-                          return <icon></icon>;
-                        }}
-                      </ElIcon>
+                      />
                     )}
                   </div>
                 ))}
@@ -221,9 +213,11 @@ export default class TabsControl extends Control {
           {this.$Store.get.Designer.Debug && (
             <>
               <div class={css.btns} style={{ width: this.BtnsWidth - 5 + "px" }}>
-                <ElIcon
-                  size={18}
+                <div
                   {...{
+                    style: {
+                      fontSize: "14px",
+                    },
                     onClick: async (e: MouseEvent) => {
                       this.config.tabs.push({ id: Guid.NewGuid(), name: "Tab", visible: true });
                       this.ShouldAddScrollbar();
@@ -231,25 +225,23 @@ export default class TabsControl extends Control {
                     },
                   }}
                 >
-                  {() => {
-                    let icon = this.$.appContext.components["Plus"];
-                    return <icon></icon>;
-                  }}
-                </ElIcon>
-                <ElIcon
-                  size={20}
-                  v-html={require(`!!raw-loader!@/Assets/Icons/Svg/GruopMove.svg`).default}
-                  style={{
-                    cursor: "move",
-                  }}
+                  <FontAwesomeIcon icon="plus" />
+                </div>
+                <div
                   {...{
+                    style: {
+                      fontSize: "14px",
+                      cursor: "move",
+                    },
                     onMousedown: (e: MouseEvent) => {
                       this.Pick(e);
                       this.BeginAdjust(e);
                     },
                     "data-type": "Move",
                   }}
-                ></ElIcon>
+                >
+                  <FontAwesomeIcon icon="up-down-left-right" />
+                </div>
               </div>
               <div
                 class={css.fold}
@@ -263,12 +255,10 @@ export default class TabsControl extends Control {
                   this.headHide = !this.headHide;
                 }}
               >
-                <ElIcon size={10}>
-                  {() => {
-                    let icon = this.$.appContext.components["ArrowUp"];
-                    return <icon></icon>;
-                  }}
-                </ElIcon>
+                <FontAwesomeIcon
+                  icon={"angle-up"}
+                  style={{ fontSize: "10px", transform: this.headHide ? "rotate(180deg)" : "rotate(0deg)" }}
+                />
               </div>
             </>
           )}

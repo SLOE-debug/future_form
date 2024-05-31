@@ -42,16 +42,6 @@ export type VirtualFileSystemState = {
   CurrentVersion: string;
 };
 
-export type SearchTree = {
-  label: string;
-  expand: boolean;
-  path: string;
-  content: string;
-  suffix: string;
-  selected: boolean;
-  children: { label: string; path: string; content_a: string; content_b: string; selected: boolean }[];
-};
-
 const state: VirtualFileSystemState = {
   Root: root,
   CurrentDirectory: root,

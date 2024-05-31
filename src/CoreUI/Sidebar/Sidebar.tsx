@@ -80,7 +80,7 @@ export default class Sidebar extends Vue {
   }
 
   async Key_Delete() {
-    if (this.$Store.get.Designer.Active) return;
+    if (this.$Store.get.Designer.Active || this.activeTab != "project") return;
 
     ((await this.$Store.dispatch("VirtualFileSystem/GetCurrentEntity")) as IDirectory | IFile).Delete();
   }

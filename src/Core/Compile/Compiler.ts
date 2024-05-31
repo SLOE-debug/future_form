@@ -58,11 +58,12 @@ export default class Compiler {
     // 编译所有模块
     for (let i = 0; i < models.length; i++) {
       const m = models[i];
-      // 获取文件的语言
-      let language = m.getLanguageId();
-      if (language == "sql" && debug) continue;
 
       let file = editor.model2File.get(m);
+
+      // 获取文件的语言
+      let language = m.getLanguageId();
+      if ((language == "sql" && debug) || !file) continue;
 
       // 对比备份的Root
       // 如果 file 的 content 和 extraData 和备份的一样
@@ -239,12 +240,15 @@ export default class Compiler {
   // PWA 的文件缓存URL前缀
   static readonly PWA_CACHE_URL_PREFIX = process.env.VUE_APP_API_BASE_URL + "VirtualFile/GetPublishFile";
 
+  // cacheName
+  static readonly CACHE_NAME = "api-cache-v1";
+
   /**
    * 更新PWA的文件缓存
    */
   static async UpdateFileCache(updateFiles: Array<{ fileId: string; fullPath: string }>) {
     for (const file of updateFiles) {
-      let cache = await caches.open("api-cache-v1");
+      let cache = await caches.open(Compiler.CACHE_NAME);
       let url = Compiler.PWA_CACHE_URL_PREFIX + "?fileId=" + file.fileId;
       let response = await cache.match(url);
       // 如果缓存中没有该文件，则匹配 fullPath
@@ -260,6 +264,41 @@ export default class Compiler {
         await cache.delete(response.url);
       }
     }
+  }
+
+  /**
+   * 检查更新
+   */
+  static async CheckUpdate() {
+    try {
+      let cache = await caches.open(Compiler.CACHE_NAME);
+      let keys = await cache.keys();
+      let checkId2UrlMap = {};
+      for (const key of keys) {
+        let response = await cache.match(key);
+        let file = (await response.json()).data as CompiledFile;
+        if (file) {
+          checkId2UrlMap[file["id"]] = {
+            url: key.url,
+            fileId: file.fileId,
+          };
+        }
+      }
+
+      // 文件ID列表
+      let param = Object.keys(checkId2UrlMap);
+      console.log("检查更新", param);
+
+      // 存在更新的文件列表
+      let updateFileIds = (await GlobalApi.CheckUpdate(param)).data as string[];
+      for (const id of updateFileIds) {
+        let { url, fileId } = checkId2UrlMap[id];
+        console.log("存在更新", url);
+
+        Compiler.DeleteFile(fileId);
+        await cache.delete(url);
+      }
+    } catch {}
   }
 
   /**

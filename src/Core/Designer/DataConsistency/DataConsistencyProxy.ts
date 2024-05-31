@@ -92,6 +92,12 @@ function SynchroData(object: object) {
   }
 }
 
+/**
+ * 数据一致性代理创建
+ * @param _object 源对象
+ * @param setter 设置器
+ * @returns 代理对象
+ */
 export function DataConsistencyProxyCreator<T extends object>(
   _object: T,
   setter?: (m: T, propName: string | symbol, nv: any, ov: any) => void

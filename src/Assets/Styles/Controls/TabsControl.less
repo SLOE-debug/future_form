@@ -58,7 +58,7 @@
           &:first-child {
             transition: 0.3s;
           }
-          :global(.el-icon) {
+          :global(.svg-inline--fa) {
             transform: scale(0);
             transition: 0.3s;
             margin-left: 5px;
@@ -66,7 +66,7 @@
           }
           &:hover {
             color: #409eff;
-            :global(.el-icon) {
+            :global(.svg-inline--fa) {
               transform: scale(1);
               margin-right: -10px;
             }
@@ -90,10 +90,16 @@
       display: flex;
       align-items: center;
       margin-right: 5px;
+      color: #898b91;
+      @size: 20px;
       > * {
-        padding: 2px;
+        width: @size;
+        height: @size;
         border: 1px solid #dcdfe6;
         margin: 0 2px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
         > svg {
           pointer-events: none;
         }
@@ -127,16 +133,16 @@
         width: 4px;
         height: 4px;
       }
-    
+
       &::-webkit-scrollbar-track {
         background-color: #f1f1f1;
       }
-    
+
       &::-webkit-scrollbar-thumb {
         background-color: #409eff;
         border-radius: 100px;
       }
-    
+
       &::-webkit-scrollbar-thumb:hover {
         background-color: #9dceff;
       }

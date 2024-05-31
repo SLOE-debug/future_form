@@ -109,6 +109,7 @@ export default class DataSourceGroupControl extends Control {
                 this.BeginAdjust(e);
               },
               "data-type": "Move",
+              "data-control": true,
             }}
           />
         )}
@@ -152,22 +153,9 @@ export default class DataSourceGroupControl extends Control {
       this.diffData.set(m, data);
     }
 
-    // switch (data["#DataType"]) {
-    //   case "Insert":
-    //     data[`@Insert#${p}`] = nv;
-    //     delete data[p];
-    //     break;
-    //   case "Delete":
-    //     break;
-    //   default:
-    //     data[`@Modify#${p}`] = nv;
-    //     data[p] = ov;
-    //     break;
-    // }
-
     data[p] = nv;
     // 如果没有任何标记，则标记为修改
-    if (!data[ControlDeclare.DataStatusField]) {
+    if (data[ControlDeclare.DataStatusField] == undefined) {
       data[ControlDeclare.DataStatusField] = ControlDeclare.DataStatus.Edit;
       // 记录原始数据
       data[`#${p}`] = ov;
@@ -303,7 +291,7 @@ export default class DataSourceGroupControl extends Control {
     return res;
   }
 
-  async SaveSource(sender: Control) {
+  async SaveSource(sender: ControlConfig) {
     if (!this.Validate()) return;
 
     let data;
@@ -319,9 +307,9 @@ export default class DataSourceGroupControl extends Control {
     this.Save(sender, data);
   }
 
-  private async Save(sender: Control, data: any[]) {
+  private async Save(sender: ControlConfig, data: any[]) {
     if (this.diffData.size) {
-      if (sender) sender.config.loading = true;
+      if (sender) sender.loading = true;
       try {
         let response;
 
@@ -352,7 +340,7 @@ export default class DataSourceGroupControl extends Control {
       } catch (error) {
         ElMessage({ message: "保存数据出错，请联系系统管理员！", type: "error" });
       } finally {
-        if (sender) sender.config.loading = false;
+        if (sender) sender.loading = false;
       }
     }
   }

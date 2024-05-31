@@ -108,20 +108,35 @@ export class BaseWindow {
    * @param container 控件容器
    */
   private BindControlInstance(config: ControlDeclare.ControlConfig, instance, container) {
-    for (let i = 0; i < config.$children.length; i++) {
-      let c = config.$children[i];
+    // 如果有子控件，则优先选用子控件
+    let children = config.items || config.$children;
+    let isItems = !!config.items;
+
+    for (let i = 0; i < children.length; i++) {
+      let c = children[i];
       instance[c.name] = c;
       // 为了验证方便，将控件的引用挂载到窗体实例上
       instance.$refs[c.name] = container.$refs[c.name];
 
+      // 获取当前控件配置的所有事件，例如：onLoad、onClick等
       let eventNames = Object.keys(c).filter((k) => k.slice(0, 2) == "on");
+      // 遍历事件，绑定事件
       for (let i = 0; i < eventNames.length; i++) {
+        // 事件名称，例如：onLoad、onClick等
         let name = eventNames[i];
+        // 事件处理函数，例如：btn_1_onClickEvent 等
         let controlEvent = c[name].toString();
-        if (controlEvent && instance[controlEvent] && Object.prototype.hasOwnProperty.call(container.$refs, c.name))
-          container.$refs[c.name].events[name] = instance[controlEvent].bind(instance);
+        // 如果controlEvent存在，且instance中存在该函数，且container中存在该控件的引用，则绑定事件
+        if (controlEvent && instance[controlEvent] && Object.prototype.hasOwnProperty.call(container.$refs, c.name)) {
+          let events = container.$refs[c.name].events;
+          // 如果是items，则使用item对象的events，否则使用控件的events，例如：FormControl.events
+          if (!events && isItems) events = c.events;
+
+          events[name] = instance[controlEvent].bind(instance);
+        }
       }
-      if (c.$children?.length && Object.prototype.hasOwnProperty.call(container.$refs, c.name)) {
+
+      if ((c.$children?.length || c.items?.length) && Object.prototype.hasOwnProperty.call(container.$refs, c.name)) {
         this.BindControlInstance(c, instance, container.$refs[c.name]);
       }
     }

@@ -163,6 +163,12 @@ export namespace ControlDeclare {
     data: any[];
     multiple: boolean;
     highlightColumn: boolean;
+    // 添加行
+    AddRow?: (object?: object) => void;
+    // 删除选中行
+    DeleteSelectedRow?: () => void;
+    // 选中行
+    SelectRow?: (index: number) => void;
   } & ControlConfig;
 
   export enum DataStatus {
@@ -170,6 +176,47 @@ export namespace ControlDeclare {
     Edit = 1,
     Delete = 2,
   }
+
+  export type ToolStripConfig = {
+    // 字体大小
+    fontSize: number;
+    // 停靠位置
+    dock: "top" | "bottom" | "left" | "right" | "none";
+    // 项
+    items: {
+      type: "button" | "label" | "select" | "split";
+      name: string;
+      width: number;
+      height: number;
+
+      // 文本和按钮
+      text: string;
+
+      // 按钮
+      showTextWidth?: number;
+      showTextHeight?: number;
+      icon?: string;
+      customIcon?: string;
+      iconSize?: number;
+
+      // 下拉框
+      placeholder?: string;
+      options?: { label: string; value: string }[];
+      value?: string;
+
+      // 是否选中
+      checked?: boolean;
+      // 事件函数对象
+      events: any;
+
+      // 事件
+      [x: string]: any;
+    }[];
+    // 按钮是否显示文本
+    showText: boolean;
+    // 是否显示区分的线
+    showSplit: boolean;
+  } & ControlConfig;
 
   // 数据状态标记属性名
   export const DataStatusField = "_status__$";

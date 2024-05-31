@@ -77,7 +77,7 @@ export default class Entity extends Vue {
             transform: this.directory.spread ? "rotate(90deg)" : "rotate(0deg)",
             transition: "transform 0.15s",
           }}
-        ></FontAwesomeIcon>
+        />
       );
     } else {
       let entity = this.entity as IFile;
@@ -233,11 +233,9 @@ export default class Entity extends Vue {
                     this.$refs.version.GetVersions(this.entity.id);
                   },
                 }}
-              ></FontAwesomeIcon>
+              />
             )}
-            {this.entity.isProtected && (
-              <FontAwesomeIcon icon={"lock"} class={css.lock} title="不可删除和重命名的"></FontAwesomeIcon>
-            )}
+            {this.entity.isProtected && <FontAwesomeIcon icon={"lock"} class={css.lock} title="不可删除和重命名的" />}
           </div>
         </div>
         {this.RenderSubDirectory()}

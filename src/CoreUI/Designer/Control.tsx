@@ -411,9 +411,17 @@ export default class Control extends DataSourceControl {
   }
 
   Cancel(e: MouseEvent) {
+    // 判断当前 e.target 的 data-control 是不是为 true
+    let isControl = (e.target as HTMLElement).dataset.control == "true";
+
     if (e.button != 0 || !this.$Store.get.Designer.Debug) return;
 
-    if (this.adjustType == ControlDeclare.AdjustType.Move && this.selected) {
+    if (
+      this.adjustType == ControlDeclare.AdjustType.Move &&
+      this.selected &&
+      !isControl &&
+      this.config.type != "ToolStrip"
+    ) {
       let rect = (this.$Store.get.Designer.$FormDesigner.$el as HTMLDivElement).getBoundingClientRect();
       let containers = this.GetAllContainer(this.$Store.get.Designer.FormConfig).reverse();
       let { clientX: x, clientY: y } = e;
@@ -596,7 +604,7 @@ export default class Control extends DataSourceControl {
           this.error = false;
         }}
         onClick={(e) => {
-          this.events.onClick && this.events.onClick(this, e);
+          this.events.onClick && this.events.onClick(this.config, e);
         }}
       >
         {

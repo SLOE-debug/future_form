@@ -25,7 +25,7 @@ export default class OptionsConfigurator extends Vue {
         >
           <ElButton
             type="primary"
-            icon="Plus"
+            icon={() => <FontAwesomeIcon icon="plus" />}
             style={{ float: "right", marginBottom: "10px" }}
             onClick={(e) => {
               let option = { label: "选项", value: "值" };
@@ -68,7 +68,7 @@ export default class OptionsConfigurator extends Vue {
           </ElTable>
         </ElDialog>
         <ElButton circle onClick={(_) => (this.visible = true)}>
-          {{ icon: () => <FontAwesomeIcon icon="gear"></FontAwesomeIcon> }}
+          {{ icon: () => <FontAwesomeIcon icon="gear" /> }}
         </ElButton>
       </>
     );

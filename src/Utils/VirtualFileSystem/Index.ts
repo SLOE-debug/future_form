@@ -178,6 +178,7 @@ export function FlatRoot(root: IDirectory) {
         suffix: m.suffix,
         isProtected: m.isProtected,
       };
+      
       files.push(file);
     }
   }

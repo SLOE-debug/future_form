@@ -30,6 +30,7 @@ export default class Home extends Vue {
       body: true,
       target: "body",
     });
+    await Compiler.CheckUpdate();
     let file = await Compiler.GetStartupFile();
     Compiler.Install(file);
     loading.close();
@@ -71,6 +72,11 @@ export default class Home extends Vue {
   }
 
   render() {
-    return <WindowCollection></WindowCollection>;
+    return (
+      <>
+        <div class={css.bg}>林达刘案件管理系统</div>
+        <WindowCollection></WindowCollection>
+      </>
+    );
   }
 }

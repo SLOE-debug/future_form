@@ -41,4 +41,11 @@ export default {
     method: "GET",
     url: "VirtualFile/GetPublishFile",
   },
+  /**
+   * 检查更新
+   */
+  CheckUpdate: {
+    method: "POST",
+    url: "VirtualFile/CheckUpdate",
+  },
 };

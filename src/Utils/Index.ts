@@ -18,14 +18,14 @@ export function BindEventContext(eventHandlers: EventHandlers, context: any) {
   }
 }
 
+/**
+ * 首字母大写
+ * @param str 字符串
+ * @returns 首字母大写的字符串
+ */
 export function CapitalizeFirstLetter(str: string) {
   if (!str || !str.length) return "";
   return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-export function GetLocalStorage(key: string) {
-  let json = localStorage.getItem(key);
-  return json ? JSON.parse(json) : null;
 }
 
 export const Guid = {
@@ -53,7 +53,7 @@ export function Debounce(wait: number) {
 }
 
 /**
- * 克隆结构
+ * 克隆对象
  * @param obj 对象
  * @returns 新对象
  */

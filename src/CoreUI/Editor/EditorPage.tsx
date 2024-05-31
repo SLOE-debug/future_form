@@ -84,7 +84,7 @@ export default class EditorPage extends Vue {
   RenderTabItemIcon(m: IFile) {
     let icon = null;
     if (m.isUnsaved && !m.showClose) {
-      icon = <FontAwesomeIcon icon={"circle"} class={css.unsaved}></FontAwesomeIcon>;
+      icon = <FontAwesomeIcon icon={"circle"} class={css.unsaved} />;
     }
 
     if (!icon && (m.selected || m.showClose)) {
@@ -100,7 +100,7 @@ export default class EditorPage extends Vue {
               e.stopPropagation();
             },
           }}
-        ></FontAwesomeIcon>
+        />
       );
     }
 

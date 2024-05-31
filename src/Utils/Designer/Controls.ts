@@ -3,7 +3,6 @@ import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import store from "@/Vuex/Store";
 import { GetFields } from "./Designer";
 import { GetAllSqlFiles } from "../VirtualFileSystem/Index";
-import { UtilsDeclare } from "@/Types/UtilsDeclare";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceControlConfig = ControlDeclare.DataSourceControlConfig;
@@ -27,6 +26,7 @@ export const ControlAlias = {
   SubWindow: "swin",
   Tabs: "tab",
   Table: "tbl",
+  ToolStrip: "tsp",
 };
 
 /**

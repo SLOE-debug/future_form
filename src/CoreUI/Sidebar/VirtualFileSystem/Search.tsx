@@ -1,17 +1,24 @@
 import SvgIcon from "@/Components/SvgIcon";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { suffix2Color } from "@/Utils/VirtualFileSystem/Index";
-import { SearchTree } from "@/Vuex/Modules/VirtualFileSystem";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ElInput } from "element-plus";
 import { Component, Vue } from "vue-facing-decorator";
 type IFile = VritualFileSystemDeclare.IFile;
 type IDirectory = VritualFileSystemDeclare.IDirectory;
 
+type SearchTree = {
+  label: string;
+  expand: boolean;
+  path: string;
+  content: string;
+  suffix: string;
+  selected: boolean;
+  children: { label: string; path: string; content_a: string; content_b: string; selected: boolean }[];
+};
+
 @Component
 export default class Search extends Vue {
-  created() {}
-
   searchText = "";
   searchRes: SearchTree[] = [];
 

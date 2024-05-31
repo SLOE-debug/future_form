@@ -154,15 +154,19 @@ export default class Configurator extends Vue {
    * @param ref 引用对象
    * @param key 键
    */
-  AppendOrLocateMethod(m: ConfiguratorItem, ref: object, key: string) {
+  AppendOrLocateMethod(m: ConfiguratorItem, ref: any, key: string) {
     if (!GetDesignerBackgroundFile()) {
       ElMessage.error("无效操作，当前选择的文件与设计器无关！");
       return;
     }
     if (!ref[key]) {
-      let methodName = `${m.config.name}_${key}Event`;
+      let obj = m.config;
+      // 如果配置项不等于ref，则使用ref（如ToolStripConfig的items）
+      if (m.config != ref) obj = ref;
+      let methodName = `${obj.name}_${key}Event`;
 
-      let params = [{ name: "sender", type: "any" }];
+      let type = m.config.type;
+      let params = [{ name: "sender", type: `${type}Config` }];
       params.concat(
         m.paramTypes?.map(({ 0: name, 1: type }) => {
           return { name, type };

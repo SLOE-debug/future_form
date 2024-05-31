@@ -124,7 +124,7 @@ export default class ColumnsConfigurator extends Vue {
               this.AddColumn();
             }}
           >
-            {{ icon: () => <FontAwesomeIcon icon="plus"></FontAwesomeIcon>, default: () => "新建" }}
+            {{ icon: () => <FontAwesomeIcon icon="plus" />, default: () => "新建" }}
           </ElButton>
           <ElTable data={this.columns} maxHeight="50vh">
             <ElTableColumn property="title" label="标题" width={160}>
@@ -196,7 +196,7 @@ export default class ColumnsConfigurator extends Vue {
                         if (i > 0) [this.columns[i], this.columns[i - 1]] = [this.columns[i - 1], this.columns[i]];
                       }}
                     >
-                      {{ icon: () => <FontAwesomeIcon icon="arrow-up"></FontAwesomeIcon> }}
+                      {{ icon: () => <FontAwesomeIcon icon="arrow-up" /> }}
                     </ElButton>
                     <ElButton
                       size="small"
@@ -205,7 +205,7 @@ export default class ColumnsConfigurator extends Vue {
                           [this.columns[i], this.columns[i + 1]] = [this.columns[i + 1], this.columns[i]];
                       }}
                     >
-                      {{ icon: () => <FontAwesomeIcon icon="arrow-down"></FontAwesomeIcon> }}
+                      {{ icon: () => <FontAwesomeIcon icon="arrow-down" /> }}
                     </ElButton>
                     <ElPopconfirm
                       confirm-button-text="确认"
@@ -226,7 +226,7 @@ export default class ColumnsConfigurator extends Vue {
           </ElTable>
         </ElDialog>
         <ElButton circle onClick={(_) => (this.visible = true)}>
-          {{ icon: () => <FontAwesomeIcon icon="gear"></FontAwesomeIcon> }}
+          {{ icon: () => <FontAwesomeIcon icon="gear" /> }}
         </ElButton>
       </>
     );
@@ -318,7 +318,7 @@ export class ColumnOptionsConfigurator extends Vue {
           }}
         >
           {{
-            icon: () => <FontAwesomeIcon icon="plus"></FontAwesomeIcon>,
+            icon: () => <FontAwesomeIcon icon="plus" />,
             default: () => "新建",
           }}
         </ElButton>
@@ -340,7 +340,7 @@ export class ColumnOptionsConfigurator extends Vue {
               return (
                 <ElButton type="danger">
                   {{
-                    icon: () => <FontAwesomeIcon icon="trash"></FontAwesomeIcon>,
+                    icon: () => <FontAwesomeIcon icon="trash" />,
                     default: () => "删除",
                   }}
                 </ElButton>
@@ -412,7 +412,7 @@ export class ColumnOptionsConfigurator extends Vue {
           }}
         >
           {{
-            icon: () => <FontAwesomeIcon icon="gear"></FontAwesomeIcon>,
+            icon: () => <FontAwesomeIcon icon="gear" />,
           }}
         </ElButton>
       </>
