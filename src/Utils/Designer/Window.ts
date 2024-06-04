@@ -1,5 +1,5 @@
 import { EventDeclare } from "@/Types/EventDeclare";
-import { WinGlobal } from "./Form";
+import { globalVariate } from "./Form";
 
 // type BarKit = EventDeclare.BarKit;
 

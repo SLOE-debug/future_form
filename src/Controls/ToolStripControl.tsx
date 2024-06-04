@@ -37,11 +37,6 @@ export default class ToolStripControl extends Control {
       type: "select",
       icon: "caret-down",
     },
-    {
-      label: "下拉按钮",
-      type: "dropdown",
-      icon: "square-caret-down",
-    },
   ];
 
   // type2Alias
@@ -149,6 +144,9 @@ export default class ToolStripControl extends Control {
     );
   }
 
+  // item 的 checked WeakMap
+  itemCheckedMap = new WeakMap();
+
   /**
    * 渲染工具条的items
    */
@@ -244,15 +242,15 @@ export default class ToolStripControl extends Control {
         // 显示配置
         itemJsx = (
           <div
-            class={item.checked ? css.debugFlag : ""}
+            class={this.itemCheckedMap.get(item) ? css.debugFlag : ""}
             style={{
               color: this.config.color,
             }}
             onClick={(e) => {
               this.config.items.forEach((i) => {
-                i.checked = false;
+                this.itemCheckedMap.set(i, false);
               });
-              item.checked = true;
+              this.itemCheckedMap.set(item, true);
               this.$Store.dispatch("Designer/RenderControlConfigurator", this);
               e.activity = false;
             }}
@@ -274,6 +272,12 @@ export default class ToolStripControl extends Control {
           color: this.config.color,
           fontSize: this.config.fontSize + "px",
         }}
+        onClick={(e) => {
+          if (e.activity == false) return;
+          this.config.items.forEach((item) => {
+            this.itemCheckedMap.set(item, false);
+          });
+        }}
       >
         {this.RenderItems()}
         {/* 如果是debug模式，显示配置 */}
@@ -281,19 +285,14 @@ export default class ToolStripControl extends Control {
       </div>
     );
     jsx.props.style.backgroundColor = this.config.bgColor;
-    jsx.props.onClick = (e: MouseEvent) => {
-      if (e.activity == false) return;
-      this.config.items.forEach((item) => {
-        item.checked = false;
-      });
-    };
+
     this.SetStyleByDock(jsx.props.style);
     return jsx;
   }
 
   Delete(pushStack = true) {
     // 如果当前的 items 中有选中的项，则删除选中的项
-    let index = this.config.items.findIndex((item) => item.checked);
+    let index = this.config.items.findIndex((item) => this.itemCheckedMap.get(item));
     if (index >= 0) {
       this.config.items.splice(index, 1);
     } else {
@@ -419,7 +418,7 @@ function GetButtonProps(item: any) {
   ];
 }
 
-export function GetProps(instance: ToolStripConfig) {
+export function GetProps(config: ToolStripConfig, instance: ToolStripControl) {
   let base = baseProps.filter((item) => item.field != "width" && item.field != "height");
   const fieldMap: ConfiguratorItem[] = [
     ...base,
@@ -461,7 +460,7 @@ export function GetProps(instance: ToolStripConfig) {
   ];
 
   // 获取当前选中的子控件
-  const item = instance.items.find((item) => item.checked);
+  const item = config.items.find((item) => instance.itemCheckedMap.get(item));
   switch (item?.type) {
     case "button":
       fieldMap.push(

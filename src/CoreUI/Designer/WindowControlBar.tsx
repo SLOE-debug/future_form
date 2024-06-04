@@ -1,17 +1,14 @@
 import SvgIcon from "@/Components/SvgIcon";
 import { WindowDeclare } from "@/Types/WindowDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
-import { BindEventContext, CapitalizeFirstLetter, RegisterEvent } from "@/Utils/Index";
-import { ElIcon, ElInput, ElSelectV2 } from "element-plus";
+import { BindEventContext, RegisterEvent } from "@/Utils/Index";
 import { Component, Prop, Provide, Vue, Watch } from "vue-facing-decorator";
-import { EventDeclare } from "@/Types/EventDeclare";
-import FormControl from "@/Controls/FormControl";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { JSX } from "vue/jsx-runtime";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { ElOption, ElSelect } from "element-plus";
+import { globalVariate } from "@/Utils/Designer/Form";
 
 type Coord = UtilsDeclare.Coord;
-
 type ControlConfig = ControlDeclare.ControlConfig;
 
 @Component
@@ -238,6 +235,32 @@ export default class WindowControlBar extends Vue {
     );
   }
 
+  /**
+   * 窗体标题栏左侧控件组
+   */
+  RenderTitleBarControls() {
+    return (
+      <div class={css.titleBarControls}>
+        {/* 案号下拉框 */}
+        <ElSelect
+          filterable
+          placeholder="请输入案号"
+          {...{
+            onDblclick: (e) => {
+              e.stopPropagation();
+            },
+          }}
+          style={{
+            width: "150px",
+          }}
+          v-model={globalVariate.ref_no}
+        >
+          <ElOption label="案号" value="1"></ElOption>
+        </ElSelect>
+      </div>
+    );
+  }
+
   contentLoading = true;
   render() {
     let window = (
@@ -257,6 +280,7 @@ export default class WindowControlBar extends Vue {
             if (this.showMaximize) this.maximize = !this.maximize;
           }}
         >
+          {this.RenderTitleBarControls()}
           {this.title}
           {this.RenderBarButtons()}
         </div>

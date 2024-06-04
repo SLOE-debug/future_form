@@ -45,6 +45,9 @@ export namespace ControlDeclare {
     [x: string]: any;
   };
 
+  /**
+   * 基本的数据源控件配置，包含数据源、显示字段、数据字段、参数
+   */
   export type DataSourceControlConfig = {
     dataSource?: string;
     displayField?: string[];
@@ -68,11 +71,14 @@ export namespace ControlDeclare {
     optionRight: number;
   } & ControlConfig;
 
+  /**
+   * 数据源组配置
+   */
   export type DataSourceGroupConfig = {
     sourceName: string;
     sourceType: "Form" | "List";
-    GetSource: (params?: any) => any;
-    SaveSource: (sender: any) => any;
+    SaveSource?(sender: any): any;
+    SharedData?(control: any): any;
   } & ControlConfig;
 
   export type DateConfig = {
@@ -228,8 +234,16 @@ export namespace ControlDeclare {
     tabs: TabItem[];
   } & ControlConfig;
 
+  // 全局变量对象
+  export type GlobalVariate = {
+    [x: string]: any;
+  };
+
   export abstract class BaseWindow {
     constructor(id: string) {}
+
+    $refs: any;
+    GlobalVariate: GlobalVariate;
     Show(): void {}
     ShowDialog(): void {}
     Alert(message: string, type: "success" | "warning" | "info" | "error" = "info", duration: number = 3000): void {}

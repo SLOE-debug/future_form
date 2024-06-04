@@ -5,11 +5,6 @@ import { UtilsDeclare } from "@/Types/UtilsDeclare";
 
 import { ElMessage } from "element-plus";
 import { Component, Provide } from "vue-facing-decorator";
-import {
-  DataConsistencyProxyCreator,
-  DataLink,
-  EstablishLink,
-} from "@/Core/Designer/DataConsistency/DataConsistencyProxy";
 import TableControl from "./TableControl";
 import { defineAsyncComponent } from "vue";
 import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
@@ -22,6 +17,7 @@ import {
 import { CloneStruct } from "@/Utils/Index";
 import { Guid } from "@/Utils/Index";
 import { GetAllSqlFiles, GetFileById } from "@/Utils/VirtualFileSystem/Index";
+import { TwoWayBinding } from "@/Utils/Designer/Form";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceGroupConfig = ControlDeclare.DataSourceGroupConfig;
@@ -136,46 +132,8 @@ export default class DataSourceGroupControl extends Control {
     );
   }
 
-  /**
-   * 跟踪属性变化
-   * @param m 对象
-   * @param p 属性名称
-   * @param nv 新值
-   * @param ov 旧值
-   * @returns
-   */
-  TrackPropertyChange(m, p, nv, ov) {
-    if (p == "$__check__$" || nv == ov) return;
-    let data = this.diffData.get(m);
-    if (!data) {
-      data = CloneStruct(m);
-      delete data.$__check__$;
-      this.diffData.set(m, data);
-    }
-
-    data[p] = nv;
-    // 如果没有任何标记，则标记为修改
-    if (data[ControlDeclare.DataStatusField] == undefined) {
-      data[ControlDeclare.DataStatusField] = ControlDeclare.DataStatus.Edit;
-      // 记录原始数据
-      data[`#${p}`] = ov;
-    }
-  }
-
-  /**
-   * 同步数据
-   * @param m 对象
-   * @param p 属性名称
-   * @param nv 新值
-   * @param ov 旧值
-   */
-  SyncTrack(m, p, nv, ov) {
-    this.TrackPropertyChange(m, p, nv, ov);
-    if (this.sharedControl) this.sharedControl.TrackPropertyChange(m, p, nv, ov);
-  }
-
   async GetSource(param: any) {
-    let res;
+    let res: { data: any };
     if (this.$Store.get.Designer.Preview) {
       let sqlFile = GetFileById(this.config.sourceName);
 
@@ -187,31 +145,64 @@ export default class DataSourceGroupControl extends Control {
     } else {
       res = await this.$Api.GetDataSourceGroupData({
         id: this.config.sourceName,
-        // param: { [this.config.sourceName]: param || {} },
         args: param || {},
       });
     }
 
-    switch (this.config.sourceType) {
-      case "List":
-        // for (let i = 0; i < 20000; i++) {
-        //   res.data.push(CloneStruct(res.data[0]));
-        // }
-        this.data = res.data.map((m) => {
-          return DataConsistencyProxyCreator(m, this.SyncTrack.bind(this));
-        });
-        break;
-      case "Form":
-        if (res.data.length) this.data = DataConsistencyProxyCreator(res.data[0], this.SyncTrack.bind(this));
-        break;
-    }
-    this[`Fill${this.config.sourceType}`]();
+    // 清空差异数据
+    this.diffData = new Map();
+    this.data = res.data;
+    this.PopulateData();
   }
 
-  data: any;
+  // 输出差异数据的定时器
+  outputDiffDataTimer: NodeJS.Timeout;
+
+  /**
+   * 根据类型填充数据
+   */
+  PopulateData() {
+    switch (this.config.sourceType) {
+      case "List":
+        this.SetTableData();
+        break;
+      case "Form":
+        this.SetFormData();
+        break;
+    }
+
+    if (!this.outputDiffDataTimer)
+      this.outputDiffDataTimer = setInterval(() => {
+        console.log(this.config.name, this.diffData);
+      }, 1000 * 2);
+  }
+
+  // 数据源数据被修改时的数据差异集合
   diffData: Map<any, any> = new Map();
-  FillList() {
-    this.diffData = new Map();
+
+  /**
+   * 更新数据差异，参数：对象，字段，新值，旧值
+   */
+  UpdateDiffData(obj: any, field: string, newValue: any, oldValue: any) {
+    if (!this.diffData.has(obj)) this.diffData.set(obj, CloneStruct(obj));
+    let data = this.diffData.get(obj);
+    if (data[field] == newValue) return;
+    data[field] = newValue;
+
+    data[ControlDeclare.DataStatusField] = data[ControlDeclare.DataStatusField] || ControlDeclare.DataStatus.Edit;
+    // 如果没有旧值，则添加旧值
+    if (Object.prototype.hasOwnProperty.call(data, `#${field}`) == false) data[`#${field}`] = oldValue;
+
+    // 如果有共享控件，则更新共享控件的数据
+    this.sharedControl && this.sharedControl.UpdateDiffData(obj, field, newValue, oldValue);
+  }
+
+  // 当前数据源数据
+  data: any;
+  /**
+   * 填充列表数据
+   */
+  private SetTableData() {
     let table = this.config.$children.find((c) => c.type == "Table") as TableConfig;
     if (table) {
       let control = this.$refs[table.name] as TableControl;
@@ -219,45 +210,62 @@ export default class DataSourceGroupControl extends Control {
     }
   }
 
-  dataLinks: DataLink[] = [];
-  FillForm() {
-    this.dataLinks?.forEach((l) => l.UnLink());
-    this.dataLinks = [];
+  // 双向绑定监听列表
+  twoWayBindingList: Function[] = [];
+  /**
+   * 填充表单数据
+   */
+  private SetFormData() {
+    this.twoWayBindingList.forEach((stop) => stop());
+    this.twoWayBindingList = [];
 
-    this.FillChildren(this.config);
+    if (this.data.length) this.PopulateChildControls(this.config);
   }
 
-  FillChildren(config: ControlConfig) {
-    for (let i = 0; i < config.$children.length; i++) {
-      let field = config.$children[i].sourceField;
+  // 当类型为 Form 时，填充的数据对象索引
+  populateIndex = 0;
 
-      if (!!field) {
-        if (this.data && field in this.data) {
-          config.$children[i] = DataConsistencyProxyCreator(config.$children[i]);
-          this.dataLinks.push(EstablishLink(config.$children[i], "value", this.data, field));
-          switch (config.$children[i].type) {
-            case "Number":
-              config.$children[i].value = this.data[field];
-              break;
-            default:
-              config.$children[i].value = this.data[field]?.toString();
-              break;
-          }
+  /**
+   * 填充子控件的数据
+   */
+  private PopulateChildControls(config: ControlConfig) {
+    let data = this.data[this.populateIndex];
+
+    for (const c of config.$children) {
+      let field = c.sourceField;
+      if (field) {
+        if (data && field in data) {
+          c.value = this.FormatValue(data[field], c.type);
+          const stop = TwoWayBinding.call(this, c, "value", data, field);
+          this.twoWayBindingList.push(stop);
         } else {
-          config.$children[i].value = undefined;
+          c.value = undefined;
         }
-      } else if (config.$children[i].$children?.length) {
-        this.FillChildren(config.$children[i] as ControlConfig);
+      } else if (c.$children?.length) {
+        this.PopulateChildControls(c);
       }
     }
   }
 
-  get _SharedData() {
-    return this.config.sourceType == "Form" ? this.data : this.data?.find((m) => m.$__check__$);
+  /**
+   * 格式化字段值
+   */
+  private FormatValue(value: any, type: string) {
+    if (value == null) return value;
+    switch (type) {
+      case "Number":
+        return Number(value);
+      case "Date":
+        return new Date(value);
+      default:
+        return value?.toString();
+    }
   }
 
-  sharedControl: DataSourceGroupControl;
-  SharedData(control: DataSourceGroupControl) {
+  /**
+   * 验证共享数据控件
+   */
+  private ValidateSharedDataControl(control: DataSourceGroupControl) {
     if (!control) {
       ElMessage({ message: "被共享的控件不存在，请检查控件名称！", type: "error" });
       return;
@@ -266,19 +274,42 @@ export default class DataSourceGroupControl extends Control {
       ElMessage({ message: "无法向非数据源控件共享数据！", type: "error" });
       return;
     }
+    return true;
+  }
+
+  // 共享的关联控件，A 中是 B，B 中是 A
+  sharedControl: DataSourceGroupControl;
+  /**
+   * 共享数据
+   * @param control 目标控件
+   * @returns
+   */
+  SharedData(control: DataSourceGroupControl) {
+    if (!this.ValidateSharedDataControl(control)) return;
     this.sharedControl = control;
-    this.FillSharedData();
+    // 互相引用
+    control.sharedControl = this;
+
+    console.log("开始共享数据");
+    console.log(`当前控件：${this.config.name}，共享控件：${control.config.name}`);
+
+    // 如果 data 为空，则报错
+    if (!this.data) {
+      ElMessage({ message: "当前数据源组数据为空，无法共享数据（请检查数据源是否已获取完成）！", type: "error" });
+      return;
+    }
+
+    // 赋值 data
+    control.data = this.data;
+    // 填充被共享控件的数据
+    control.PopulateData();
   }
 
-  FillSharedData() {
-    if (!this.sharedControl) return;
-    this.sharedControl.data = this._SharedData;
-    this.sharedControl.diffData = new Map();
-    if (this.sharedControl.config.sourceType == "Form") this.sharedControl.FillForm();
-    else this.sharedControl.FillList();
-  }
-
-  Validate() {
+  /**
+   * 保存时验证表单
+   * @returns 是否验证通过
+   */
+  private Validate() {
     let res = true;
     for (const c of this.config.$children) {
       let result = (this.parentFormControl.instance.$refs[c.name] as Control)?.Verify();
@@ -293,83 +324,78 @@ export default class DataSourceGroupControl extends Control {
 
   async SaveSource(sender: ControlConfig) {
     if (!this.Validate()) return;
-
-    let data;
-    switch (this.config.sourceType) {
-      case "Form":
-        data = [this.diffData.values().next().value];
-        break;
-      case "List":
-        data = Array.from(this.diffData.values());
-        break;
-    }
-
+    let data = this.GetSaveDataBySourceType();
     this.Save(sender, data);
   }
 
+  /**
+   * 根据数据源类型获取要保存的数据
+   */
+  GetSaveDataBySourceType() {
+    switch (this.config.sourceType) {
+      case "Form":
+        return [this.diffData.values().next().value];
+      case "List":
+        return Array.from(this.diffData.values());
+      default:
+        return [];
+    }
+  }
+
+  /**
+   * 保存数据
+   * @param sender 发送者
+   * @param data 要保存的数据
+   */
   private async Save(sender: ControlConfig, data: any[]) {
-    if (this.diffData.size) {
-      if (sender) sender.loading = true;
-      try {
-        let response;
+    if (!this.diffData.size) return;
+    if (sender) sender.loading = true;
+    try {
+      let response = await this.SaveData(data);
+      const res = response.data;
 
-        if (this.$Store.get.Designer.Preview) {
-          let sqlFile = GetFileById(this.config.sourceName);
-          response = await this.$Api.SaveDataSourceGroupDataInDebug({
-            sql: sqlFile.content,
-            tableName: sqlFile.extraData.table,
-            fields: sqlFile.extraData.fields,
-            primaryFields: sqlFile.extraData.primaryFields,
-            data,
-          });
-        } else {
-          response = await this.$Api.SaveDataSourceGroupData({
-            id: this.config.sourceName,
-            data,
-          });
-        }
-
-        const res = response.data;
-
-        if (res.success) {
-          this.diffData = new Map();
-          ElMessage({ message: "保存成功！", type: "success" });
-        } else {
-          ElMessage({ message: res.message, type: "error", dangerouslyUseHTMLString: true });
-        }
-      } catch (error) {
-        ElMessage({ message: "保存数据出错，请联系系统管理员！", type: "error" });
-      } finally {
-        if (sender) sender.loading = false;
+      if (res.success) {
+        this.diffData = new Map();
+        ElMessage({ message: "保存成功！", type: "success" });
+      } else {
+        ElMessage({ message: res.message, type: "error", dangerouslyUseHTMLString: true });
       }
+    } catch (error) {
+      ElMessage({ message: "保存数据出错，请联系系统管理员！", type: "error" });
+    } finally {
+      if (sender) sender.loading = false;
+    }
+  }
+
+  /**
+   * 保存数据
+   */
+  private async SaveData(data: any[]) {
+    if (this.$Store.get.Designer.Preview) {
+      let sqlFile = GetFileById(this.config.sourceName);
+      return await this.$Api.SaveDataSourceGroupDataInDebug({
+        sql: sqlFile.content,
+        tableName: sqlFile.extraData.table,
+        fields: sqlFile.extraData.fields,
+        primaryFields: sqlFile.extraData.primaryFields,
+        data,
+      });
+    } else {
+      return await this.$Api.SaveDataSourceGroupData({
+        id: this.config.sourceName,
+        data,
+      });
     }
   }
 
   unmounted() {
     this.sharedControl = null;
-    this.dataLinks.forEach((l) => l.UnLink());
-    this.dataLinks = null;
+
+    this.twoWayBindingList.forEach((stop) => stop());
+    this.twoWayBindingList = null;
+
     this.data = null;
   }
-
-  // DeclarationPatch() {
-  //   if (this.config.sourceName) {
-  //     let source = this.$Store.get.Designer.FormSources.find((s) => s.name == this.config.sourceName);
-
-  //     let declare = `{ \n\t\tSaveSource(sender: any): Promise<void>`;
-
-  //     if (source?.params.length)
-  //       declare += `\n\t\tGetSource(data: { ${source.params.map((p) => {
-  //         return `${p.name}: ${p.type};`;
-  //       })} }): Promise<void>\n`;
-  //     else declare += `\n\t\tGetSource(): Promise<void>\n`;
-
-  //     declare += `\t\tSharedData(control: any);`;
-  //     declare += `\n\t}`;
-  //     return declare;
-  //   }
-  //   return "";
-  // }
 
   static GetDefaultConfig(): DataSourceGroupConfig {
     return {
@@ -380,8 +406,6 @@ export default class DataSourceGroupControl extends Control {
       sourceName: "",
       sourceType: "Form",
       readonly: false,
-      GetSource: null,
-      SaveSource: null,
     };
   }
 }

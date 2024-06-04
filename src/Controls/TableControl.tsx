@@ -27,7 +27,6 @@ import DataSourceGroupControl from "./DataSourceGroupControl";
 import { baseProps, baseEvents } from "@/Utils/Designer/Controls";
 import { EventDeclare } from "@/Types/EventDeclare";
 import { Guid } from "@/Utils/Index";
-import { DataConsistencyProxyCreator } from "@/Core/Designer/DataConsistency/DataConsistencyProxy";
 import { toRaw } from "vue";
 import { GetFileById } from "@/Utils/VirtualFileSystem/Index";
 
@@ -468,7 +467,13 @@ export default class TableControl extends Control {
   ChangeSharedData() {
     if (this.GetParentDataSourceGroupControl()) {
       let parent = this.$parent as DataSourceGroupControl;
-      parent.FillSharedData();
+      let sharedControl = parent.sharedControl;
+      // 如果有共享控件，则同步数据，因为在渲染第一个数据源控件时，第二个数据源控件还没有渲染，所以初次会出现sharedControl为null的情况
+      if (sharedControl) {
+        // 更改共享控件在作为表单填充时的数据索引
+        sharedControl.populateIndex = this.config.data.findIndex((m) => m.$__check__$);
+        sharedControl && sharedControl.PopulateData();
+      }
     }
   }
 
@@ -519,19 +524,17 @@ export default class TableControl extends Control {
     // }
     // object["#DataType"] = "Insert";
 
-    let data = DataConsistencyProxyCreator(
-      object,
-      this.parentDataSourceControl.SyncTrack.bind(this.parentDataSourceControl)
-    );
+    // let data = DataConsistencyProxyCreator(
+    //   object,
+    //   this.parentDataSourceControl.SyncTrack.bind(this.parentDataSourceControl)
+    // );
+
+    let data = object;
     // 添加新增标记
     data[ControlDeclare.DataStatusField] = ControlDeclare.DataStatus.New;
 
     this.config.data.push(data);
   }
-
-  // DeclarationPatch() {
-  //   return `{ \n\t\tSelectRow(i: number): void;\n\t\tDeleteSelectedRow(): Promise<void>;\n\t\tAddRow(object?: object): void;\n\t }`;
-  // }
 
   rowEventHandlerParams: RowEventHandlerParams = {
     rowIndex: -1,

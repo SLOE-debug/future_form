@@ -1,15 +1,56 @@
 import FormControl from "@/Controls/FormControl";
-import { DataConsistencyProxyCreator } from "@/Core/Designer/DataConsistency/DataConsistencyProxy";
 import store from "@/Vuex/Store";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import Compiler from "@/Core/Compile/Compiler";
-// import { EventDeclare } from "@/Types/EventDeclare";
+import { reactive, watch } from "vue";
+import DataSourceGroupControl from "@/Controls/DataSourceGroupControl";
 
-// type BarKit = EventDeclare.BarKit;
-type WindowGlobalVariate = any;
+type GlobalVariate = ControlDeclare.GlobalVariate;
 
-export const WinGlobal: WindowGlobalVariate = DataConsistencyProxyCreator({ ref_no: "", wideScreen: true });
+export const globalVariate: GlobalVariate = reactive({ ref_no: "" });
 
+/**
+ * 数据双向绑定
+ * @param obj1 对象1
+ * @param prop1 属性1
+ * @param obj2 对象2
+ * @param prop2 属性2
+ */
+export function TwoWayBinding(obj1, prop1, obj2, prop2) {
+  const stopWatch1 = watch(
+    () => obj1[prop1],
+    (value) => {
+      // 在属性值修改时，触发事件，旧值应该取obj2的值，因为前者是vue的响应式对象，他已经在UI上更新了
+      PropertyChange.call(this, obj2, prop2, value, obj2[prop2]);
+      obj2[prop2] = value;
+    }
+  );
+  const stopWatch2 = watch(
+    () => obj2[prop2],
+    (value) => {
+      // 同理，旧值应该取obj1的值
+      PropertyChange.call(this, obj2, prop2, value, obj1[prop1]);
+      obj1[prop1] = value;
+    }
+  );
+
+  return () => {
+    stopWatch1();
+    stopWatch2();
+  };
+}
+
+/**
+ * 属性值修改时，触发事件
+ */
+export function PropertyChange(m, p, nv, ov) {
+  const ctor = this.$options.__vfdConstructor;
+  if (ctor === DataSourceGroupControl) (this as DataSourceGroupControl).UpdateDiffData(m, p, nv, ov);
+}
+
+/**
+ * 窗体基类
+ */
 export class BaseWindow {
   /**
    * 窗体配置
@@ -21,9 +62,6 @@ export class BaseWindow {
    */
   $refs: { [x: string]: any } = {};
 
-  // // 窗体控制条上的按钮组
-  // barKit: EventDeclare.BarKit[] = [];
-
   // 窗体ID
   id: string;
 
@@ -34,6 +72,9 @@ export class BaseWindow {
   constructor(_id: string) {
     this.id = _id;
   }
+
+  // 全局变量对象
+  GlobalVariate = globalVariate;
 
   // 是否已经加载过窗体的Config
   isLoaded: boolean = false;

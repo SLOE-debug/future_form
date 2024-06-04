@@ -49,7 +49,6 @@ export default class FormControl extends Control {
   }
 
   instance: {
-    // $Window: FormControl;
     $refs: any;
     Dispose: () => void;
   };

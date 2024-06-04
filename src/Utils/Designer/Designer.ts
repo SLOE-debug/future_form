@@ -6,11 +6,12 @@ import store from "@/Vuex/Store";
 import * as ts from "typescript";
 import { editor } from "@/CoreUI/Editor/EditorPage";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
-import { GetDesignerBackgroundFile, GetParentByFile } from "../VirtualFileSystem/Index";
+import { GetDesignerBackgroundFile, GetFileById, GetParentByFile } from "../VirtualFileSystem/Index";
 
 type IFile = VritualFileSystemDeclare.IFile;
 
 type ControlConfig = ControlDeclare.ControlConfig;
+type DataSourceGroupConfig = ControlDeclare.DataSourceGroupConfig;
 
 /**
  * 创建控件通过拖拽事件
@@ -237,44 +238,54 @@ export function GetTables(sql: string) {
 }
 
 /**
- * 向设计器代码添加控件声明
+ * 数据源控件附加的类型声明
  */
-export function AddControlDeclareToDesignerCode(config: ControlConfig) {
+function DataSourceControlTypeDeclare(config: DataSourceGroupConfig) {
+  // 附加的声明
+  let declare = " & { GetSource(";
+
+  // 通过 config.sourceName 获取引用的sql文件
+  let sqlFile = GetFileById(config.sourceName);
+  if (!sqlFile) return "";
+  let params = sqlFile.extraData.params as { name: string; type: string }[];
+  if (params.length == 0) {
+    declare += "): any; }";
+  } else {
+    declare += "params: { ";
+    for (let i = 0; i < params.length; i++) {
+      declare += `${params[i].name}: ${params[i].type};`;
+    }
+    declare += " }): any; }";
+  }
+  return declare;
+}
+
+/**
+ * 处理控件声明的通用函数
+ */
+function transformPageClass(transformer: (members: ts.ClassElement[]) => ts.ClassElement[]) {
   let pageCode = store.get.VirtualFileSystem.CurrentFile.content;
   let sourceFile = ts.createSourceFile("page.ts", pageCode, ts.ScriptTarget.ESNext, true);
-  const visitor =
-    (context: ts.TransformationContext) =>
-    (rootNode: ts.Node): ts.Node => {
+
+  function visitor(context: ts.TransformationContext) {
+    return function (rootNode: ts.Node): ts.Node {
       function visit(node: ts.Node): ts.Node {
         if (ts.isClassDeclaration(node) && node.name?.text === "Page") {
-          const typeRefNode = ts.factory.createTypeReferenceNode(
-            ts.factory.createIdentifier(`${config.type}Config`),
-            undefined
-          );
-
-          // 创建一个新的属性声明
-          const newMember = ts.factory.createPropertyDeclaration(
-            undefined, // 修饰符
-            config.name, // 属性名
-            undefined, // 类型注解
-            typeRefNode, // 类型
-            undefined // 初始化器
-          );
-
-          // 返回一个新的类声明，包含新的成员
+          const newMembers = transformer(node.members as unknown as ts.ClassElement[]);
           return ts.factory.updateClassDeclaration(
             node,
             node.modifiers,
             node.name,
             node.typeParameters,
             node.heritageClauses,
-            [...node.members, newMember] // 添加新成员
+            newMembers
           );
         }
         return ts.visitEachChild(node, visit, context);
       }
       return ts.visitNode(rootNode, visit);
     };
+  }
 
   const result = ts.transform(sourceFile, [visitor]);
   const printer = ts.createPrinter();
@@ -284,92 +295,43 @@ export function AddControlDeclareToDesignerCode(config: ControlConfig) {
   store.get.VirtualFileSystem.CurrentFile.content = printedResult;
 
   editor.RefreshModel(store.get.VirtualFileSystem.CurrentFile);
+}
+
+/**
+ * 向设计器代码添加控件声明
+ */
+export function AddControlDeclareToDesignerCode(config: ControlConfig) {
+  transformPageClass((members) => {
+    let identifier = `${config.type}Config`;
+    if (config.type === "DataSourceGroup") {
+      identifier += DataSourceControlTypeDeclare(config as DataSourceGroupConfig);
+    }
+    const typeRefNode = ts.factory.createTypeReferenceNode(ts.factory.createIdentifier(identifier), undefined);
+    const newMember = ts.factory.createPropertyDeclaration(undefined, config.name, undefined, typeRefNode, undefined);
+    return [...members, newMember];
+  });
 }
 
 /**
  * 向设计器代码更新控件声明
  */
 export function UpdateControlDeclareToDesignerCode(oldName: string, config: ControlConfig) {
-  let pageCode = store.get.VirtualFileSystem.CurrentFile.content;
-  let sourceFile = ts.createSourceFile("page.ts", pageCode, ts.ScriptTarget.ESNext, true);
-  const visitor =
-    (context: ts.TransformationContext) =>
-    (rootNode: ts.Node): ts.Node => {
-      function visit(node: ts.Node): ts.Node {
-        if (ts.isClassDeclaration(node) && node.name?.text === "Page") {
-          const typeRefNode = ts.factory.createTypeReferenceNode(
-            ts.factory.createIdentifier(`${config.type}Config`),
-            undefined
-          );
-
-          // 创建一个新的属性声明
-          const newMember = ts.factory.createPropertyDeclaration(
-            undefined, // 修饰符
-            config.name, // 属性名
-            undefined, // 类型注解
-            typeRefNode, // 类型
-            undefined // 初始化器
-          );
-
-          debugger;
-          // 返回一个新的类声明，包含新的成员
-          return ts.factory.updateClassDeclaration(
-            node,
-            node.modifiers,
-            node.name,
-            node.typeParameters,
-            node.heritageClauses,
-            [...node.members.filter((m) => m.name?.getText() != oldName), newMember] // 添加新成员
-          );
-        }
-        return ts.visitEachChild(node, visit, context);
-      }
-      return ts.visitNode(rootNode, visit);
-    };
-
-  const result = ts.transform(sourceFile, [visitor]);
-  const printer = ts.createPrinter();
-
-  const transformedSourceFile = result.transformed[0];
-  const printedResult = printer.printFile(transformedSourceFile as ts.SourceFile);
-  store.get.VirtualFileSystem.CurrentFile.content = printedResult;
-
-  editor.RefreshModel(store.get.VirtualFileSystem.CurrentFile);
+  transformPageClass((members) => {
+    let identifier = `${config.type}Config`;
+    if (config.type === "DataSourceGroup") {
+      identifier += DataSourceControlTypeDeclare(config as DataSourceGroupConfig);
+    }
+    const typeRefNode = ts.factory.createTypeReferenceNode(ts.factory.createIdentifier(identifier), undefined);
+    const newMember = ts.factory.createPropertyDeclaration(undefined, config.name, undefined, typeRefNode, undefined);
+    return [...members.filter((m) => m.name?.getText() != oldName), newMember];
+  });
 }
 
 /**
  * 向设计器代码删除控件声明
  */
 export function RemoveControlDeclareToDesignerCode(name: string) {
-  let pageCode = store.get.VirtualFileSystem.CurrentFile.content;
-  let sourceFile = ts.createSourceFile("page.ts", pageCode, ts.ScriptTarget.ESNext, true);
-  const visitor =
-    (context: ts.TransformationContext) =>
-    (rootNode: ts.Node): ts.Node => {
-      function visit(node: ts.Node): ts.Node {
-        if (ts.isClassDeclaration(node) && node.name?.text === "Page") {
-          return ts.factory.updateClassDeclaration(
-            node,
-            node.modifiers,
-            node.name,
-            node.typeParameters,
-            node.heritageClauses,
-            node.members.filter((m) => m.name?.getText() != name)
-          );
-        }
-        return ts.visitEachChild(node, visit, context);
-      }
-      return ts.visitNode(rootNode, visit);
-    };
-
-  const result = ts.transform(sourceFile, [visitor]);
-  const printer = ts.createPrinter();
-
-  const transformedSourceFile = result.transformed[0];
-  const printedResult = printer.printFile(transformedSourceFile as ts.SourceFile);
-  store.get.VirtualFileSystem.CurrentFile.content = printedResult;
-
-  editor.RefreshModel(store.get.VirtualFileSystem.CurrentFile);
+  transformPageClass((members) => members.filter((m) => m.name?.getText() != name));
 }
 
 /**

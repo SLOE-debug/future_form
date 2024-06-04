@@ -186,9 +186,11 @@ export default class Control extends DataSourceControl {
           this.disableStack = false;
         });
       } else {
-        if (nv.name != ov.name) {
+        // 如果是名称/数据源变更，都需要更新设计器的代码，以便在设计器的“后台”文件中使用最新的代码声明，前者是为了变量的引用统一，后者是为了数据源的获取参数统一
+        if (nv.name != ov.name || nv.sourceName != ov.sourceName) {
           UpdateControlDeclareToDesignerCode(this.watchOldValue.name, nv);
         }
+
         await this.$Store.dispatch("Designer/AddStack", new Stack(this, nv, this.watchOldValue));
       }
 
