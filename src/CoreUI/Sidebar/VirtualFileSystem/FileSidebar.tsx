@@ -274,6 +274,8 @@ export default class FileSidebar extends Vue {
 
       await Compiler.Compile(false, this.isPublishAll);
 
+      console.log(Compiler.CompiledFiles);
+
       if (!this.isPublishAll && Compiler.CompiledFiles.length === 0) {
         ElMessage.warning("没有要发布的文件，请查看是否有修改的文件！");
         return;

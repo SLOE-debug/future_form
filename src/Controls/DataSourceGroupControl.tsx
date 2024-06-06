@@ -6,7 +6,7 @@ import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { ElMessage } from "element-plus";
 import { Component, Provide } from "vue-facing-decorator";
 import TableControl from "./TableControl";
-import { defineAsyncComponent } from "vue";
+import { defineAsyncComponent, watch } from "vue";
 import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import { baseProps, baseEvents } from "@/Utils/Designer/Controls";
 import {
@@ -181,20 +181,60 @@ export default class DataSourceGroupControl extends Control {
   diffData: Map<any, any> = new Map();
 
   /**
+   * 获取或创建差异数据
+   */
+  GetOrCreateDiffData(obj: any) {
+    let data = this.diffData.get(obj);
+    if (!data) {
+      data = CloneStruct(obj);
+      // 删除 Table 控件中用于选中的字段，以保持数据的干净
+      delete data.$__check__$;
+
+      this.diffData.set(obj, data);
+    }
+    return data;
+  }
+
+  /**
+   * 修改数据差异的数据状态
+   */
+  UpdateDataStatus(obj: any, status: ControlDeclare.DataStatus, originControlName?: string) {
+    let data = this.GetOrCreateDiffData(obj);
+
+    // 如果新状态是删除，并且旧状态是新增，则直接删除数据
+    if (
+      status == ControlDeclare.DataStatus.Delete &&
+      data[ControlDeclare.DataStatusField] == ControlDeclare.DataStatus.New
+    ) {
+      this.diffData.delete(obj);
+    }
+
+    data[ControlDeclare.DataStatusField] = status;
+
+    // 如果有共享控件，并且不是共享控件发起的更新，则将数据同步到共享控件
+    this.sharedControl && !originControlName && this.sharedControl.UpdateDataStatus(obj, status, this.config.name);
+  }
+
+  /**
    * 更新数据差异，参数：对象，字段，新值，旧值
    */
-  UpdateDiffData(obj: any, field: string, newValue: any, oldValue: any) {
-    if (!this.diffData.has(obj)) this.diffData.set(obj, CloneStruct(obj));
-    let data = this.diffData.get(obj);
-    if (data[field] == newValue) return;
+  UpdateDiffData(obj: any, field: string, newValue: any, oldValue: any, originControlName?: string) {
+    let data = this.GetOrCreateDiffData(obj);
     data[field] = newValue;
 
-    data[ControlDeclare.DataStatusField] = data[ControlDeclare.DataStatusField] || ControlDeclare.DataStatus.Edit;
-    // 如果没有旧值，则添加旧值
-    if (Object.prototype.hasOwnProperty.call(data, `#${field}`) == false) data[`#${field}`] = oldValue;
+    // 如果没有数据状态字段，则认为是编辑状态
+    if (data[ControlDeclare.DataStatusField] == undefined) {
+      data[ControlDeclare.DataStatusField] = ControlDeclare.DataStatus.Edit;
+      // 初次将添加旧值
+      if (Object.prototype.hasOwnProperty.call(data, `#${field}`) == false) {
+        data[`#${field}`] = oldValue;
+      }
+    }
 
-    // 如果有共享控件，则更新共享控件的数据
-    this.sharedControl && this.sharedControl.UpdateDiffData(obj, field, newValue, oldValue);
+    // 如果有共享控件，并且不是共享控件发起的更新，则将数据同步到共享控件
+    this.sharedControl &&
+      !originControlName &&
+      this.sharedControl.UpdateDiffData(obj, field, newValue, oldValue, this.config.name);
   }
 
   // 当前数据源数据
@@ -206,6 +246,20 @@ export default class DataSourceGroupControl extends Control {
     let table = this.config.$children.find((c) => c.type == "Table") as TableConfig;
     if (table) {
       let control = this.$refs[table.name] as TableControl;
+
+      // 循环 data 为 data 创建 双向绑定 watch
+      for (const d of this.data) {
+        for (const key in d) {
+          let stopWatch = watch(
+            () => d[key],
+            (newValue, oldValue) => {
+              this.UpdateDiffData(d, key, newValue, oldValue);
+            }
+          );
+          this.twoWayBindingList.push(stopWatch);
+        }
+      }
+
       control.SetData(this.data);
     }
   }

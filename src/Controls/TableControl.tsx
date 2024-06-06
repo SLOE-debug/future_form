@@ -11,9 +11,7 @@ import {
   ElInput,
   ElInputNumber,
   ElMessageBox,
-  ElOption,
   ElPopover,
-  ElSelect,
   ElSelectV2,
   ElTableV2,
   ElTooltip,
@@ -26,9 +24,11 @@ import { Component } from "vue-facing-decorator";
 import DataSourceGroupControl from "./DataSourceGroupControl";
 import { baseProps, baseEvents } from "@/Utils/Designer/Controls";
 import { EventDeclare } from "@/Types/EventDeclare";
-import { Guid } from "@/Utils/Index";
-import { toRaw } from "vue";
+import { CapitalizeFirstLetter, Guid } from "@/Utils/Index";
 import { GetFileById } from "@/Utils/VirtualFileSystem/Index";
+import { globalCache } from "@/Utils/Caches";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { watch } from "vue";
 
 type ColumnItem = ControlDeclare.ColumnItem;
 type TableConfig = ControlDeclare.TableConfig;
@@ -47,10 +47,14 @@ type FilterConfig = {
 export default class TableControl extends Control {
   declare config: TableConfig;
 
+  // 排序配置
   sortBy: SortBy = { key: "", order: TableV2SortOrder.ASC };
-  filterConfigs: { [x: string]: FilterConfig } = {};
 
-  filterConditionMap: Map<string, Map<string, string>> = new Map();
+  // 过滤条件配置，用于存储Header中的过滤条件，在表格中进行过滤
+  columnFilterConfigs: { [x: string]: FilterConfig } = {};
+
+  // 列的过滤条件
+  columnFilterConditions: Map<string, Map<string, string>> = new Map();
   /**
    * 获取过滤条件的复选框组
    * @param column 列配置
@@ -58,10 +62,10 @@ export default class TableControl extends Control {
    */
   GetFilterCheckBoxsGroup(column: ColumnItem) {
     let { field } = column;
-    let map = this.filterConditionMap.get(field);
+    let map = this.columnFilterConditions.get(field);
 
     return (
-      <ElCheckboxGroup class={css.filterCheckGroup} v-model={this.filterConfigs[field].filters}>
+      <ElCheckboxGroup class={css.filterCheckGroup} v-model={this.columnFilterConfigs[field].filters}>
         {(() => {
           let boxs = [];
           for (const v of map.values()) {
@@ -77,6 +81,11 @@ export default class TableControl extends Control {
     );
   }
 
+  /**
+   * 自定义表头渲染器
+   * @param p 表头渲染参数
+   * @returns 自定义表头
+   */
   CustomHeaderRenderer(p: HeaderCellSlotProps) {
     return (
       <div class={css.customHeader}>
@@ -90,7 +99,7 @@ export default class TableControl extends Control {
                   <ElButton
                     text
                     onClick={() => {
-                      this.filterConfigs[p.column.field].filters = [];
+                      this.columnFilterConfigs[p.column.field].filters = [];
                     }}
                   >
                     重置
@@ -101,6 +110,9 @@ export default class TableControl extends Control {
             reference: () => (
               <ElIcon
                 size={14}
+                style={{
+                  marginLeft: "4px",
+                }}
                 {...{
                   onClick: (e: MouseEvent) => {
                     e.stopPropagation();
@@ -108,8 +120,7 @@ export default class TableControl extends Control {
                 }}
               >
                 {() => {
-                  let icon = this.$.appContext.components["Filter"];
-                  return <icon style={{ cursor: "pointer" }}></icon>;
+                  return <FontAwesomeIcon icon="filter" />;
                 }}
               </ElIcon>
             ),
@@ -119,31 +130,9 @@ export default class TableControl extends Control {
     );
   }
 
-  edits = new Map();
-  Text(e: CellRendererParams<any>) {
-    let key = `${e.rowIndex}_${e.columnIndex}`;
-
-    return (
-      <ElInput
-        v-model={e.rowData[e.column.field]}
-        class={this.edits.get(key) ? "" : css.text}
-        disabled={this.parentDataSourceControl?.config?.readonly || e.column.readonly}
-        onBlur={() => {
-          this.edits.set(key, false);
-        }}
-        onFocus={() => {
-          this.CallCellFocusEvent(e);
-          if (!e.column.readonly) {
-            this.edits.set(key, true);
-          }
-        }}
-        onChange={() => {
-          this.CallCellChangeEvent(e);
-        }}
-      ></ElInput>
-    );
-  }
-
+  /**
+   * 单元格事件参数
+   */
   cellEventHandlerParams: CellEventHandlerParams = {
     rowIndex: -1,
     rowData: null,
@@ -151,6 +140,9 @@ export default class TableControl extends Control {
     cellData: null,
   };
 
+  /**
+   * 调用单元格获取焦点事件
+   */
   CallCellFocusEvent(e: CellRendererParams<any>) {
     this.cellEventHandlerParams = {
       rowIndex: e.rowIndex,
@@ -161,6 +153,9 @@ export default class TableControl extends Control {
     this.events.onCellFocus && this.events.onCellFocus(this, { ...this.cellEventHandlerParams });
   }
 
+  /**
+   * 调用单元格改变事件
+   */
   CallCellChangeEvent(e: CellRendererParams<any>) {
     this.cellEventHandlerParams = {
       rowIndex: e.rowIndex,
@@ -171,154 +166,17 @@ export default class TableControl extends Control {
     this.events.onCellChange && this.events.onCellChange(this, { ...this.cellEventHandlerParams });
   }
 
-  optionsCache: Map<string, any[]> = new Map();
-  async GetColumnOptions(column: ColumnItem) {
-    let key = `${column.field}_${column.dataSource || ""}`;
-
-    if (column.dataSource) {
-      let data = this.optionsCache.get(key);
-      if (!data) {
-        this.optionsCache.set(key, []);
-
-        let mehtodName = "GetSource";
-        let params: any = { id: column.dataSource, args: {} };
-
-        // 如果是预览模式，则请求GetSourceInDebug
-        if (this.$Store.get.Designer.Preview) {
-          mehtodName = "GetSourceInDebug";
-          let file = GetFileById(this.config.dataSource);
-          params = { sql: file.content, param: file.extraData.params, args: params };
-        }
-
-        data = (await this.$Api[mehtodName](params)).data;
-
-        let map = this.filterConditionMap.get(column.field);
-        if (map) {
-          data.forEach((m) => {
-            map.set(m[column.displayField], m[column.displayField]);
-          });
-        }
-
-        this.optionsCache.set(
-          key,
-          data.map((m) => {
-            return { label: m[column.displayField], value: m[column.dataField] };
-          })
-        );
-      }
-    } else {
-      let map = this.filterConditionMap.get(column.field);
-      if (map) {
-        column.options?.forEach((m) => {
-          map.set(m.label, m.label);
-        });
-      }
-      this.optionsCache.set(
-        key,
-        column.options?.map((o) => {
-          return { label: o.label, value: o.value };
-        })
-      );
-    }
-  }
-
+  /**
+   * 自定义单元格渲染器
+   * @param e 单元格渲染参数
+   * @returns 自定义单元格
+   */
   CustomCellRenderer(e: CellRendererParams<any>) {
     let column = e.column as ColumnItem;
-    let content;
-    let key = `${e.rowIndex}_${e.columnIndex}`;
-    switch (column.type) {
-      case "number":
-        content = (
-          <ElInputNumber
-            v-model={e.rowData[column.field]}
-            class={this.edits.get(key) ? "" : css.text}
-            controls={false}
-            disabled={this.parentDataSourceControl?.config?.readonly || column.readonly}
-            onBlur={() => {
-              this.edits.set(key, false);
-            }}
-            onFocus={() => {
-              this.CallCellFocusEvent(e);
-              if (!e.column.readonly) {
-                this.edits.set(key, true);
-              }
-            }}
-            onChange={() => {
-              this.CallCellChangeEvent(e);
-            }}
-          ></ElInputNumber>
-        );
-        break;
-      case "date":
-        content = (
-          <ElDatePicker
-            v-model={e.rowData[column.field]}
-            disabled={this.parentDataSourceControl?.config?.readonly || column.readonly}
-            clearable
-            {...{
-              onFocus: () => {
-                this.CallCellFocusEvent(e);
-              },
-              onChange: () => {
-                this.CallCellChangeEvent(e);
-              },
-            }}
-          ></ElDatePicker>
-        );
-        break;
-      case "select":
-        if (!this.optionsCache?.get(`${column.field}_${column.dataSource || ""}`) && !this.$Store.get.Designer.Debug)
-          this.GetColumnOptions(column);
-        content = (
-          <ElSelectV2
-            v-model={e.rowData[column.field]}
-            disabled={this.parentDataSourceControl?.config?.readonly || column.readonly}
-            filterable
-            style={{ height: "65%" }}
-            options={this.optionsCache?.get(`${column.field}_${column.dataSource || ""}`) || []}
-            onFocus={() => {
-              this.CallCellFocusEvent(e);
-            }}
-            onChange={() => {
-              this.CallCellChangeEvent(e);
-            }}
-          ></ElSelectV2>
-        );
-        break;
-      case "check":
-        if (typeof e.rowData[column.field] == "number") e.rowData[column.field] = e.rowData[column.field].toString();
+    // 渲染器方法名
+    let rendererMethodName = `${CapitalizeFirstLetter(column.type)}Renderer`;
+    let content = this[rendererMethodName](e);
 
-        content = (
-          <ElCheckbox
-            v-model={e.rowData[column.field]}
-            trueLabel={column.selectValue}
-            falseLabel={column.unSelectValue}
-            size="large"
-            disabled={this.parentDataSourceControl?.config?.readonly || column.readonly}
-            v-onFocus={() => {
-              this.CallCellFocusEvent(e);
-            }}
-            onChange={() => {
-              this.CallCellChangeEvent(e);
-            }}
-          ></ElCheckbox>
-        );
-        break;
-      case "button":
-        content = (
-          <ElButton
-            color={column.btnColor}
-            plain
-            disabled={this.parentDataSourceControl?.config?.readonly || column.readonly}
-          >
-            {column.title}
-          </ElButton>
-        );
-        break;
-      default:
-        content = this.Text(e);
-        break;
-    }
     return (
       <div
         class={css.customCell}
@@ -337,19 +195,244 @@ export default class TableControl extends Control {
     );
   }
 
-  get data() {
-    return this.config.data.filter((m) => {
-      for (const k in this.filterConfigs) {
-        let { optionsKey, filters } = this.filterConfigs[k];
+  // 编辑状态
+  edits = new Map();
 
-        let options = this.optionsCache.get(optionsKey);
-        if (options) {
-          filters = filters.map((f) => {
-            let option = options.find((o) => o.props.label == f);
-            if (option) f = option.props.value;
-            return f;
-          });
+  /**
+   * 文本渲染器
+   */
+  TextRenderer(e: CellRendererParams<any>) {
+    let key = `${e.rowIndex}_${e.columnIndex}`;
+
+    return (
+      <ElInput
+        v-model={e.rowData[e.column.field]}
+        class={this.edits.get(key) ? "" : css.text}
+        disabled={this.parentDataSourceControl?.config?.readonly || e.column.readonly}
+        onBlur={() => this.edits.set(key, false)}
+        onFocus={() => this.CellFocusHandler(e, key)}
+        onChange={() => this.CallCellChangeEvent(e)}
+      ></ElInput>
+    );
+  }
+
+  /**
+   * 数字输入框渲染器
+   */
+  InputNumberRenderer(e: CellRendererParams<any>) {
+    let {
+      rowData,
+      rowIndex,
+      column: { field, readonly },
+      columnIndex,
+    } = e;
+    let key = `${rowIndex}_${columnIndex}`;
+    // 是否只读
+    let isReadOnly = this.parentDataSourceControl?.config?.readonly || readonly;
+    return (
+      <ElInputNumber
+        v-model={rowData[field]}
+        class={this.edits.get(key) ? "" : css.text}
+        controls={false}
+        disabled={isReadOnly}
+        onBlur={() => this.edits.set(key, false)}
+        onFocus={() => this.CellFocusHandler(e, key)}
+        onChange={() => this.CallCellChangeEvent(e)}
+      ></ElInputNumber>
+    );
+  }
+
+  /**
+   * 日期选择器渲染器
+   */
+  DatePickerRenderer(e: CellRendererParams<any>) {
+    let {
+      rowData,
+      column: { field, readonly },
+    } = e;
+    let isReadOnly = this.parentDataSourceControl?.config?.readonly || readonly;
+    return (
+      <ElDatePicker
+        v-model={rowData[field]}
+        disabled={isReadOnly}
+        clearable
+        {...{
+          onFocus: () => this.CallCellFocusEvent(e),
+          onChange: () => this.CallCellChangeEvent(e),
+        }}
+      ></ElDatePicker>
+    );
+  }
+
+  /**
+   * 下拉框渲染器
+   */
+  SelectRenderer(e: CellRendererParams<any>) {
+    let {
+      rowData,
+      column: { field, readonly, dataSource },
+    } = e;
+    let isReadOnly = this.parentDataSourceControl?.config?.readonly || readonly;
+
+    // 是否是 debug 模式
+    let isDebug = this.$Store.get.Designer.Debug;
+
+    // 如果不是 debug 模式，则加载远程下拉框选项
+    if (!isDebug) this.RemoteSelectOptionsLoader(e);
+
+    return (
+      <ElSelectV2
+        v-model={rowData[field]}
+        disabled={isReadOnly}
+        filterable
+        style={{ height: "65%" }}
+        options={
+          isDebug
+            ? []
+            : e.column.options?.map((o) => {
+                // 默认的显示字段和值字段
+                let label = "label",
+                  value = "value";
+                if (dataSource) {
+                  label = e.column.displayField;
+                  value = e.column.dataField;
+                }
+
+                return { label: o[label], value: o[value] };
+              })
         }
+        loading={e.column.loading}
+        onFocus={() => this.CallCellFocusEvent(e)}
+        onChange={() => this.CallCellChangeEvent(e)}
+      ></ElSelectV2>
+    );
+  }
+
+  /**
+   * 远程下拉框选项加载器
+   */
+  RemoteSelectOptionsLoader(e: CellRendererParams<any>) {
+    let {
+      column: { dataSource },
+    } = e;
+    // 如果有数据源，则请求数据源，如果没有，则不做任何操作
+    if (dataSource) {
+      // 优先从缓存中获取数据
+      let promise = globalCache.dataSourceCache.get(dataSource);
+
+      // 如果没有缓存，则请求数据源
+      if (!promise) {
+        promise = new Promise(async (resolve) => {
+          let mehtodName = "GetSource";
+          let params: any = { id: dataSource, args: {} };
+
+          // 如果是预览模式，则请求GetSourceInDebug
+          if (this.$Store.get.Designer.Preview) {
+            mehtodName = "GetSourceInDebug";
+            let file = GetFileById(dataSource);
+            params = { sql: file.content, param: file.extraData.params, args: params };
+          }
+
+          let data = (await this.$Api[mehtodName](params)).data;
+          resolve(data);
+        });
+        globalCache.dataSourceCache.set(dataSource, promise);
+      }
+
+      promise.then((res) => {
+        e.column.options = res;
+      });
+    }
+  }
+
+  /**
+   * 复选框渲染器
+   */
+  CheckRenderer(e: CellRendererParams<any>) {
+    let {
+      rowData,
+      column: { field, readonly, selectValue, unSelectValue },
+    } = e;
+    let isReadOnly = this.parentDataSourceControl?.config?.readonly || readonly;
+    // 如果是数字类型，转换为字符串
+    rowData[field] = String(rowData[field]);
+
+    return (
+      <ElCheckbox
+        v-model={rowData[field]}
+        trueLabel={selectValue}
+        falseLabel={unSelectValue}
+        size="large"
+        disabled={isReadOnly}
+        v-onFocus={() => this.CallCellFocusEvent(e)}
+        onChange={() => this.CallCellChangeEvent(e)}
+      ></ElCheckbox>
+    );
+  }
+
+  /**
+   * 按钮渲染器
+   */
+  ButtonRenderer(e: CellRendererParams<any>) {
+    let {
+      column: { title, btnColor, readonly },
+    } = e;
+    let isReadOnly = this.parentDataSourceControl?.config?.readonly || readonly;
+    return (
+      <ElButton color={btnColor} plain disabled={isReadOnly}>
+        {title}
+      </ElButton>
+    );
+  }
+
+  /**
+   * 单元格获取焦点事件
+   */
+  CellFocusHandler(e: CellRendererParams<any>, key: string) {
+    this.CallCellFocusEvent(e);
+    if (!e.column.readonly) {
+      this.edits.set(key, true);
+    }
+  }
+
+  get testData() {
+    let obj = {};
+    this.config.columns.forEach((c) => {
+      switch (c.type) {
+        case "check":
+          obj[c.field] = true;
+          break;
+        case "number":
+          obj[c.field] = 0;
+          break;
+        default:
+          obj[c.field] = "测试";
+          break;
+      }
+    });
+    return [obj];
+  }
+
+  get data() {
+    // let { columns } = this.config;
+    return this.config.data.filter((m) => {
+      for (const k in this.columnFilterConfigs) {
+        let { filters } = this.columnFilterConfigs[k];
+
+        // // 如果是下拉框或其他类型的过滤条件，需要根据显示字段和值字段进行过滤
+        // let { options, dataSource, displayField, dataField } = this.config.columns.find((c) => c.field === k);
+        // if (options) {
+        //   filters = filters.map((f) => {
+        //     // 默认的显示字段和值字段
+        //     let label = "label",
+        //       value = "value";
+        //     if (dataSource) {
+        //       value = dataField;
+        //     }
+        //     // 返回选中的过滤条件的值
+        //     return options.find((o) => o[label] === f)[value];
+        //   });
+        // }
 
         if (filters.length && !filters.includes(m[k])) {
           m.$__check__$ = false;
@@ -370,7 +453,7 @@ export default class TableControl extends Control {
             return (
               <ElCheckbox
                 v-model={rowData.$__check__$}
-                onChange={this.ChangeSharedData}
+                onChange={this.UpdateSharedControlData}
                 {...{
                   onClick: (e: MouseEvent) => {
                     e.stopPropagation();
@@ -408,27 +491,37 @@ export default class TableControl extends Control {
     this.InitColumnConfig();
   }
 
-  GetFilterCondition(c: ColumnItem) {
-    let key = `${c.field}_${c.dataSource || ""}`;
-    this.filterConfigs[c.field] = {
+  /**
+   * 获取列的过滤条件，用于填充到Header的过滤条件复选框中
+   */
+  GetColumnFilterConditions(c: ColumnItem) {
+    // 过滤条件的key，当前列的字段名和数据源名
+    const key = `${c.field}_${c.dataSource || ""}`;
+    // 初始化过滤条件配置
+    this.columnFilterConfigs[c.field] = {
       optionsKey: key,
       filters: [],
     };
-    let map = new Map();
-    for (let i = 0; i < this.config.data.length; i++) {
-      let f = this.config.data[i][c.field];
-      if (!map.get(f)) map.set(f, f);
+    const map = new Map();
+    for (const data of this.config.data) {
+      // 获取当前列的值
+      const value = data[c.field];
+      // 如果map中没有该值，则添加到map中
+      if (!map.get(value)) map.set(value, value);
     }
-    this.filterConditionMap.set(c.field, map);
+    this.columnFilterConditions.set(c.field, map);
   }
 
+  /**
+   * 初始化列配置
+   */
   InitColumnConfig() {
     this.config.columns.forEach((c) => {
       c.dataKey = c.field;
       c.key = c.field;
 
       if (c.filter) {
-        this.GetFilterCondition(c);
+        this.GetColumnFilterConditions(c);
         c.headerCellRenderer = this.CustomHeaderRenderer;
       }
       c.cellRenderer = this.CustomCellRenderer;
@@ -464,9 +557,12 @@ export default class TableControl extends Control {
     this.highlightColumnClass = "";
   }
 
-  ChangeSharedData() {
-    if (this.GetParentDataSourceGroupControl()) {
-      let parent = this.$parent as DataSourceGroupControl;
+  /**
+   * 更新共享控件的数据
+   */
+  UpdateSharedControlData() {
+    let parent = this.GetParentDataSourceGroupControl();
+    if (parent) {
       let sharedControl = parent.sharedControl;
       // 如果有共享控件，则同步数据，因为在渲染第一个数据源控件时，第二个数据源控件还没有渲染，所以初次会出现sharedControl为null的情况
       if (sharedControl) {
@@ -488,7 +584,7 @@ export default class TableControl extends Control {
 
     if (change) {
       this.events.onRowFocusChange && this.events.onRowFocusChange(this, { ...this.rowEventHandlerParams });
-      this.ChangeSharedData();
+      this.UpdateSharedControlData();
     }
   }
 
@@ -504,60 +600,43 @@ export default class TableControl extends Control {
       const selectedRows = this.config.data.filter((m) => m.$__check__$);
       selectedRows.forEach((m) => {
         const index = this.config.data.findIndex((d) => d === m);
-
-        if (m[ControlDeclare.DataStatusField] === ControlDeclare.DataStatus.New) {
-          this.parentDataSourceControl.diffData.delete(m);
-        } else {
-          m[ControlDeclare.DataStatusField] = ControlDeclare.DataStatus.Delete;
-        }
+        this.parentDataSourceControl?.UpdateDataStatus(m, ControlDeclare.DataStatus.Delete);
 
         this.config.data.splice(index, 1);
       });
     } catch (error) {}
   }
 
-  AddRow(object: object) {
-    object = object || {};
-    // for (const k in object) {
-    //   object[`@Insert#${k}`] = object[k];
-    //   delete object[k];
-    // }
-    // object["#DataType"] = "Insert";
+  AddRow(object: object = {}) {
+    // 循环列配置，初始化新增行的数据
+    for (const c of this.config.columns) {
+      // 如果object中没有该列的数据，则初始化为Null
+      if (!object[c.field]) object[c.field] = null;
+    }
 
-    // let data = DataConsistencyProxyCreator(
-    //   object,
-    //   this.parentDataSourceControl.SyncTrack.bind(this.parentDataSourceControl)
-    // );
+    this.config.data.push(object);
+    let data = this.config.data[this.config.data.length - 1];
+    this.parentDataSourceControl?.UpdateDataStatus(data, ControlDeclare.DataStatus.New);
 
-    let data = object;
-    // 添加新增标记
-    data[ControlDeclare.DataStatusField] = ControlDeclare.DataStatus.New;
-
-    this.config.data.push(data);
+    // 如果父组件是数据源组控件
+    if (this.parentDataSourceControl) {
+      // 循环 data 的键
+      for (const key in data) {
+        let stopWatch = watch(
+          () => data[key],
+          (value, oldValue) => {
+            this.parentDataSourceControl.UpdateDiffData(data, key, value, oldValue);
+          }
+        );
+        this.parentDataSourceControl.twoWayBindingList.push(stopWatch);
+      }
+    }
   }
 
   rowEventHandlerParams: RowEventHandlerParams = {
     rowIndex: -1,
     rowData: null,
   };
-
-  get testData() {
-    let obj = {};
-    this.config.columns.forEach((c) => {
-      switch (c.type) {
-        case "check":
-          obj[c.field] = true;
-          break;
-        case "number":
-          obj[c.field] = 0;
-          break;
-        default:
-          obj[c.field] = "测试";
-          break;
-      }
-    });
-    return [obj];
-  }
 
   CustomCellProps({ column }: { column: ColumnItem }) {
     let key = column.field;

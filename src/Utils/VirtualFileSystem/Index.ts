@@ -1,5 +1,6 @@
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import store from "@/Vuex/Store";
+import { CloneStruct } from "../Index";
 
 type IFile = VritualFileSystemDeclare.IFile;
 type IDirectory = VritualFileSystemDeclare.IDirectory;
@@ -170,7 +171,7 @@ export function FlatRoot(root: IDirectory) {
       let m = dir as any;
       let file = {
         content: m.content,
-        extraData: m.extraData,
+        extraData: CloneStruct(m.extraData),
         fileId: m.id,
         name: m._name,
         fullPath: dir.GetFullName(),
@@ -178,7 +179,7 @@ export function FlatRoot(root: IDirectory) {
         suffix: m.suffix,
         isProtected: m.isProtected,
       };
-      
+
       files.push(file);
     }
   }

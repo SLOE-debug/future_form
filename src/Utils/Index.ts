@@ -58,27 +58,22 @@ export function Debounce(wait: number) {
  * @returns 新对象
  */
 export function CloneStruct<T>(obj: T): T {
-  if (Array.isArray(obj)) {
-    let arr = [];
-    for (const m of obj) {
-      arr.push(CloneStruct(m));
-    }
-    return arr as T;
-  } else if (typeof obj == "object") {
-    let m = {} as T;
-    for (const k in obj) {
-      if (obj[k] == null) {
-        m[k] = null;
-      } else if (typeof obj[k] == "object") {
-        m[k] = CloneStruct(obj[k]);
-      } else {
-        m[k] = obj[k];
-      }
-    }
-    return m;
-  } else {
+  if (obj === null || typeof obj !== "object") {
     return obj;
   }
+
+  if (Array.isArray(obj)) {
+    return obj.map((item) => CloneStruct(item)) as unknown as T;
+  }
+
+  const clonedObj = {} as T;
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      clonedObj[key] = CloneStruct(obj[key]);
+    }
+  }
+
+  return clonedObj;
 }
 
 /**
@@ -97,12 +92,19 @@ export function DeepCompareObject(obj1: any, obj2: any): boolean {
     return true;
   }
 
-  const keys1 = Object.keys(obj1);
-  const keys2 = Object.keys(obj2);
+  const keys1 = Object.keys(obj1).filter((k) => {
+    // 过滤 Function
+    return typeof obj1[k] !== "function";
+  });
+  const keys2 = Object.keys(obj2).filter((k) => {
+    // 过滤 Function
+    return typeof obj2[k] !== "function";
+  });
   if (keys1.length !== keys2.length) return false;
 
   for (const key of keys1) {
     if (!keys2.includes(key)) return false;
+
     if (!DeepCompareObject(obj1[key], obj2[key])) return false;
   }
 

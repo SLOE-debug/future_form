@@ -20,16 +20,13 @@ export function TwoWayBinding(obj1, prop1, obj2, prop2) {
   const stopWatch1 = watch(
     () => obj1[prop1],
     (value) => {
-      // 在属性值修改时，触发事件，旧值应该取obj2的值，因为前者是vue的响应式对象，他已经在UI上更新了
-      PropertyChange.call(this, obj2, prop2, value, obj2[prop2]);
       obj2[prop2] = value;
     }
   );
   const stopWatch2 = watch(
     () => obj2[prop2],
-    (value) => {
-      // 同理，旧值应该取obj1的值
-      PropertyChange.call(this, obj2, prop2, value, obj1[prop1]);
+    (value, oldValue) => {
+      PropertyChange.call(this, obj2, prop2, value, oldValue);
       obj1[prop1] = value;
     }
   );
