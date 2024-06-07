@@ -4,12 +4,14 @@ import VirtualFileSystemModule, { VirtualFileSystemState } from "./Modules/Virtu
 import PageModule, { PageState } from "./Modules/Page";
 import DesignerModule, { DesignerState } from "./Modules/Designer";
 import WindowModule, { WindowState } from "./Modules/Window";
+import IndexModule, { IndexState } from "./Modules/Index";
 
 export type RootState = {
   Page: PageState;
   VirtualFileSystem: VirtualFileSystemState;
   Designer: DesignerState;
   Window: WindowState;
+  Index: IndexState;
 };
 const store: Store<RootState> = createStore({
   modules: {
@@ -17,6 +19,7 @@ const store: Store<RootState> = createStore({
     VirtualFileSystem: VirtualFileSystemModule,
     Designer: DesignerModule,
     Window: WindowModule,
+    Index: IndexModule,
   },
 });
 

@@ -15,6 +15,7 @@ import DataSourceGroupControl from "@/Controls/DataSourceGroupControl";
 import { JSX } from "vue/jsx-runtime";
 import { GetFileById } from "@/Utils/VirtualFileSystem/Index";
 import DesignerSpace from "./DesignerSpace";
+import ToolStripControl from "@/Controls/ToolStripControl";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceControlConfig = ControlDeclare.DataSourceControlConfig;
@@ -31,7 +32,6 @@ const sourceCache = new Map<string, Promise<any>>();
 
 @ComponentBase
 export class DataSourceControl extends Vue {
-  // @Prop
   config: ControlConfig & DataSourceControlConfig;
   @Prop
   locate: Locate;
@@ -66,6 +66,7 @@ export class DataSourceControl extends Vue {
 
   async created() {
     this.config = this.GetInjectConfig();
+
     this.parentFormControl = this.GetParentFormControl();
     this.parentDataSourceControl = this.GetParentDataSourceGroupControl();
 
@@ -88,12 +89,12 @@ export class DataSourceControl extends Vue {
     }
   }
 
-  beforeUpdate() {
-    let newConfig = this.GetInjectConfig();
-    if (newConfig["#concordance"] != this.config["#concordance"]) {
-      this.config = newConfig;
-    }
-  }
+  // beforeUpdate() {
+  //   let newConfig = this.GetInjectConfig();
+  //   if (newConfig["#concordance"] != this.config["#concordance"]) {
+  //     this.config = newConfig;
+  //   }
+  // }
 
   unmounted() {
     if (!this.$Store.get.Designer.Debug) this.config = null;
@@ -581,6 +582,10 @@ export default class Control extends DataSourceControl {
     return conf;
   }
 
+  get baseStyle() {
+    return {};
+  }
+
   events: EventHandlers = {};
 
   /**大人物(是否是以此为依据对齐/移动/调整的控件) */
@@ -597,6 +602,7 @@ export default class Control extends DataSourceControl {
           width: this.config.width + "px",
           height: this.config.height + "px",
           cursor: this.cursor,
+          ...this.baseStyle,
         }}
         onMousedown={(e) => {
           if (this.$Store.get.Designer.Debug) {

@@ -90,6 +90,8 @@ export namespace ControlDeclare {
 
   export type FormConfig = {
     maximize?: boolean;
+    // 是否显示标题栏的控件组
+    showTitleBarControls?: boolean;
   } & ControlConfig;
 
   export type GroupConfig = {
@@ -183,41 +185,63 @@ export namespace ControlDeclare {
     Delete = 2,
   }
 
+  export type ToolStripItem = {
+    type: "button" | "label" | "select" | "split";
+    name: string;
+    width: number;
+    height: number;
+
+    // 文本和按钮
+    text?: string;
+
+    // 按钮
+    showTextWidth?: number;
+    showTextHeight?: number;
+    icon?: string;
+    faIcon?: string;
+    iconSize?: number;
+
+    // 下拉框
+    placeholder?: string;
+    options?: { label: string; value: string; m: Object }[];
+    value?: string;
+    // 是否可清空
+    clearable?: boolean;
+    // 正在加载
+    loading?: boolean;
+    // 加载时显示的文字
+    loadingText?: string;
+    // 是否是远程搜索下拉框
+    remote?: boolean;
+    // 远程方法
+    remoteMethod?: Function;
+    // 是否可筛选
+    filterable?: boolean;
+    // 显示方式
+    display?: "list" | "table";
+    // 列
+    columns?: {
+      title: string;
+      field: string;
+      width?: number;
+    }[];
+
+    // 是否选中
+    checked?: boolean;
+    // 事件函数对象
+    events: any;
+
+    // 事件
+    [x: string]: any;
+  };
+
   export type ToolStripConfig = {
     // 字体大小
     fontSize: number;
     // 停靠位置
     dock: "top" | "bottom" | "left" | "right" | "none";
     // 项
-    items: {
-      type: "button" | "label" | "select" | "split";
-      name: string;
-      width: number;
-      height: number;
-
-      // 文本和按钮
-      text: string;
-
-      // 按钮
-      showTextWidth?: number;
-      showTextHeight?: number;
-      icon?: string;
-      customIcon?: string;
-      iconSize?: number;
-
-      // 下拉框
-      placeholder?: string;
-      options?: { label: string; value: string }[];
-      value?: string;
-
-      // 是否选中
-      checked?: boolean;
-      // 事件函数对象
-      events: any;
-
-      // 事件
-      [x: string]: any;
-    }[];
+    items: ToolStripItem[];
     // 按钮是否显示文本
     showText: boolean;
     // 是否显示区分的线
@@ -242,10 +266,34 @@ export namespace ControlDeclare {
   export abstract class BaseWindow {
     constructor(id: string) {}
 
+    /**
+     * 当前窗体中所有的控件实例
+     */
     $refs: any;
+    /**
+     * 全局变量对象
+     */
     GlobalVariate: GlobalVariate;
+    /**
+     * 显示窗体
+     */
     Show(): void {}
+    /**
+     * 以对话框的形式显示窗体
+     */
     ShowDialog(): void {}
+    /**
+     * 弹出消息
+     * @param message 消息内容
+     * @param type 消息类型
+     * @param duration 显示时间
+     */
     Alert(message: string, type: "success" | "warning" | "info" | "error" = "info", duration: number = 3000): void {}
+    /**
+     * 获取公共的ToolStrips配置
+     */
+    GetCommonToolStrips(): ToolStripItem[] {
+      return [];
+    }
   }
 }

@@ -171,10 +171,10 @@ export default class DataSourceGroupControl extends Control {
         break;
     }
 
-    if (!this.outputDiffDataTimer)
-      this.outputDiffDataTimer = setInterval(() => {
-        console.log(this.config.name, this.diffData);
-      }, 1000 * 2);
+    // if (!this.outputDiffDataTimer && !this.$Store.get.Designer.Debug)
+    //   this.outputDiffDataTimer = setInterval(() => {
+    //     console.log(this.config.name, this.diffData);
+    //   }, 1000 * 2);
   }
 
   // 数据源数据被修改时的数据差异集合

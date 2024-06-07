@@ -201,7 +201,7 @@ export default class TableControl extends Control {
   /**
    * 文本渲染器
    */
-  TextRenderer(e: CellRendererParams<any>) {
+  private TextRenderer(e: CellRendererParams<any>) {
     let key = `${e.rowIndex}_${e.columnIndex}`;
 
     return (
@@ -219,7 +219,7 @@ export default class TableControl extends Control {
   /**
    * 数字输入框渲染器
    */
-  InputNumberRenderer(e: CellRendererParams<any>) {
+  private InputNumberRenderer(e: CellRendererParams<any>) {
     let {
       rowData,
       rowIndex,
@@ -245,7 +245,7 @@ export default class TableControl extends Control {
   /**
    * 日期选择器渲染器
    */
-  DatePickerRenderer(e: CellRendererParams<any>) {
+  private DatePickerRenderer(e: CellRendererParams<any>) {
     let {
       rowData,
       column: { field, readonly },
@@ -267,7 +267,7 @@ export default class TableControl extends Control {
   /**
    * 下拉框渲染器
    */
-  SelectRenderer(e: CellRendererParams<any>) {
+  private SelectRenderer(e: CellRendererParams<any>) {
     let {
       rowData,
       column: { field, readonly, dataSource },
@@ -311,7 +311,7 @@ export default class TableControl extends Control {
   /**
    * 远程下拉框选项加载器
    */
-  RemoteSelectOptionsLoader(e: CellRendererParams<any>) {
+  private RemoteSelectOptionsLoader(e: CellRendererParams<any>) {
     let {
       column: { dataSource },
     } = e;
@@ -348,7 +348,7 @@ export default class TableControl extends Control {
   /**
    * 复选框渲染器
    */
-  CheckRenderer(e: CellRendererParams<any>) {
+  private CheckRenderer(e: CellRendererParams<any>) {
     let {
       rowData,
       column: { field, readonly, selectValue, unSelectValue },
@@ -373,7 +373,7 @@ export default class TableControl extends Control {
   /**
    * 按钮渲染器
    */
-  ButtonRenderer(e: CellRendererParams<any>) {
+  private ButtonRenderer(e: CellRendererParams<any>) {
     let {
       column: { title, btnColor, readonly },
     } = e;

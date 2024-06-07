@@ -54,6 +54,7 @@ export default class WindowCollection extends Vue {
             title: config.title,
             // 最大化
             max: config.maximize,
+            showTitleBarControls: config.showTitleBarControls,
             ref: instanceId,
             zIndex: i + 1,
             instanceId: instanceId,

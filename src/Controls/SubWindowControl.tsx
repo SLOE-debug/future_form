@@ -15,8 +15,6 @@ type ControlConfig = ControlDeclare.ControlConfig;
 
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 
-type WindowConfig = WindowDeclare.WindowConfig;
-
 @Component
 export default class SubWindowControl extends Control {
   declare config: SubWindowConfig;

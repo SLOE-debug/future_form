@@ -3,12 +3,13 @@ import { RootState } from "./Vuex/Store";
 import VirtualFileSystem from "./Apis/VirtualFileSystem";
 import { Api } from "./Plugins/Api/ExtendApi";
 import DataSource from "./Apis/DataSource";
+import Expression from "./Apis/Expression";
 
 declare module "@vue/runtime-core" {
   interface ComponentCustomProperties {
     $Store: Store<RootState>;
     $Controls: string[];
-    $Api: Api<typeof VirtualFileSystem & typeof DataSource>;
+    $Api: Api<typeof VirtualFileSystem & typeof DataSource & typeof Expression>;
     $PaleData: any;
   }
 }

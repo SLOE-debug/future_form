@@ -10,6 +10,7 @@ import { globalVariate } from "@/Utils/Designer/Form";
 
 type Coord = UtilsDeclare.Coord;
 type ControlConfig = ControlDeclare.ControlConfig;
+type TitleBarControl = WindowDeclare.TitleBarControl;
 
 @Component
 export default class WindowControlBar extends Vue {
@@ -36,6 +37,9 @@ export default class WindowControlBar extends Vue {
   showMaximize: boolean;
   @Prop({ default: true })
   showClose: boolean;
+  @Prop({ default: true })
+  showTitleBarControls: boolean;
+
   @Prop({
     default: WindowDeclare.StartPosition.CenterScreen,
   })
@@ -235,32 +239,6 @@ export default class WindowControlBar extends Vue {
     );
   }
 
-  /**
-   * 窗体标题栏左侧控件组
-   */
-  RenderTitleBarControls() {
-    return (
-      <div class={css.titleBarControls}>
-        {/* 案号下拉框 */}
-        <ElSelect
-          filterable
-          placeholder="请输入案号"
-          {...{
-            onDblclick: (e) => {
-              e.stopPropagation();
-            },
-          }}
-          style={{
-            width: "150px",
-          }}
-          v-model={globalVariate.ref_no}
-        >
-          <ElOption label="案号" value="1"></ElOption>
-        </ElSelect>
-      </div>
-    );
-  }
-
   contentLoading = true;
   render() {
     let window = (
@@ -280,7 +258,6 @@ export default class WindowControlBar extends Vue {
             if (this.showMaximize) this.maximize = !this.maximize;
           }}
         >
-          {this.RenderTitleBarControls()}
           {this.title}
           {this.RenderBarButtons()}
         </div>

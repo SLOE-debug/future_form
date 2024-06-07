@@ -4,11 +4,22 @@ import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { baseEvents, baseProps } from "@/Utils/Designer/Controls";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElSelect } from "element-plus";
+import {
+  ElAutoResizer,
+  ElButton,
+  ElDropdown,
+  ElDropdownItem,
+  ElDropdownMenu,
+  ElSelect,
+  ElSelectV2,
+  ElTableV2,
+} from "element-plus";
+import { AnyColumns } from "element-plus/es/components/table-v2/src/types";
 import { Component, Watch } from "vue-facing-decorator";
 import { JSX } from "vue/jsx-runtime";
 
 type ToolStripConfig = ControlDeclare.ToolStripConfig;
+type ToolStripItem = ControlDeclare.ToolStripItem;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 
 @Component
@@ -144,6 +155,140 @@ export default class ToolStripControl extends Control {
     );
   }
 
+  /**
+   * 按钮渲染器
+   */
+  ButtonRenderer(item: ToolStripItem) {
+    return (
+      <ElButton
+        size="small"
+        class={css.button}
+        style={{
+          width: (this.config.showText ? item.showTextWidth : item.width) + "px",
+          height: (this.config.showText ? item.showTextHeight : item.height) + "px",
+        }}
+        ref={item.name}
+        onClick={(e) => {
+          item.events.onClick && item.events.onClick(item, e);
+        }}
+      >
+        {{
+          default: () => this.config.showText && item.text,
+          icon: () => {
+            if (!item.icon && !item.faIcon) return;
+            // 是否是 file 开头的图标
+            let isFile = item.icon && item.icon.startsWith("file:");
+            if (isFile) {
+              return (
+                <SvgIcon
+                  {...{
+                    name: item.icon.replace("file:", ""),
+                    size: item.iconSize,
+                    style: {
+                      fontSize: item.iconSize + "px",
+                    },
+                  }}
+                />
+              );
+            }
+
+            return (
+              <FontAwesomeIcon
+                icon={item.faIcon ? item.faIcon : item.icon}
+                style={{
+                  fontSize: item.iconSize + "px",
+                }}
+              />
+            );
+          },
+        }}
+      </ElButton>
+    );
+  }
+
+  /**
+   * 通过 item 的配置，获取表格下拉框的列样式
+   */
+  GetTableSelectColumnsStyle(item: ToolStripItem) {
+    return {
+      display: "grid",
+      "grid-template-columns": item.columns.map((col) => col.width + "px").join(" "),
+    };
+  }
+
+  /**
+   * 下拉框渲染器
+   */
+  SelectRenderer(item: ToolStripItem) {
+    return (
+      <ElSelectV2
+        key={item.name}
+        class={css.select}
+        style={{
+          width: item.width + "px",
+          height: item.height + "px",
+        }}
+        filterable
+        clearable={item.clearable}
+        loading={item.loading}
+        loadingText={item.loadingText || "加载中"}
+        placeholder={item.placeholder}
+        v-model={item.value}
+        options={item.options}
+        remote={item.remote}
+        popperClass={css.selectPopper}
+        remoteMethod={(e) => {
+          let { systemRemoteMethod, remoteMethod } = item;
+          // 执行 remoteMethod 并获取返回值，返回值来指示是否需要继续执行 systemRemoteMethod
+          if (remoteMethod) {
+            let result = remoteMethod(item, e);
+            if (result == false) return;
+          }
+          // 如果有 systemRemoteMethod，则执行
+          systemRemoteMethod && systemRemoteMethod(item, e);
+        }}
+        ref={item.name}
+        onChange={(e) => {
+          item.events.onChange && item.events.onChange(item, e);
+        }}
+      >
+        {{
+          default: (e) => {
+            let m = e.item.m;
+            // 如果显示方式是 table，则显示列
+            if (item.display == "table") {
+              return (
+                <span style={this.GetTableSelectColumnsStyle(item)}>
+                  {item.columns.map((col) => {
+                    return (
+                      <span class={css.clip} title={m[col.field]}>
+                        {m[col.field]}
+                      </span>
+                    );
+                  })}
+                </span>
+              );
+            }
+            return null;
+          },
+          header: () => {
+            // 如果显示方式是 table，则显示列头
+            if (item.display == "table") {
+              return (
+                <div style={this.GetTableSelectColumnsStyle(item)}>
+                  {item.columns.map((col) => (
+                    <div>{col.title}</div>
+                  ))}
+                </div>
+              );
+            }
+            return null;
+          },
+        }}
+      </ElSelectV2>
+    );
+  }
+
   // item 的 checked WeakMap
   itemCheckedMap = new WeakMap();
 
@@ -156,76 +301,13 @@ export default class ToolStripControl extends Control {
 
       switch (item.type) {
         case "button":
-          itemJsx = (
-            <ElButton
-              size="small"
-              class={css.button}
-              style={{
-                width: (this.config.showText ? item.showTextWidth : item.width) + "px",
-                height: (this.config.showText ? item.showTextHeight : item.height) + "px",
-              }}
-              ref={item.name}
-              onClick={(e) => {
-                item.events.onClick && item.events.onClick(item, e);
-              }}
-            >
-              {{
-                default: () => this.config.showText && item.text,
-                icon: () => {
-                  if (!item.icon && !item.customIcon) return;
-                  // 是否是 file 开头的图标
-                  let isFile = item.icon && item.icon.startsWith("file:");
-                  if (isFile) {
-                    return (
-                      <SvgIcon
-                        {...{
-                          name: item.icon.replace("file:", ""),
-                          size: item.iconSize,
-                          style: {
-                            fontSize: item.iconSize + "px",
-                          },
-                        }}
-                      />
-                    );
-                  }
-
-                  return (
-                    <FontAwesomeIcon
-                      icon={item.customIcon ? item.customIcon : item.icon}
-                      style={{
-                        fontSize: item.iconSize + "px",
-                      }}
-                    />
-                  );
-                },
-              }}
-            </ElButton>
-          );
+          itemJsx = this.ButtonRenderer(item);
           break;
         case "label":
           itemJsx = <div class={css.label}>{item.text}</div>;
           break;
         case "select":
-          itemJsx = (
-            <ElSelect
-              class={css.select}
-              style={{
-                width: item.width + "px",
-                height: item.height + "px",
-              }}
-              filterable
-              placeholder={item.placeholder}
-              v-model={item.value}
-              ref={item.name}
-              onChange={(e) => {
-                item.events.onChange && item.events.onChange(item, e);
-              }}
-            >
-              {item.options?.map((option) => (
-                <ElSelect.Option label={option.label} value={option.value}></ElSelect.Option>
-              )) || []}
-            </ElSelect>
-          );
+          itemJsx = this.SelectRenderer(item);
           break;
         case "split":
           itemJsx = <div class={css.split}></div>;
@@ -265,7 +347,7 @@ export default class ToolStripControl extends Control {
   }
 
   render() {
-    let jsx = super.render(
+    return super.render(
       <div
         class={css.toolStrip}
         style={{
@@ -284,10 +366,6 @@ export default class ToolStripControl extends Control {
         {this.$Store.get.Designer.Debug && this.RenderConfigurator()}
       </div>
     );
-    jsx.props.style.backgroundColor = this.config.bgColor;
-
-    this.SetStyleByDock(jsx.props.style);
-    return jsx;
   }
 
   Delete(pushStack = true) {
@@ -301,27 +379,28 @@ export default class ToolStripControl extends Control {
   }
 
   /**
-   * 通过当前的Dock属性，计算出当前控件的样式
+   * 获取当前控件的基类样式
    */
-  SetStyleByDock(style: any) {
+  get baseStyle() {
+    let style: any = {
+      height: "auto",
+      backgroundColor: this.config.bgColor,
+    };
+
     // 反向的停靠位置
     let reverseDock = this.config.dock == "top" ? "bottom" : this.config.dock == "left" ? "right" : "left";
-
     // 如果需要显示分区线
     if (this.config.showSplit) {
       style["border-" + reverseDock] = "1px solid #ccc";
     }
-
     switch (this.config.dock) {
       case "top":
       case "bottom":
         style.width = "100%";
         style.padding = "2px";
-        delete style.height;
         style.left = 0;
         style[this.config.dock] = 0;
         style[this.config.dock == "top" ? "bottom" : "top"] = "auto";
-
         break;
       case "left":
         style.left = 0;
@@ -330,7 +409,41 @@ export default class ToolStripControl extends Control {
         style.right = 0;
         break;
     }
+
+    return style;
   }
+
+  /**
+   * 通过当前的Dock属性，计算出当前控件的样式
+   */
+  // SetStyleByDock(style: any) {
+  //   // 反向的停靠位置
+  //   let reverseDock = this.config.dock == "top" ? "bottom" : this.config.dock == "left" ? "right" : "left";
+
+  //   // 如果需要显示分区线
+  //   if (this.config.showSplit) {
+  //     style["border-" + reverseDock] = "1px solid #ccc";
+  //   }
+
+  //   switch (this.config.dock) {
+  //     case "top":
+  //     case "bottom":
+  //       style.width = "100%";
+  //       style.padding = "2px";
+  //       delete style.height;
+  //       style.left = 0;
+  //       style[this.config.dock] = 0;
+  //       style[this.config.dock == "top" ? "bottom" : "top"] = "auto";
+
+  //       break;
+  //     case "left":
+  //       style.left = 0;
+  //       break;
+  //     case "right":
+  //       style.right = 0;
+  //       break;
+  //   }
+  // }
 
   static GetDefaultConfig(): ToolStripConfig {
     return {

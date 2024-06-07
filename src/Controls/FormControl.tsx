@@ -10,7 +10,7 @@ import { Component, Prop, Provide } from "vue-facing-decorator";
 import DataSourceGroupControl from "./DataSourceGroupControl";
 import store from "@/Vuex/Store";
 
-type ControlConfig = ControlDeclare.ControlConfig;
+type FormConfig = ControlDeclare.FormConfig;
 
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 type Coord = UtilsDeclare.Coord;
@@ -126,7 +126,7 @@ export default class FormControl extends Control {
     );
   }
 
-  static GetDefaultConfig(): ControlConfig {
+  static GetDefaultConfig(): FormConfig {
     return {
       name: store.get.VirtualFileSystem.CurrentFile.name.replace(".form.ts", ""),
       width: 700,
@@ -135,12 +135,14 @@ export default class FormControl extends Control {
       title: "默认标题",
       bgColor: "#F1F1F1",
       enterBtn: "",
+      maximize: false,
+      showTitleBarControls: true,
       $children: [],
     };
   }
 }
 
-export function GetProps(config: ControlConfig) {
+export function GetProps(config: FormConfig) {
   const fieldMap: ConfiguratorItem[] = [
     {
       name: "标题",

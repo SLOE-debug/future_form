@@ -4,8 +4,12 @@ import { ControlDeclare } from "@/Types/ControlDeclare";
 import Compiler from "@/Core/Compile/Compiler";
 import { reactive, watch } from "vue";
 import DataSourceGroupControl from "@/Controls/DataSourceGroupControl";
+import { WindowDeclare } from "@/Types/WindowDeclare";
+import { GlobalApi } from "@/Plugins/Api/ExtendApi";
 
 type GlobalVariate = ControlDeclare.GlobalVariate;
+type TitleBarControl = WindowDeclare.TitleBarControl;
+type ToolStripItem = ControlDeclare.ToolStripItem;
 
 export const globalVariate: GlobalVariate = reactive({ ref_no: "" });
 
@@ -117,6 +121,139 @@ export class BaseWindow {
    */
   async ShowSubWindow() {
     return await this.Show(false, true);
+  }
+
+  /**
+   * 获取公共的ToolStrips配置
+   */
+  GetCommonToolStrips(): ToolStripItem[] {
+    return [
+      {
+        name: "$_select",
+        type: "select",
+        placeholder: "请选择案号",
+        width: 120,
+        height: 24,
+        options: [],
+        value: "",
+        clearable: true,
+        loading: false,
+        loadingText: "正在搜索...",
+        remote: true,
+        systemRemoteMethod: this.RemoteSearchCaseNo.bind(this),
+        display: "table",
+        columns: [
+          { title: "案件文号", field: "ref_no", width: 150 },
+          {
+            title: "申请号",
+            field: "applicationNumber",
+            width: 120,
+          },
+          {
+            title: "委托客户",
+            field: "client_id",
+            width: 50,
+          },
+          {
+            title: "发明名称",
+            field: "invention_title",
+            width: 200,
+          },
+        ],
+        filterable: true,
+        events: {},
+      },
+      {
+        name: "$_edit",
+        type: "button",
+        iconSize: 14,
+        text: "修改模式",
+        width: 24,
+        height: 24,
+        icon: "file:WindowBarEdit",
+        events: {},
+      },
+      {
+        name: "$_new",
+        type: "button",
+        iconSize: 14,
+        text: "新建",
+        width: 24,
+        height: 24,
+        icon: "file:WindowBarNewFile",
+        events: {},
+      },
+      {
+        name: "$_delete",
+        type: "button",
+        iconSize: 14,
+        text: "删除",
+        width: 24,
+        height: 24,
+        icon: "file:WindowBarDelete",
+        events: {},
+      },
+      {
+        name: "$_save",
+        type: "button",
+        iconSize: 14,
+        text: "保存",
+        width: 24,
+        height: 24,
+        icon: "file:WindowBarSave",
+        events: {},
+      },
+      {
+        name: "$_refresh",
+        type: "button",
+        iconSize: 14,
+        text: "刷新",
+        width: 24,
+        height: 24,
+        icon: "file:WindowBarRefresh",
+        events: {},
+      },
+    ];
+  }
+
+  /**
+   * 远程搜索案号
+   */
+  async RemoteSearchCaseNo(item: ToolStripItem, e: string) {
+    if (!!e) {
+      let len = e.length;
+      if (len < 3) return;
+      item.loading = true;
+      try {
+        let res = await GlobalApi.GetListByExpression({
+          exp: `SELECT ref_no
+                    , CASE 
+                        WHEN case_type = 2
+                            THEN pct_file_no
+                        WHEN app_source = 3
+                            OR app_source = 5
+                            THEN file_no
+                        ELSE file_no
+                        END AS applicationNumber
+                    , client_id
+                    , invention_title
+                FROM patent_primary
+                WHERE ref_no LIKE @ref_no`,
+          paramters: {
+            ref_no: `%${e}%`,
+          },
+        });
+        item.loading = false;
+
+        // 如果 item.display 为 table
+        if (item.display === "table") {
+          item.options = res.data.map((r) => ({ m: r }));
+          return;
+        }
+
+        item.options = res.data.map((r) => ({ label: r.ref_no, value: r.ref_no }));
+      } catch {}
+    }
   }
 
   /**
