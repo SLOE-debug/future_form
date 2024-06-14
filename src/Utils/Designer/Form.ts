@@ -4,12 +4,12 @@ import { ControlDeclare } from "@/Types/ControlDeclare";
 import Compiler from "@/Core/Compile/Compiler";
 import { reactive, watch } from "vue";
 import DataSourceGroupControl from "@/Controls/DataSourceGroupControl";
-import { WindowDeclare } from "@/Types/WindowDeclare";
 import { GlobalApi } from "@/Plugins/Api/ExtendApi";
+import { GetOrCreateLocalStorageObject } from "../Index";
 
 type GlobalVariate = ControlDeclare.GlobalVariate;
-type TitleBarControl = WindowDeclare.TitleBarControl;
 type ToolStripItem = ControlDeclare.ToolStripItem;
+type ToolStripConfig = ControlDeclare.ToolStripConfig;
 
 export const globalVariate: GlobalVariate = reactive({ ref_no: "" });
 
@@ -50,6 +50,11 @@ export function PropertyChange(m, p, nv, ov) {
 }
 
 /**
+ * 不需要释放的键
+ */
+const noDisposeMembers = ["$refs", "$Window", "GlobalVariate", "isLoaded", "id", "formConfig"];
+
+/**
  * 窗体基类
  */
 export class BaseWindow {
@@ -63,7 +68,12 @@ export class BaseWindow {
    */
   $refs: { [x: string]: any } = {};
 
-  // 窗体ID
+  /**
+   * 当前窗体的FormControl实例，在 FormControl Creted 时赋值
+   */
+  $Window: FormControl;
+
+  // 窗体ID，该ID是编译后的文件ID
   id: string;
 
   /**
@@ -107,7 +117,12 @@ export class BaseWindow {
    */
   async Show(dialog: boolean = false, subWindow: boolean = false) {
     await this.LoadConfig();
-    return await store.dispatch("Window/CreateWindow", { config: this.formConfig, dialog, subWindow, instance: this });
+    return await store.dispatch("Window/CreateWindow", {
+      compileFileId: this.id,
+      dialog,
+      subWindow,
+      instance: this,
+    });
   }
 
   /**
@@ -132,15 +147,15 @@ export class BaseWindow {
         name: "$_select",
         type: "select",
         placeholder: "请选择案号",
-        width: 120,
+        width: 150,
         height: 24,
         options: [],
         value: "",
         clearable: true,
         loading: false,
-        loadingText: "正在搜索...",
+        loadingText: "正在搜索案号中，请稍后...",
+        empty: "未找到相关案号<br />请尝试输入完整案号！",
         remote: true,
-        systemRemoteMethod: this.RemoteSearchCaseNo.bind(this),
         display: "table",
         columns: [
           { title: "案件文号", field: "ref_no", width: 150 },
@@ -161,7 +176,10 @@ export class BaseWindow {
           },
         ],
         filterable: true,
-        events: {},
+        events: {
+          systemRemoteMethod: this.RemoteSearchCaseNo.bind(this),
+          systemOnChange: this.systemOnChange.bind(this),
+        },
       },
       {
         name: "$_edit",
@@ -171,7 +189,9 @@ export class BaseWindow {
         width: 24,
         height: 24,
         icon: "file:WindowBarEdit",
-        events: {},
+        events: {
+          systemOnClick: this.EditMode.bind(this),
+        },
       },
       {
         name: "$_new",
@@ -181,6 +201,7 @@ export class BaseWindow {
         width: 24,
         height: 24,
         icon: "file:WindowBarNewFile",
+        disabled: false,
         events: {},
       },
       {
@@ -191,6 +212,7 @@ export class BaseWindow {
         width: 24,
         height: 24,
         icon: "file:WindowBarDelete",
+        disabled: true,
         events: {},
       },
       {
@@ -201,6 +223,7 @@ export class BaseWindow {
         width: 24,
         height: 24,
         icon: "file:WindowBarSave",
+        disabled: true,
         events: {},
       },
       {
@@ -211,19 +234,23 @@ export class BaseWindow {
         width: 24,
         height: 24,
         icon: "file:WindowBarRefresh",
-        events: {},
+        events: {
+          systemOnClick: this.Refresh.bind(this),
+        },
       },
     ];
   }
 
+  // 历史案号列表key
+  protected readonly historySelectRefNoKey = "historySelectRefNo";
+
   /**
    * 远程搜索案号
    */
-  async RemoteSearchCaseNo(item: ToolStripItem, e: string) {
-    if (!!e) {
-      let len = e.length;
-      if (len < 3) return;
+  private async RemoteSearchCaseNo(config: ToolStripConfig, item: ToolStripItem, e: string) {
+    if (!!e && e.length > 2) {
       item.loading = true;
+
       try {
         let res = await GlobalApi.GetListByExpression({
           exp: `SELECT ref_no
@@ -245,15 +272,64 @@ export class BaseWindow {
         });
         item.loading = false;
 
-        // 如果 item.display 为 table
-        if (item.display === "table") {
-          item.options = res.data.map((r) => ({ m: r }));
-          return;
-        }
-
-        item.options = res.data.map((r) => ({ label: r.ref_no, value: r.ref_no }));
-      } catch {}
+        item.options = res.data.map((r) => ({
+          label: r.ref_no,
+          value: r.ref_no,
+          m: r,
+        }));
+      } catch {
+        item.loading = false;
+      }
+    } else {
+      let history = GetOrCreateLocalStorageObject(this.historySelectRefNoKey, []);
+      item.options = history.map((h) => ({
+        label: h.ref_no,
+        value: h.ref_no,
+        m: h,
+      }));
     }
+  }
+
+  /**
+   * 选择案号
+   */
+  private systemOnChange(config: ToolStripConfig, item: ToolStripItem, e: string) {
+    globalVariate.ref_no = e || "";
+    if (!e) return;
+    // 筛选出当前案号的数据
+    let m = item.options.find((o) => o.value == e)?.m;
+
+    // 获取历史选择的案号
+    let history = GetOrCreateLocalStorageObject(this.historySelectRefNoKey, []);
+    // 如果历史数据中没有当前案号，则添加
+    if (!history.find((h) => h.ref_no == e)) history.push(m);
+    // 如果历史案号大于5个，则删除第一个
+    if (history.length > 5) history.shift();
+    localStorage.setItem("historySelectRefNo", JSON.stringify(history));
+  }
+
+  /**
+   * 修改模式
+   */
+  private EditMode(config: ToolStripConfig, item: ToolStripItem, e: MouseEvent) {
+    // 将 删除、保存按钮置为可用
+    config.items.forEach((i) => {
+      if (i.name == "$_delete" || i.name == "$_save") {
+        i.disabled = !i.disabled;
+      }
+    });
+
+    this.$Window.dataSourceControls.forEach((d) => {
+      d.config.readonly = !d.config.readonly;
+    });
+  }
+
+  /**
+   * 刷新
+   */
+  Refresh(config: ToolStripConfig, item: ToolStripItem, e: MouseEvent) {
+    store.dispatch("Window/RefreshWindow", this.$Window.instanceId);
+    e.stopPropagation();
   }
 
   /**
@@ -320,10 +396,15 @@ export class BaseWindow {
   /**
    * 释放资源
    */
-  Dispose() {
-    this.formConfig = null;
+  Dispose(refresh: boolean = false) {
     let members = Object.keys(this);
     for (const k of members) {
+      /**
+       * 如果是刷新，则不释放以下资源
+       */
+      if (refresh && noDisposeMembers.includes(k)) {
+        continue;
+      }
       this[k] = null;
     }
   }

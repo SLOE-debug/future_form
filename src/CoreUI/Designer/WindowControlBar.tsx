@@ -5,12 +5,9 @@ import { BindEventContext, RegisterEvent } from "@/Utils/Index";
 import { Component, Prop, Provide, Vue, Watch } from "vue-facing-decorator";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { JSX } from "vue/jsx-runtime";
-import { ElOption, ElSelect } from "element-plus";
-import { globalVariate } from "@/Utils/Designer/Form";
 
 type Coord = UtilsDeclare.Coord;
 type ControlConfig = ControlDeclare.ControlConfig;
-type TitleBarControl = WindowDeclare.TitleBarControl;
 
 @Component
 export default class WindowControlBar extends Vue {
@@ -160,7 +157,7 @@ export default class WindowControlBar extends Vue {
   StartMove(e: MouseEvent) {
     if (!(e.target as HTMLDivElement).classList.contains(css.head)) return;
     let rect = ((e.target as HTMLElement).parentNode as HTMLElement).getBoundingClientRect();
-    let deskRect = this.$Store.get.Window.DesktopDom?.getBoundingClientRect() || { left: 0, top: 0 };
+    let deskRect = { left: 0, top: 0 };
     this.offset = { x: e.clientX - rect.left + deskRect.left, y: e.clientY - rect.top };
 
     this.isMove = true;
@@ -187,7 +184,7 @@ export default class WindowControlBar extends Vue {
       case WindowDeclare.StartPosition.CenterScreen:
         let { width, height } = this.windowSize;
 
-        let rect = this.$Store.get.Window.DesktopDom?.getBoundingClientRect() || {
+        let rect = {
           width: innerWidth,
           height: innerHeight,
         };
@@ -239,6 +236,9 @@ export default class WindowControlBar extends Vue {
     );
   }
 
+  /**
+   * 窗体内容是否正在加载
+   */
   contentLoading = true;
   render() {
     let window = (

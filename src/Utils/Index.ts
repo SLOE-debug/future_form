@@ -110,3 +110,15 @@ export function DeepCompareObject(obj1: any, obj2: any): boolean {
 
   return true;
 }
+
+/**
+ * 获取或者创建 localStorage 中的对象
+ */
+export function GetOrCreateLocalStorageObject<T>(key: string, defaultValue: T): T {
+  let value = localStorage.getItem(key);
+  if (!value) {
+    value = JSON.stringify(defaultValue);
+    localStorage.setItem(key, value);
+  }
+  return JSON.parse(value);
+}

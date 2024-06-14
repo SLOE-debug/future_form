@@ -9,6 +9,8 @@ import { defineAsyncComponent } from "vue";
 import { Component, Prop, Provide } from "vue-facing-decorator";
 import DataSourceGroupControl from "./DataSourceGroupControl";
 import store from "@/Vuex/Store";
+import { BaseWindow } from "@/Utils/Designer/Form";
+import SubWindowControl from "./SubWindowControl";
 
 type FormConfig = ControlDeclare.FormConfig;
 
@@ -21,6 +23,10 @@ const AsyncSlideSelector = defineAsyncComponent(() => import("@/CoreUI/Designer/
 export default class FormControl extends Control {
   @Prop
   id: string;
+
+  /**
+   * 窗体实例ID
+   */
   @Prop
   instanceId: string;
 
@@ -48,10 +54,18 @@ export default class FormControl extends Control {
     this.slideStartCoord = null;
   }
 
-  instance: {
-    $refs: any;
-    Dispose: () => void;
-  };
+  /**
+   * 通知 窗体控制条/子窗体 控件加载完成
+   */
+  NotifyControlLoaded() {
+    let parent = this.$parent.$options.__vfdConstructor;
+    if (parent == WindowControlBar) {
+      let windowBar = this.$parent as WindowControlBar;
+      windowBar.contentLoading = false;
+    }
+  }
+
+  instance: BaseWindow;
 
   @Provide
   rootConfig;
@@ -68,6 +82,8 @@ export default class FormControl extends Control {
     if (!this.$Store.get.Designer.Debug || this.$Store.get.Designer.Preview) {
       let { instance, config } = this.$Store.get.Window.Windows[this.instanceId];
       instance.BindWindowEventAndControl(config, this);
+      instance.$Window = this;
+
       this.instance = instance;
     }
     if (this.events.onCreated) {
@@ -75,11 +91,7 @@ export default class FormControl extends Control {
       await this.createEventPromise;
     }
 
-    // 如果父组件是窗体控件，则关闭加载状态
-    if (this.$parent.$options.__vfdConstructor == WindowControlBar) {
-      let windowBar = this.$parent as WindowControlBar;
-      windowBar.contentLoading = false;
-    }
+    this.NotifyControlLoaded();
   }
 
   mounted() {
@@ -185,7 +197,7 @@ export function GetEvents() {
   const eventMap: ConfiguratorItem[] = [
     ...baseEvents,
     {
-      name: "创建",
+      name: "开始创建",
       des: "窗体的开始创建事件",
       type: DesignerDeclare.InputType.ElSelect,
       field: "created",
@@ -196,17 +208,13 @@ export function GetEvents() {
       type: DesignerDeclare.InputType.ElSelect,
       field: "mounted",
     },
-    // {
-    //   name: "自定义按钮",
-    //   des: "窗体标题栏的自定义按钮事件总线",
-    //   type: DesignerDeclare.InputType.ElSelect,
-    //   field: "barToolKitEventBus",
-    //   paramTypes: [
-    //     ["barKit", "BarKit"],
-    //     ["type", "string"],
-    //     ["e", "any"],
-    //   ],
-    // },
+    // 获取焦点
+    {
+      name: "获取焦点",
+      des: "窗体获取焦点事件",
+      type: DesignerDeclare.InputType.ElSelect,
+      field: "focus",
+    },
   ];
   return eventMap;
 }

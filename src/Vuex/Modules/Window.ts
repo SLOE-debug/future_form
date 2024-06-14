@@ -5,77 +5,85 @@ import { CloneStruct } from "@/Utils/Index";
 import { BaseWindow } from "@/Utils/Designer/Form";
 import { Guid } from "@/Utils/Index";
 import { Module, ActionTree, GetterTree } from "vuex";
+import SubWindowControl from "@/Controls/SubWindowControl";
 
-type WindowConfig = WindowDeclare.WindowConfig;
 type DesktopWindowInstances = WindowDeclare.DesktopWindowInstances;
 
 export type WindowState = {
-  WindowConfigs: WindowConfig[];
-  $WindowCollection: WindowCollection;
-  DesktopDom: HTMLDivElement;
+  /**
+   * 桌面窗体实例
+   */
   Windows: { [x: string]: DesktopWindowInstances };
-  WindowInstances: { [x: string]: any };
-  SingleWindowCreatedFlag: { [x: string]: string };
 };
 
 const state: WindowState = {
-  WindowConfigs: [],
   Windows: {},
-  WindowInstances: {},
-  SingleWindowCreatedFlag: {},
-  $WindowCollection: null,
-  DesktopDom: null,
 };
 
 let focusIndex = 0;
 type OpenWindowParams = {
-  config: ControlDeclare.FormConfig;
+  /**
+   * 编译文件ID
+   */
+  compileFileId: string;
+  /**
+   * 是否是对话框
+   */
   dialog: boolean;
+  /**
+   * 是否是子窗体
+   */
   subWindow: boolean;
+  /**
+   * 窗体实例
+   */
   instance: BaseWindow;
 };
 
+/**
+ * 通过 params 创建窗体实例对象
+ */
+function CreateWindowInstance(params: OpenWindowParams): DesktopWindowInstances {
+  return {
+    config: CloneStruct(params.instance.formConfig),
+    focusIndex: focusIndex++,
+    dialog: params.dialog,
+    instance: params.instance,
+    subWindow: params.subWindow,
+  };
+}
+
 const actions: ActionTree<WindowState, any> = {
-  AddWindowConfigs({ state }, windowConfig: WindowConfig[]) {
-    state.WindowConfigs.push(...windowConfig);
-  },
-  SetWindowInstance({ state }, { id, instance }) {
-    state.WindowInstances[id] = instance;
-  },
-  ClearWindows({ state }) {
-    state.Windows = {};
-    state.WindowInstances = {};
-  },
-  ClearWindowConfigs({ state }) {
-    state.WindowConfigs = [];
-  },
+  /**
+   * 设置焦点窗体
+   */
   SetFocusWindow({ state }, id: string) {
     state.Windows[id].focusIndex = focusIndex++;
+    // 获取 window 实例 $Window 的 focus 事件
+    let { onFocus } = state.Windows[id].instance?.$Window?.events || {};
+    onFocus && onFocus();
   },
-  SetWindowCollection({ state }, windowCollection: WindowCollection) {
-    state.$WindowCollection = windowCollection;
-  },
-  SetDesktopDom({ state }, dom: HTMLDivElement) {
-    state.DesktopDom = dom;
-  },
-  // 以下内容3.0重构的
+  /**
+   * 创建窗体
+   */
   CreateWindow({ state, dispatch }, p: OpenWindowParams) {
     let id = Guid.NewGuid();
-    state.Windows[id] = {
-      config: CloneStruct(p.config),
-      focusIndex: focusIndex++,
-      dialog: p.dialog,
-      instance: p.instance,
-      subWindow: p.subWindow,
-    };
+    state.Windows[id] = CreateWindowInstance(p);
     dispatch("SetFocusWindow", id);
+
+    // 如果是子窗体，并且p.instance.$Window存在
+    if (p.subWindow && p.instance.$Window) {
+      let subWindowControl = p.instance.$Window.$parent as SubWindowControl;
+      subWindowControl.subWinInstanceId = id;
+    }
+
     return id;
   },
   async CloseWindow({ state }, id) {
     state.Windows[id].instance.Dispose();
     delete state.Windows[id];
   },
-  // 关闭所有窗口
+  // 关闭所有窗体
   async CloseAllWindows({ state }) {
     for (let id in state.Windows) {
       if (state.Windows[id].subWindow) continue;
@@ -83,15 +91,20 @@ const actions: ActionTree<WindowState, any> = {
       delete state.Windows[id];
     }
   },
+  // 刷新窗体
+  async RefreshWindow({ state, dispatch }, id) {
+    // 存储当前窗体的配置
+    let window = state.Windows[id];
+    // // 关闭当前窗体
+    window.instance.Dispose(true);
+    delete state.Windows[id];
+
+    return await dispatch("CreateWindow", window);
+  },
 };
 
 const getters: GetterTree<WindowState, any> = {
-  WindowConfigs: (state) => state.WindowConfigs,
   Windows: (state) => state.Windows,
-  WindowInstances: (state) => state.WindowInstances,
-  SingleWindowCreatedFlag: (state) => state.SingleWindowCreatedFlag,
-  $WindowCollection: (state) => state.$WindowCollection,
-  DesktopDom: (state) => state.DesktopDom,
 };
 
 const WindowModule: Module<WindowState, any> = {

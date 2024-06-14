@@ -2,7 +2,7 @@ import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { baseProps, baseEvents } from "@/Utils/Designer/Controls";
-import { Component, Provide } from "vue-facing-decorator";
+import { Component, Provide, Watch } from "vue-facing-decorator";
 import FormControl from "./FormControl";
 import { WindowDeclare } from "@/Types/WindowDeclare";
 import { GetAllFormFiles, GetFileById } from "@/Utils/VirtualFileSystem/Index";
@@ -21,6 +21,14 @@ export default class SubWindowControl extends Control {
 
   subWinInstanceId: string = null;
 
+  /**
+   * 监听subWinInstanceId的变化
+   */
+  @Watch("subWinInstanceId")
+  onSubWinInstanceIdChanged(val: string) {
+    this.rootConfig = [this.$Store.get.Window.Windows[val].config];
+  }
+
   @Provide
   rootConfig: ControlConfig[];
 
@@ -37,8 +45,6 @@ export default class SubWindowControl extends Control {
           subWin = m[this.config.createClassName] as typeof BaseWindow;
         }
         this.subWinInstanceId = await new subWin(undefined).ShowSubWindow();
-
-        this.rootConfig = [this.$Store.get.Window.Windows[this.subWinInstanceId].config];
       });
     }
   }
@@ -59,6 +65,10 @@ export default class SubWindowControl extends Control {
           height: this.config.height + "px",
           overflowX: "hidden",
         }}
+        onClick={(e) => {
+          this.$Store.get.Window.Windows[this.subWinInstanceId].focusIndex--;
+          this.$Store.dispatch("Window/SetFocusWindow", this.subWinInstanceId);
+        }}
       >
         {this.$Store.get.Designer.Debug ? (
           <>
@@ -67,7 +77,8 @@ export default class SubWindowControl extends Control {
             <span>绑定窗体：{this.config.subWindowId}</span>
           </>
         ) : (
-          this.subWinInstanceId && (
+          this.subWinInstanceId &&
+          this.$Store.get.Window.Windows[this.subWinInstanceId] && (
             <FormControl
               {...{
                 locate: { index: 0 },

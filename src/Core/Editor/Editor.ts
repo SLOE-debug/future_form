@@ -165,7 +165,7 @@ export default class Editor {
           },
         ]);
 
-        res.language.tokenizer.root.unshift([/class|extends|new/, "keyword", "@className"]);
+        res.language.tokenizer.root.unshift([/class |extends |new /, "keyword", "@className"]);
         res.language.tokenizer.root.unshift([/console/, "typeIdentifier"]);
         res.language.tokenizer.className = [
           [/[a-zA-Z][\w\$]*/, "typeIdentifier", "@pop"],

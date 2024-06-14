@@ -285,7 +285,6 @@ export default class TableControl extends Control {
         v-model={rowData[field]}
         disabled={isReadOnly}
         filterable
-        style={{ height: "65%" }}
         options={
           isDebug
             ? []
@@ -555,6 +554,7 @@ export default class TableControl extends Control {
     this.highlightColumnStyle?.remove();
     this.highlightColumnStyleId = "";
     this.highlightColumnClass = "";
+    super.unmounted();
   }
 
   /**

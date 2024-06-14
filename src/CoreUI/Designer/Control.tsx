@@ -54,6 +54,10 @@ export class DataSourceControl extends Vue {
     return this.GetParentDataSourceGroupControl(control.$parent as Control);
   }
 
+  /**
+   * 获取注入的配置
+   * @returns 注入的配置
+   */
   GetInjectConfig() {
     let children = this.parentChildren;
     if (this.locate.filter) {
@@ -61,7 +65,9 @@ export class DataSourceControl extends Vue {
         children = children.filter((c) => c[k] == this.locate.filter[k]);
       }
     }
-    return children[this.locate.index];
+
+    let config = children[this.locate.index];
+    return config;
   }
 
   async created() {
@@ -124,6 +130,9 @@ export class DataSourceControl extends Vue {
   }
 }
 
+/**
+ * 克隆控件配置
+ */
 export function CloneControlConfig(config: ControlConfig, includeChildren: boolean = false): ControlConfig {
   const clonedConfig: ControlConfig = {
     width: 0,
@@ -220,7 +229,9 @@ export default class Control extends DataSourceControl {
   move: boolean;
 
   get disabled() {
-    if (this.config.limit) return this.parentDataSourceControl?.config?.readonly || this.config.disabled;
+    if (this.config.limit && this.parentDataSourceControl?.config?.limit) {
+      return this.parentDataSourceControl?.config?.readonly || this.config.disabled;
+    }
     return this.config.disabled;
   }
 
@@ -262,6 +273,7 @@ export default class Control extends DataSourceControl {
       this.events[k] = null;
     }
     this.events = null;
+    super.unmounted();
   }
 
   Pick(e: MouseEvent) {

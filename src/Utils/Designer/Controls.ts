@@ -115,7 +115,7 @@ export const baseProps: ConfiguratorItem[] = [
   },
   {
     name: "受限",
-    des: "控件是否受到DataSourceGroup控件的限制",
+    des: "控件是否受到数据源控件的只读限制",
     type: DesignerDeclare.InputType.ElSwitch,
     field: "limit",
   },

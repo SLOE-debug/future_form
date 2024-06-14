@@ -166,10 +166,24 @@ export default class ToolStripControl extends Control {
         style={{
           width: (this.config.showText ? item.showTextWidth : item.width) + "px",
           height: (this.config.showText ? item.showTextHeight : item.height) + "px",
+          // 如果 disabled 为 true，则置灰
+          filter: item.disabled ? "grayscale(100%)" : "",
         }}
+        disabled={item.disabled}
         ref={item.name}
         onClick={(e) => {
-          item.events.onClick && item.events.onClick(item, e);
+          let {
+            events: { systemOnClick, onClick },
+          } = item;
+
+          // 执行 onClick 并获取返回值，返回值来指示是否需要继续执行 systemOnClick
+          if (onClick && onClick(item, e) === false) return;
+
+          // 执行 systemOnClick
+          systemOnClick && systemOnClick(this.config, item, e);
+        }}
+        {...{
+          title: item.text || "",
         }}
       >
         {{
@@ -231,28 +245,43 @@ export default class ToolStripControl extends Control {
         filterable
         clearable={item.clearable}
         loading={item.loading}
-        loadingText={item.loadingText || "加载中"}
+        // loadingText={item.loadingText || "加载中"}
         placeholder={item.placeholder}
         v-model={item.value}
         options={item.options}
         remote={item.remote}
         popperClass={css.selectPopper}
         remoteMethod={(e) => {
-          let { systemRemoteMethod, remoteMethod } = item;
+          let {
+            events: { systemRemoteMethod },
+            remoteMethod,
+          } = item;
           // 执行 remoteMethod 并获取返回值，返回值来指示是否需要继续执行 systemRemoteMethod
-          if (remoteMethod) {
-            let result = remoteMethod(item, e);
-            if (result == false) return;
-          }
+          if (remoteMethod && remoteMethod(item, e) === false) return;
           // 如果有 systemRemoteMethod，则执行
-          systemRemoteMethod && systemRemoteMethod(item, e);
+          systemRemoteMethod && systemRemoteMethod(this.config, item, e);
         }}
         ref={item.name}
         onChange={(e) => {
-          item.events.onChange && item.events.onChange(item, e);
+          let {
+            events: { systemOnChange, onChange },
+          } = item;
+          // 执行 onChange 并获取返回值，返回值来指示是否需要继续执行 systemOnChange
+          if (onChange && onChange(item, e) === false) return;
+          // 如果有 systemOnChange，则执行
+          systemOnChange && systemOnChange(this.config, item, e);
+        }}
+        {...{
+          "data-value": item.value,
         }}
       >
         {{
+          loading: () => {
+            return <span v-html={item.loadingText || "加载中"}></span>;
+          },
+          empty: () => {
+            return <span v-html={item.empty || "无数据"}></span>;
+          },
           default: (e) => {
             let m = e.item.m;
             // 如果显示方式是 table，则显示列

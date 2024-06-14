@@ -178,7 +178,7 @@ export default class DesignerSpace extends Vue {
       if (e.code.startsWith("Arrow")) {
         this.Arrow(e.code);
         e.preventDefault();
-      } else this[funcName] && this[funcName](e);
+      } else this[funcName]?.(e);
     },
     mousedown: function () {
       this.menu = false;

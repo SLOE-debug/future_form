@@ -8,7 +8,7 @@ const state: IndexState = {
   System: "",
 };
 
-// 解析当前的 localhost.href 中的 System 参数
+// 解析当前的 localhost.href 中的 System 参数，作为当前程序的标识
 const url = new URL(location.href);
 const System = url.searchParams.get("System");
 if (System) state.System = System;

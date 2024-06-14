@@ -1,6 +1,7 @@
 import WindowCollection from "@/Components/WindowCollection";
 import Compiler from "@/Core/Compile/Compiler";
 import { Guid } from "@/Utils/Index";
+import store from "@/Vuex/Store";
 import { ElNotification } from "element-plus";
 import { Component, Vue } from "vue-facing-decorator";
 
@@ -71,10 +72,25 @@ export default class Home extends Vue {
     };
   }
 
+  /**
+   * 当前系统的中文名称
+   */
+  get SystemName() {
+    let system = store.get.Index.System;
+    switch (system) {
+      case "ceshi":
+        return "开发模式——";
+      case "server50":
+        return "林达刘";
+      default:
+        return "未知系统";
+    }
+  }
+
   render() {
     return (
       <>
-        <div class={css.bg}>林达刘案件管理系统</div>
+        <div class={css.bg}>{this.SystemName}案件管理系统</div>
         <WindowCollection></WindowCollection>
       </>
     );

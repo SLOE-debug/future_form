@@ -200,6 +200,8 @@ export namespace ControlDeclare {
     icon?: string;
     faIcon?: string;
     iconSize?: number;
+    // 禁用
+    disabled?: boolean;
 
     // 下拉框
     placeholder?: string;
@@ -211,7 +213,9 @@ export namespace ControlDeclare {
     loading?: boolean;
     // 加载时显示的文字
     loadingText?: string;
-    // 是否是远程搜索下拉框
+    // 无数据时显示的文字
+    empty?: string;
+    // 远程搜索下拉框
     remote?: boolean;
     // 远程方法
     remoteMethod?: Function;
@@ -229,7 +233,7 @@ export namespace ControlDeclare {
     // 是否选中
     checked?: boolean;
     // 事件函数对象
-    events: any;
+    events: { [x: string]: Function };
 
     // 事件
     [x: string]: any;
