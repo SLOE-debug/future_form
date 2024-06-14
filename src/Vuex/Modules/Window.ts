@@ -21,35 +21,18 @@ const state: WindowState = {
 };
 
 let focusIndex = 0;
-type OpenWindowParams = {
-  /**
-   * 编译文件ID
-   */
-  compileFileId: string;
-  /**
-   * 是否是对话框
-   */
-  dialog: boolean;
-  /**
-   * 是否是子窗体
-   */
-  subWindow: boolean;
-  /**
-   * 窗体实例
-   */
-  instance: BaseWindow;
-};
 
 /**
  * 通过 params 创建窗体实例对象
  */
-function CreateWindowInstance(params: OpenWindowParams): DesktopWindowInstances {
+function CreateWindowInstance(params: DesktopWindowInstances): DesktopWindowInstances {
   return {
     config: CloneStruct(params.instance.formConfig),
     focusIndex: focusIndex++,
     dialog: params.dialog,
     instance: params.instance,
     subWindow: params.subWindow,
+    isRefresh: params.isRefresh || false,
   };
 }
 
@@ -66,12 +49,17 @@ const actions: ActionTree<WindowState, any> = {
   /**
    * 创建窗体
    */
-  CreateWindow({ state, dispatch }, p: OpenWindowParams) {
+  CreateWindow({ state, dispatch }, p: DesktopWindowInstances) {
     let id = Guid.NewGuid();
-    state.Windows[id] = CreateWindowInstance(p);
-    dispatch("SetFocusWindow", id);
+    let window = CreateWindowInstance(p);
+    state.Windows[id] = window;
 
-    // 如果是子窗体，并且p.instance.$Window存在
+    // 如果不是刷新窗体，则设置焦点窗体
+    if (!p.isRefresh) dispatch("SetFocusWindow", id);
+    // 设置窗体为非刷新窗体
+    window.isRefresh = false;
+
+    // 如果是子窗体，并且p.instance.$Window存在，则更新子窗体的实例ID
     if (p.subWindow && p.instance.$Window) {
       let subWindowControl = p.instance.$Window.$parent as SubWindowControl;
       subWindowControl.subWinInstanceId = id;
@@ -95,6 +83,7 @@ const actions: ActionTree<WindowState, any> = {
   async RefreshWindow({ state, dispatch }, id) {
     // 存储当前窗体的配置
     let window = state.Windows[id];
+    window.isRefresh = true;
     // // 关闭当前窗体
     window.instance.Dispose(true);
     delete state.Windows[id];

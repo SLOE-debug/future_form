@@ -197,15 +197,15 @@ export default class Compiler {
       let paramObj = { [type]: param };
       file = (await GlobalApi.GetPublishFile(paramObj)).data as CompiledFile;
       this.CompiledFiles.push(file);
-      for (const ref of file.refs) {
-        let isExist = this.CompiledFiles.find((f) => f.fullPath == ref.absPath);
-        if (!isExist) {
-          await Compiler.GetPublishFile(ref.absPath, "fullPath");
-        }
+    }
+    for (const ref of file.refs) {
+      let isExist = this.CompiledFiles.find((f) => f.fullPath == ref.absPath);
+      if (!isExist) {
+        await Compiler.GetPublishFile(ref.absPath, "fullPath");
       }
-      if (!this.fileId2BlobUrlMap.has(file.fileId)) {
-        this.Install(file);
-      }
+    }
+    if (!this.fileId2BlobUrlMap.has(file.fileId)) {
+      this.Install(file);
     }
     return file;
   }
