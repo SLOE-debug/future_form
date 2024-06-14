@@ -43,6 +43,10 @@ export namespace WindowDeclare {
      * 是否为子窗体
      */
     subWindow: boolean;
+    /**
+     * 是否是刷新的窗体
+     */
+    isRefresh: boolean;
   };
 
   /**

@@ -98,6 +98,7 @@ export default class ToolStripControl extends Control {
         item.height = 24;
         item.placeholder = "选择框";
         item.options = [];
+        item.display = "list";
         break;
     }
 
@@ -241,19 +242,18 @@ export default class ToolStripControl extends Control {
         filterable
         clearable={item.clearable}
         loading={item.loading}
-        // loadingText={item.loadingText || "加载中"}
         placeholder={item.placeholder}
         v-model={item.value}
         options={item.options}
         remote={item.remote}
-        popperClass={css.selectPopper}
+        popperClass={[css.selectPopper, item.display == "table" ? css.tableSelectPopper : ""].join(" ")}
         remoteMethod={(e) => {
           let {
-            events: { systemRemoteMethod },
-            remoteMethod,
+            events: { systemRemoteMethod, onRemoteMethod },
           } = item;
-          // 执行 remoteMethod 并获取返回值，返回值来指示是否需要继续执行 systemRemoteMethod
-          if (remoteMethod && remoteMethod(item, e) === false) return;
+
+          // 执行 onRemoteMethod 并获取返回值，返回值来指示是否需要继续执行 systemRemoteMethod
+          if (onRemoteMethod && onRemoteMethod(item, e) === false) return;
           // 如果有 systemRemoteMethod，则执行
           systemRemoteMethod && systemRemoteMethod(this.config, item, e);
         }}
@@ -294,21 +294,18 @@ export default class ToolStripControl extends Control {
                 </span>
               );
             }
-            return null;
+            return e.item.label;
           },
-          header: () => {
-            // 如果显示方式是 table，则显示列头
-            if (item.display == "table") {
-              return (
-                <div style={this.GetTableSelectColumnsStyle(item)}>
-                  {item.columns.map((col) => (
-                    <div>{col.title}</div>
-                  ))}
-                </div>
-              );
-            }
-            return null;
-          },
+          header:
+            item.display == "table" // 如果显示方式是 table，则显示列
+              ? () => (
+                  <div style={this.GetTableSelectColumnsStyle(item)}>
+                    {item.columns.map((col) => (
+                      <div>{col.title}</div>
+                    ))}
+                  </div>
+                )
+              : null,
         }}
       </ElSelectV2>
     );
@@ -438,38 +435,6 @@ export default class ToolStripControl extends Control {
     return style;
   }
 
-  /**
-   * 通过当前的Dock属性，计算出当前控件的样式
-   */
-  // SetStyleByDock(style: any) {
-  //   // 反向的停靠位置
-  //   let reverseDock = this.config.dock == "top" ? "bottom" : this.config.dock == "left" ? "right" : "left";
-
-  //   // 如果需要显示分区线
-  //   if (this.config.showSplit) {
-  //     style["border-" + reverseDock] = "1px solid #ccc";
-  //   }
-
-  //   switch (this.config.dock) {
-  //     case "top":
-  //     case "bottom":
-  //       style.width = "100%";
-  //       style.padding = "2px";
-  //       delete style.height;
-  //       style.left = 0;
-  //       style[this.config.dock] = 0;
-  //       style[this.config.dock == "top" ? "bottom" : "top"] = "auto";
-
-  //       break;
-  //     case "left":
-  //       style.left = 0;
-  //       break;
-  //     case "right":
-  //       style.right = 0;
-  //       break;
-  //   }
-  // }
-
   static GetDefaultConfig(): ToolStripConfig {
     return {
       width: 70,
@@ -486,7 +451,7 @@ export default class ToolStripControl extends Control {
 }
 
 // 按钮属性
-function GetButtonProps(item: any) {
+function GetButtonProps(item: ToolStripItem) {
   return [
     // 按钮文本
     {
@@ -556,6 +521,114 @@ function GetButtonProps(item: any) {
   ];
 }
 
+// 下拉框属性
+function GetSelectProps(item: ToolStripItem) {
+  return [
+    // 宽度
+    {
+      name: "宽度",
+      field: { ref: item, key: "width" },
+      des: "工具条控件的下拉框宽度",
+      type: DesignerDeclare.InputType.ElInputNumber,
+    },
+    // 高度
+    {
+      name: "高度",
+      field: { ref: item, key: "height" },
+      des: "工具条控件的下拉框高度",
+      type: DesignerDeclare.InputType.ElInputNumber,
+    },
+    // 占位符
+    {
+      name: "占位符",
+      field: { ref: item, key: "placeholder" },
+      des: "工具条控件的下拉框占位符",
+      type: DesignerDeclare.InputType.ElInput,
+    },
+    // 选项
+    {
+      name: "选项",
+      field: { ref: item, key: "options" },
+      des: "工具条控件的下拉框选项",
+      type: DesignerDeclare.InputType.Options,
+    },
+    // 占位符
+    {
+      name: "占位符",
+      field: { ref: item, key: "placeholder" },
+      des: "工具条控件的下拉框占位符",
+      type: DesignerDeclare.InputType.ElInput,
+    },
+    // 默认值
+    {
+      name: "默认值",
+      field: { ref: item, key: "value" },
+      des: "工具条控件的下拉框默认值",
+      type: DesignerDeclare.InputType.ElInput,
+    },
+    // 是否可清空
+    {
+      name: "可清空",
+      field: { ref: item, key: "clearable" },
+      des: "工具条控件的下拉框是否可清空",
+      type: DesignerDeclare.InputType.ElSwitch,
+    },
+    // 加载中
+    {
+      name: "加载中",
+      field: { ref: item, key: "loading" },
+      des: "下拉框远程搜索时是否加载中",
+      type: DesignerDeclare.InputType.ElSwitch,
+    },
+    // 加载中显示的文字
+    {
+      name: "加载中文字",
+      field: { ref: item, key: "loadingText" },
+      des: "工具条控件的下拉框加载中显示的文字",
+      type: DesignerDeclare.InputType.ElInput,
+    },
+    // 无数据时显示的文字
+    {
+      name: "无数据文字",
+      field: { ref: item, key: "empty" },
+      des: "工具条控件的下拉框无数据时显示的文字",
+      type: DesignerDeclare.InputType.ElInput,
+    },
+    // 是否是远程搜索
+    {
+      name: "远程搜索",
+      field: { ref: item, key: "remote" },
+      des: "工具条控件的下拉框是否支持远程搜索",
+      type: DesignerDeclare.InputType.ElSwitch,
+    },
+    // 是否可筛选
+    {
+      name: "可筛选",
+      field: { ref: item, key: "filterable" },
+      des: "工具条控件的下拉框是否可筛选",
+      type: DesignerDeclare.InputType.ElSwitch,
+    },
+    // 显示方式
+    {
+      name: "显示方式",
+      field: { ref: item, key: "display" },
+      des: "工具条控件的下拉框显示方式",
+      type: DesignerDeclare.InputType.ElSelect,
+      options: [
+        { label: "列表", value: "list" },
+        { label: "表格", value: "table" },
+      ],
+    },
+    // 列
+    {
+      name: "表格列",
+      field: { ref: item, key: "columns" },
+      des: "工具条控件的下拉框表格列",
+      type: DesignerDeclare.InputType.Columns,
+    },
+  ];
+}
+
 export function GetProps(config: ToolStripConfig, instance: ToolStripControl) {
   let base = baseProps.filter((item) => item.field != "width" && item.field != "height");
   const fieldMap: ConfiguratorItem[] = [
@@ -619,34 +692,8 @@ export function GetProps(config: ToolStripConfig, instance: ToolStripControl) {
       break;
     case "select":
       fieldMap.push(
-        // 宽度
-        {
-          name: "宽度",
-          field: { ref: item, key: "width" },
-          des: "工具条控件的下拉框宽度",
-          type: DesignerDeclare.InputType.ElInputNumber,
-        },
-        // 高度
-        {
-          name: "高度",
-          field: { ref: item, key: "height" },
-          des: "工具条控件的下拉框高度",
-          type: DesignerDeclare.InputType.ElInputNumber,
-        },
-        // 占位符
-        {
-          name: "占位符",
-          field: { ref: item, key: "placeholder" },
-          des: "工具条控件的下拉框占位符",
-          type: DesignerDeclare.InputType.ElInput,
-        },
-        // 选项
-        {
-          name: "选项",
-          field: { ref: item, key: "options" },
-          des: "工具条控件的下拉框选项",
-          type: DesignerDeclare.InputType.Options,
-        }
+        // 下拉框属性
+        ...GetSelectProps(item)
       );
       break;
   }
@@ -654,11 +701,11 @@ export function GetProps(config: ToolStripConfig, instance: ToolStripControl) {
   return fieldMap;
 }
 
-export function GetEvents(instance: ToolStripConfig) {
+export function GetEvents(config: ToolStripConfig, instance: ToolStripControl) {
   const eventMap: ConfiguratorItem[] = [...baseEvents];
 
   // 获取当前选中的子控件
-  const item = instance.items.find((item) => item.checked);
+  const item = config.items.find((item) => instance.itemCheckedMap.get(item));
   switch (item?.type) {
     case "button":
       eventMap.push(
@@ -679,6 +726,13 @@ export function GetEvents(instance: ToolStripConfig) {
           name: "改变",
           field: { ref: item, key: "onChange" },
           des: "工具条控件的下拉框改变事件",
+          type: DesignerDeclare.InputType.ElSelect,
+        },
+        // 远程搜索事件
+        {
+          name: "远程搜索",
+          field: { ref: item, key: "onRemoteMethod" },
+          des: "工具条控件的下拉框远程搜索事件",
           type: DesignerDeclare.InputType.ElSelect,
         }
       );

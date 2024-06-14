@@ -139,7 +139,7 @@ const actions: ActionTree<DesignerState, any> = {
         ];
       }
 
-      events = GetEvents ? GetEvents(state.SelectedControls[0].config) : [];
+      events = GetEvents ? GetEvents(state.SelectedControls[0].config, state.SelectedControls[0]) : [];
 
       props = props.map((m) => {
         let p = { ...m };

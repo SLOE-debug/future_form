@@ -67,7 +67,6 @@ export default class Configurator extends Vue {
           <ElInput
             v-model={ref[key]}
             style={{ width: "100%", height: "100%" }}
-            placeholder={m.des}
             size="small"
             clearable={true}
             key={m.config.id}
@@ -94,7 +93,6 @@ export default class Configurator extends Vue {
             filterable={true}
             clearable={true}
             size="small"
-            placeholder={m.des}
             multiple={m.multiple || false}
             key={m.config.id}
             {...{
