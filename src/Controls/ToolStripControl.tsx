@@ -5,17 +5,13 @@ import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { baseEvents, baseProps } from "@/Utils/Designer/Controls";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
-  ElAutoResizer,
   ElButton,
   ElDropdown,
   ElDropdownItem,
   ElDropdownMenu,
-  ElSelect,
   ElSelectV2,
-  ElTableV2,
 } from "element-plus";
-import { AnyColumns } from "element-plus/es/components/table-v2/src/types";
-import { Component, Watch } from "vue-facing-decorator";
+import { Component } from "vue-facing-decorator";
 import { JSX } from "vue/jsx-runtime";
 
 type ToolStripConfig = ControlDeclare.ToolStripConfig;

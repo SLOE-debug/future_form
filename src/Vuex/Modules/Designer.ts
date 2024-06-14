@@ -125,11 +125,12 @@ const actions: ActionTree<DesignerState, any> = {
   SetFormDesigner({ state }, formDesigner) {
     state.$FormDesigner = formDesigner;
   },
-  RenderControlConfigurator({ state }) {
+  async RenderControlConfigurator({ state }) {
     let props: ConfiguratorItem[] = [];
     let events: ConfiguratorItem[] = [];
     if (state.SelectedControls.length == 1 || SameType(state.SelectedControls)) {
-      let { GetProps, GetEvents } = require(`@/Controls/${state.SelectedControls[0].config.type}Control.tsx`);
+      let { GetProps, GetEvents } = await import(`@/Controls/${state.SelectedControls[0].config.type}Control.tsx`);
+      // let { GetProps, GetEvents } = require(`@/Controls/${state.SelectedControls[0].config.type}Control.tsx`);
 
       if (GetProps) {
         props = [
