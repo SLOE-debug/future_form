@@ -3,13 +3,14 @@ import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
-import { baseProps, baseEvents } from "@/Utils/Designer/Controls";
-import { CreateControlByDragEvent, CreateControlName } from "@/Utils/Designer/Designer";
 import { Guid } from "@/Utils/Index";
-import { ElIcon } from "element-plus";
 import { defineAsyncComponent } from "vue";
 import { Component, Provide, Watch } from "vue-facing-decorator";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
+// 仅在开发模式下导入的模块
+const UtilControl = () => import("@/Utils/Designer/Controls");
+const UtilDesigner = () => import("@/Utils/Designer/Designer");
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type TabsConfig = ControlDeclare.TabsConfig;
@@ -29,7 +30,9 @@ export default class TabsControl extends Control {
     this.$Store.get.Designer.Debug && this.$Store.dispatch("Designer/RenderControlConfigurator");
   }
 
-  Drop(e: DragEvent) {
+  async Drop(e: DragEvent) {
+    let { CreateControlByDragEvent, CreateControlName } = await UtilDesigner();
+
     let config = CreateControlByDragEvent.call(this, e) as ControlConfig;
 
     config.id = Guid.NewGuid();
@@ -325,7 +328,9 @@ export default class TabsControl extends Control {
   }
 }
 
-export function GetProps(config: TabsConfig) {
+export async function GetProps(config: TabsConfig) {
+  let { baseProps } = await UtilControl();
+
   const fieldMap: ConfiguratorItem[] = [...baseProps.filter((p) => p.field != "round")];
 
   if (config.value && config.tabs.length) {
@@ -352,7 +357,9 @@ export function GetProps(config: TabsConfig) {
   return fieldMap;
 }
 
-export function GetEvents() {
+export async function GetEvents() {
+  let { baseEvents } = await UtilControl();
+
   const eventMap: ConfiguratorItem[] = [...baseEvents];
   return eventMap;
 }

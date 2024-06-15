@@ -1,9 +1,11 @@
 import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { baseEvents, baseProps } from "@/Utils/Designer/Controls";
 import { ElButton } from "element-plus";
 import { Component } from "vue-facing-decorator";
+
+// 仅在开发模式下导入的模块
+const UtilControl = () => import("@/Utils/Designer/Controls");
 
 type ButtonConfig = ControlDeclare.ButtonConfig;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
@@ -30,7 +32,9 @@ export default class ButtonControl extends Control {
   }
 }
 
-export function GetProps() {
+export async function GetProps() {
+  let { baseProps } = await UtilControl();
+
   const fieldMap: ConfiguratorItem[] = [
     ...baseProps.filter((p) => p.field != "bgColor"),
     { name: "文本", des: "按钮显示的文字", type: DesignerDeclare.InputType.ElInput, field: "text" },
@@ -47,13 +51,21 @@ export function GetProps() {
         { label: "Danger", value: "danger" },
       ],
     },
-    { name: "字体大小", des: "按钮显示字体的大小", type: DesignerDeclare.InputType.ElInputNumber, field: "fontSize", min: 8, max: 100 },
+    {
+      name: "字体大小",
+      des: "按钮显示字体的大小",
+      type: DesignerDeclare.InputType.ElInputNumber,
+      field: "fontSize",
+      min: 8,
+      max: 100,
+    },
     { name: "加载中", des: "按钮加载中的状态", type: DesignerDeclare.InputType.ElSwitch, field: "loading" },
   ];
   return fieldMap;
 }
 
-export function GetEvents() {
+export async function GetEvents() {
+  let { baseEvents } = await UtilControl();
   const eventMap: ConfiguratorItem[] = [...baseEvents];
   return eventMap;
 }

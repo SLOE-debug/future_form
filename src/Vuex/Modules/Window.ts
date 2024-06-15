@@ -1,9 +1,5 @@
-import WindowCollection from "@/Components/WindowCollection";
-import { ControlDeclare } from "@/Types/ControlDeclare";
 import { WindowDeclare } from "@/Types/WindowDeclare";
-import { CloneStruct } from "@/Utils/Index";
-import { BaseWindow } from "@/Utils/Designer/Form";
-import { Guid } from "@/Utils/Index";
+import { CloneStruct, Guid } from "@/Utils/Index";
 import { Module, ActionTree, GetterTree } from "vuex";
 import SubWindowControl from "@/Controls/SubWindowControl";
 

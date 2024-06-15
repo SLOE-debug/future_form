@@ -1,9 +1,11 @@
 import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { baseEvents, baseProps } from "@/Utils/Designer/Controls";
 import { ElRadio, ElRadioGroup } from "element-plus";
 import { Component } from "vue-facing-decorator";
+
+// 仅在开发模式下导入的模块
+const UtilControl = () => import("@/Utils/Designer/Controls");
 
 type RadioConfig = ControlDeclare.RadioConfig;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
@@ -49,12 +51,20 @@ export default class RadioControl extends Control {
   }
 }
 
-export function GetProps() {
+export async function GetProps() {
+  let { baseProps } = await UtilControl();
+
   const fieldMap: ConfiguratorItem[] = [
     ...baseProps,
     { name: "选项", des: "单选按钮的选项", type: DesignerDeclare.InputType.Options, field: "options" },
     { name: "属性值", des: "单选按钮的属性值", type: DesignerDeclare.InputType.ElInput, field: "value" },
-    { name: "选项边距", des: "单选按钮的边距", type: DesignerDeclare.InputType.ElInputNumber, field: "optionRight", min: 0 },
+    {
+      name: "选项边距",
+      des: "单选按钮的边距",
+      type: DesignerDeclare.InputType.ElInputNumber,
+      field: "optionRight",
+      min: 0,
+    },
     {
       name: "对齐方式",
       des: "单选按钮的对齐方式",
@@ -70,7 +80,9 @@ export function GetProps() {
   return fieldMap;
 }
 
-export function GetEvents() {
+export async function GetEvents() {
+  let { baseEvents } = await UtilControl();
+
   const eventMap: ConfiguratorItem[] = [...baseEvents];
   return eventMap;
 }

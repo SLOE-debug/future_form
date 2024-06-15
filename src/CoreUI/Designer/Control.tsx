@@ -3,19 +3,15 @@ import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { ComponentBase, Inject, Prop, Vue, Watch } from "vue-facing-decorator";
 import FormControl from "@/Controls/FormControl";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import {
-  FindControlsByKeyValue,
-  CreateControlName,
-  UpdateControlDeclareToDesignerCode,
-  RemoveControlDeclareToDesignerCode,
-} from "@/Utils/Designer/Designer";
-import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import { BindEventContext, Debounce, RegisterEvent } from "@/Utils/Index";
 import DataSourceGroupControl from "@/Controls/DataSourceGroupControl";
 import { JSX } from "vue/jsx-runtime";
-import { GetFileById } from "@/Utils/VirtualFileSystem/Index";
-import DesignerSpace from "./DesignerSpace";
-import ToolStripControl from "@/Controls/ToolStripControl";
+
+// 仅在开发模式下导入的模块
+
+const UtilDesigner = () => import("@/Utils/Designer/Designer");
+const UtilVFS = () => import("@/Utils/VirtualFileSystem/Index");
+const CoreUndoStack = () => import("@/Core/Designer/UndoStack/Stack");
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceControlConfig = ControlDeclare.DataSourceControlConfig;
@@ -106,6 +102,8 @@ export class DataSourceControl extends Vue {
 
     // 如果是预览模式，则请求 GetSourceInDebug
     if (this.$Store.get.Designer.Preview) {
+      let { GetFileById } = await UtilVFS();
+
       methodName = "GetSourceInDebug";
       let file = GetFileById(this.config.dataSource);
       reqParams = { sql: file.content, param: file.extraData.params, args: params };
@@ -182,6 +180,9 @@ export default class Control extends DataSourceControl {
    */
   @Debounce(150)
   async AddStack(nv, ov) {
+    let { FindControlsByKeyValue, CreateControlName, UpdateControlDeclareToDesignerCode } = await UtilDesigner();
+    let { Stack } = await CoreUndoStack();
+
     // 如果当前控件的名称与其他控件的名称冲突，则不执行
     if (
       nv.name != ov.name &&
@@ -569,10 +570,18 @@ export default class Control extends DataSourceControl {
     );
   }
 
-  Delete(pushStack = true) {
+  async Delete(pushStack = true) {
+    let { RemoveControlDeclareToDesignerCode } = await UtilDesigner();
+    let { Stack, StackAction } = await CoreUndoStack();
+
     // 如果父组件是 DesignerSpace,则意味着当前组件是主Form窗体，不允许删除
-    if (this.$parent.$options.__vfdConstructor == DesignerSpace) {
-      ElMessage({ message: "不允许删除主Form窗体！", type: "error" });
+    // if (this.$parent.$options.__vfdConstructor == DesignerSpace) {
+    //   ElMessage({ message: "不允许删除主Form窗体！", type: "error" });
+    //   return;
+    // }
+    // 如果当前窗体是 Form，则不允许删除
+    if (this.config.type == "Form") {
+      ElMessage({ message: "不允许删除窗体！", type: "error" });
       return;
     }
 
@@ -598,8 +607,32 @@ export default class Control extends DataSourceControl {
     return conf;
   }
 
+  /**
+   * 获取基础样式，用于在子类中重写，在 render 中覆盖
+   */
   get baseStyle() {
     return {};
+  }
+
+  /**
+   * 获取子类 render 中 ele 的样式
+   */
+  get eleStyle() {
+    let style: any = {
+      display: this.config.visible || this.config.type == "Form" ? "" : "none",
+      pointerEvents: this.$Store.get.Designer.Debug ? "none" : "initial",
+    };
+    if (this.config.transparent) style.opacity = this.config.transparent;
+    if (this.config.round) style.borderRadius = this.config.round + "px";
+    if (this.config.border) {
+      style.borderWidth = this.config.border + "px";
+      style.borderStyle = this.config.borderStyle;
+      style.borderColor = this.config.borderColor || "auto";
+    }
+    if (this.config.bgColor) style.backgroundColor = this.config.bgColor;
+    if (this.disabled) style.color = this.config.color || "black";
+
+    return style;
   }
 
   events: EventHandlers = {};
@@ -631,21 +664,7 @@ export default class Control extends DataSourceControl {
           this.events.onClick && this.events.onClick(this.config, e);
         }}
       >
-        {
-          <ele
-            style={{
-              display: this.config.visible || this.config.type == "Form" ? "" : "none",
-              opacity: this.config.transparent,
-              borderRadius: this.config.round + "px",
-              borderWidth: this.config.border + "px",
-              borderStyle: this.config.borderStyle,
-              borderColor: this.config.borderColor || "auto",
-              backgroundColor: this.config.bgColor,
-              pointerEvents: this.$Store.get.Designer.Debug ? "none" : "initial",
-              color: this.disabled ? "" : this.config.color || "black",
-            }}
-          ></ele>
-        }
+        {<ele style={this.eleStyle}></ele>}
         {this.error && <div class={css.error}></div>}
         {this.$Store.get.Designer.Debug && this.selected && this.HelpPoint()}
       </div>

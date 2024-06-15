@@ -1,9 +1,11 @@
 import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { baseProps, baseEvents } from "@/Utils/Designer/Controls";
 import { ElDatePicker } from "element-plus";
 import { Component } from "vue-facing-decorator";
+
+// 仅在开发模式下导入的模块
+const UtilControl = () => import("@/Utils/Designer/Controls");
 
 type DateConfig = ControlDeclare.DateConfig;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
@@ -38,7 +40,9 @@ export default class DateControl extends Control {
   }
 }
 
-export function GetProps() {
+export async function GetProps() {
+  let { baseProps } = await UtilControl();
+
   const fieldMap: ConfiguratorItem[] = [
     ...baseProps,
     {
@@ -69,7 +73,9 @@ export function GetProps() {
   return fieldMap;
 }
 
-export function GetEvents() {
+export async function GetEvents() {
+  let { baseEvents } = await UtilControl();
+
   const eventMap: ConfiguratorItem[] = [...baseEvents];
   return eventMap;
 }

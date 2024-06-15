@@ -4,10 +4,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { Component, Vue, Watch } from "vue-facing-decorator";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import Editor from "@/Core/Editor/Editor";
-import { Debounce } from "@/Utils/Index";
 import DesignerSpace from "../Designer/DesignerSpace";
 import SqlConfigurator from "../Designer/SqlConfigurator";
-import ToolBar from "../Designer/Components/ToolBar";
 
 type IFile = VritualFileSystemDeclare.IFile;
 

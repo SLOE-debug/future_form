@@ -1,9 +1,11 @@
 import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { baseProps, baseEvents } from "@/Utils/Designer/Controls";
 import { ElCheckbox, ElCheckboxGroup } from "element-plus";
 import { Component } from "vue-facing-decorator";
+
+// 仅在开发模式下导入的模块
+const UtilControl = () => import("@/Utils/Designer/Controls");
 
 type CheckGroupConfig = ControlDeclare.CheckGroupConfig;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
@@ -56,7 +58,9 @@ export default class CheckGroupControl extends Control {
   }
 }
 
-export function GetProps() {
+export async function GetProps() {
+  let { baseProps } = await UtilControl();
+
   const fieldMap: ConfiguratorItem[] = [
     ...baseProps,
     { name: "选项", des: "多选按钮的选项", type: DesignerDeclare.InputType.Options, field: "options" },
@@ -76,7 +80,9 @@ export function GetProps() {
   return fieldMap;
 }
 
-export function GetEvents() {
+export async function GetEvents() {
+  let { baseEvents } = await UtilControl();
+
   const eventMap: ConfiguratorItem[] = [...baseEvents];
   return eventMap;
 }

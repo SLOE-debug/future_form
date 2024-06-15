@@ -1,8 +1,10 @@
 import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { baseEvents, baseProps } from "@/Utils/Designer/Controls";
 import { Component } from "vue-facing-decorator";
+
+// 仅在开发模式下导入的模块
+const UtilControl = () => import("@/Utils/Designer/Controls");
 
 type LabelConfig = ControlDeclare.LabelConfig;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
@@ -12,18 +14,24 @@ export default class LabelControl extends Control {
   declare config: LabelConfig;
 
   get align() {
+    let style = "display:flex;";
+
     switch (this.config.align) {
       case "right":
         return "text-align: right;";
       case "top":
-        return "display:flex;align-items: start";
+        style += "align-items: start;";
+        break;
       case "bottom":
-        return "display:flex;align-items: end";
+        style += "align-items: end;";
+        break;
       case "center":
-        return "display:flex;align-items: center;justify-content: center;";
+        style += "align-items: center;justify-content: center;";
+        break;
       default:
         return "";
     }
+    return style;
   }
 
   render() {
@@ -39,7 +47,9 @@ export default class LabelControl extends Control {
   }
 }
 
-export function GetProps() {
+export async function GetProps() {
+  let { baseProps } = await UtilControl();
+
   const fieldMap: ConfiguratorItem[] = [
     ...baseProps.filter(
       (p) =>
@@ -50,7 +60,14 @@ export function GetProps() {
         p.field != "errorMessage"
     ),
     { name: "文本", des: "标签显示的文字", type: DesignerDeclare.InputType.ElInput, field: "text" },
-    { name: "字体大小", des: "标签的字体大小", type: DesignerDeclare.InputType.ElInputNumber, field: "fontSize", min: 8, max: 100 },
+    {
+      name: "字体大小",
+      des: "标签的字体大小",
+      type: DesignerDeclare.InputType.ElInputNumber,
+      field: "fontSize",
+      min: 8,
+      max: 100,
+    },
     {
       name: "对齐方式",
       des: "标签的对齐方式",
@@ -68,7 +85,9 @@ export function GetProps() {
   return fieldMap;
 }
 
-export function GetEvents() {
+export async function GetEvents() {
+  let { baseEvents } = await UtilControl();
+
   const eventMap: ConfiguratorItem[] = [...baseEvents];
   return eventMap;
 }

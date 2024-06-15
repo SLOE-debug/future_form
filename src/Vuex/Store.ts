@@ -1,8 +1,8 @@
 import { App } from "vue";
 import { createStore, Store } from "vuex";
-import VirtualFileSystemModule, { VirtualFileSystemState } from "./Modules/VirtualFileSystem";
-import PageModule, { PageState } from "./Modules/Page";
-import DesignerModule, { DesignerState } from "./Modules/Designer";
+import { VirtualFileSystemState } from "./Modules/VirtualFileSystem";
+import { PageState } from "./Modules/Page";
+import { DesignerState } from "./Modules/Designer";
 import WindowModule, { WindowState } from "./Modules/Window";
 import IndexModule, { IndexState } from "./Modules/Index";
 
@@ -15,9 +15,9 @@ export type RootState = {
 };
 const store: Store<RootState> = createStore({
   modules: {
-    Page: PageModule,
-    VirtualFileSystem: VirtualFileSystemModule,
-    Designer: DesignerModule,
+    // Page: PageModule,
+    // VirtualFileSystem: VirtualFileSystemModule,
+    // Designer: DesignerModule,
     Window: WindowModule,
     Index: IndexModule,
   },

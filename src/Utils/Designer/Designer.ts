@@ -5,10 +5,7 @@ import { Guid } from "../Index";
 import store from "@/Vuex/Store";
 import * as ts from "typescript";
 import { editor } from "@/CoreUI/Editor/EditorPage";
-import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
-import { GetDesignerBackgroundFile, GetFileById, GetParentByFile } from "../VirtualFileSystem/Index";
-
-type IFile = VritualFileSystemDeclare.IFile;
+import { GetDesignerBackgroundFile, GetFileById } from "../VirtualFileSystem/Index";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceGroupConfig = ControlDeclare.DataSourceGroupConfig;

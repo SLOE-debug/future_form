@@ -31,14 +31,18 @@ export default class ContextMenu extends Vue {
     this.$Store.dispatch("VirtualFileSystem/SelectFile", this.$Store.get.VirtualFileSystem.CurrentFile.children[0]);
   }
 
-  BringFront() {
-    let controls = this.$Store.get.Designer.SelectedControls.map((c) => c.Delete());
-    controls.forEach((c) => c.children.push(c.del));
+  async BringFront() {
+    for (const control of this.$Store.get.Designer.SelectedControls) {
+      let { del, children } = await control.Delete();
+      children.push(del);
+    }
   }
 
-  UnderFloor() {
-    let controls = this.$Store.get.Designer.SelectedControls.map((c) => c.Delete());
-    controls.forEach((c) => c.children.unshift(c.del));
+  async UnderFloor() {
+    for (const control of this.$Store.get.Designer.SelectedControls) {
+      let { del, children } = await control.Delete();
+      children.unshift(del);
+    }
   }
 
   Copy() {

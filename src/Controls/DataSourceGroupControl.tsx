@@ -7,17 +7,15 @@ import { ElMessage } from "element-plus";
 import { Component, Provide } from "vue-facing-decorator";
 import TableControl from "./TableControl";
 import { defineAsyncComponent, watch } from "vue";
-import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
-import { baseProps, baseEvents } from "@/Utils/Designer/Controls";
-import {
-  CreateControlByDragEvent,
-  CreateControlName,
-  AddControlDeclareToDesignerCode,
-} from "@/Utils/Designer/Designer";
 import { CloneStruct } from "@/Utils/Index";
 import { Guid } from "@/Utils/Index";
-import { GetAllSqlFiles, GetFileById } from "@/Utils/VirtualFileSystem/Index";
 import { TwoWayBinding } from "@/Utils/Designer/Form";
+
+// 仅在开发模式下导入的模块
+const UtilsDesigner = () => import("@/Utils/Designer/Designer");
+const UtilControl = () => import("@/Utils/Designer/Controls");
+const UtilVFS = () => import("@/Utils/VirtualFileSystem/Index");
+const CoreUndoStack = () => import("@/Core/Designer/UndoStack/Stack");
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceGroupConfig = ControlDeclare.DataSourceGroupConfig;
@@ -33,7 +31,10 @@ const AsyncSvgIcon = defineAsyncComponent(() => import("@/Components/SvgIcon"));
 export default class DataSourceGroupControl extends Control {
   declare config: DataSourceGroupConfig;
 
-  Drop(e: DragEvent) {
+  async Drop(e: DragEvent) {
+    let { CreateControlByDragEvent, CreateControlName, AddControlDeclareToDesignerCode } = await UtilsDesigner()
+    let { Stack, StackAction } = await CoreUndoStack()
+
     let config = CreateControlByDragEvent.call(this, e) as ControlConfig;
 
     config.id = Guid.NewGuid();
@@ -135,6 +136,8 @@ export default class DataSourceGroupControl extends Control {
   async GetSource(param: any) {
     let res: { data: any };
     if (this.$Store.get.Designer.Preview) {
+      let { GetFileById } = await UtilVFS()
+
       let sqlFile = GetFileById(this.config.sourceName);
 
       res = await this.$Api.GetDataSourceGroupDataInDebug({
@@ -425,6 +428,7 @@ export default class DataSourceGroupControl extends Control {
    * 保存数据
    */
   private async SaveData(data: any[]) {
+    let { GetFileById } = await UtilVFS()
     if (this.$Store.get.Designer.Preview) {
       let sqlFile = GetFileById(this.config.sourceName);
       return await this.$Api.SaveDataSourceGroupDataInDebug({
@@ -464,7 +468,10 @@ export default class DataSourceGroupControl extends Control {
   }
 }
 
-export function GetProps(config: DataSourceGroupConfig, instance: DataSourceGroupControl) {
+export async function GetProps(config: DataSourceGroupConfig, instance: DataSourceGroupControl) {
+  let { GetAllSqlFiles } = await UtilVFS()
+  let { baseProps } = await UtilControl()
+
   let sqlFiles = GetAllSqlFiles();
 
   const fieldMap: ConfiguratorItem[] = [
@@ -494,7 +501,8 @@ export function GetProps(config: DataSourceGroupConfig, instance: DataSourceGrou
   return fieldMap;
 }
 
-export function GetEvents() {
+export async function GetEvents() {
+  let { baseEvents } = await UtilControl()
   const eventMap: ConfiguratorItem[] = [...baseEvents];
   return eventMap;
 }

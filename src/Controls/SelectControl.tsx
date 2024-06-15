@@ -1,9 +1,11 @@
 import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { baseProps, AddDataSourceProps, baseEvents } from "@/Utils/Designer/Controls";
 import { ElSelectV2, ElTooltip } from "element-plus";
 import { Component, Watch } from "vue-facing-decorator";
+
+// 仅在开发模式下导入的模块
+const UtilControl = () => import("@/Utils/Designer/Controls");
 
 type SelectConfig = ControlDeclare.SelectConfig;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
@@ -161,18 +163,6 @@ export default class SelectControl extends Control {
     );
   }
 
-  // DeclarationPatch() {
-  //   if (!!this.config.dataSource) {
-  //     let params = this.$Store.get.Designer.Sources.find((s) => s.name == this.config.dataSource).params || [];
-  //     if (!params.length) return `{ GetSource() }`;
-  //     else
-  //       return `{ GetSource(data: {${params.map((p) => {
-  //         return `${p.name}: ${p.type};`;
-  //       })}}) }`;
-  //   }
-  //   return "";
-  // }
-
   static GetDefaultConfig(): SelectConfig {
     return {
       width: 130,
@@ -187,7 +177,9 @@ export default class SelectControl extends Control {
   }
 }
 
-export function GetProps(config: SelectConfig) {
+export async function GetProps(config: SelectConfig) {
+  let { baseProps, AddDataSourceProps } = await UtilControl();
+
   const fieldMap: ConfiguratorItem[] = [
     ...baseProps,
     { name: "选项", des: "下拉框的选项", type: DesignerDeclare.InputType.Options, field: "options" },
@@ -202,7 +194,9 @@ export function GetProps(config: SelectConfig) {
   return fieldMap;
 }
 
-export function GetEvents() {
+export async function GetEvents() {
+  let { baseEvents } = await UtilControl();
+
   const eventMap: ConfiguratorItem[] = [...baseEvents];
   return eventMap;
 }

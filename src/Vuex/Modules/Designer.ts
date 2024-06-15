@@ -9,7 +9,7 @@ import { Module, ActionTree, GetterTree } from "vuex";
 import { GetProps as GetBaseProps } from "@/CoreUI/Designer/Control";
 import * as ts from "typescript";
 import { GetDesignerBackgroundFile } from "@/Utils/VirtualFileSystem/Index";
-import { Debounce, DebounceFunction } from "@/Utils/Index";
+import { DebounceFunction } from "@/Utils/Index";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 
@@ -138,10 +138,10 @@ const actions: ActionTree<DesignerState, any> = {
       let { GetProps, GetEvents } = await import(`@/Controls/${type}Control.tsx`);
 
       if (GetProps) {
-        props = [...GetBaseProps(control.config, control), ...GetProps(control.config, control)];
+        props = [...GetBaseProps(control.config, control), ...(await GetProps(control.config, control))];
       }
 
-      events = GetEvents ? GetEvents(control.config, control) : [];
+      events = GetEvents ? await GetEvents(control.config, control) : [];
 
       props = props.map((m) => {
         let p = { ...m };

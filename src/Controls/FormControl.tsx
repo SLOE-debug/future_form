@@ -3,14 +3,15 @@ import WindowControlBar from "@/CoreUI/Designer/WindowControlBar";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
-import { baseProps, baseEvents } from "@/Utils/Designer/Controls";
-import { FindControlsByType } from "@/Utils/Designer/Designer";
 import { defineAsyncComponent } from "vue";
 import { Component, Prop, Provide } from "vue-facing-decorator";
 import DataSourceGroupControl from "./DataSourceGroupControl";
 import store from "@/Vuex/Store";
 import { BaseWindow } from "@/Utils/Designer/Form";
-import SubWindowControl from "./SubWindowControl";
+
+// 仅在开发模式下导入的模块
+const UtilControl = ()=>import("@/Utils/Designer/Controls");
+const UtilDesigner = ()=>import("@/Utils/Designer/Designer");
 
 type FormConfig = ControlDeclare.FormConfig;
 
@@ -155,7 +156,10 @@ export default class FormControl extends Control {
   }
 }
 
-export function GetProps(config: FormConfig) {
+export async function GetProps(config: FormConfig) {
+  let { baseProps } = await UtilControl();
+  let { FindControlsByType } = await UtilDesigner();
+
   const fieldMap: ConfiguratorItem[] = [
     {
       name: "标题",
@@ -218,7 +222,9 @@ export function GetProps(config: FormConfig) {
   return fieldMap;
 }
 
-export function GetEvents() {
+export async function GetEvents() {
+  let { baseEvents } = await UtilControl()
+
   const eventMap: ConfiguratorItem[] = [
     ...baseEvents,
     {

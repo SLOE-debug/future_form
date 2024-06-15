@@ -1,14 +1,15 @@
 import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { baseProps, baseEvents } from "@/Utils/Designer/Controls";
 import { Component, Provide, Watch } from "vue-facing-decorator";
 import FormControl from "./FormControl";
-import { WindowDeclare } from "@/Types/WindowDeclare";
-import { GetAllFormFiles, GetFileById } from "@/Utils/VirtualFileSystem/Index";
 import Compiler from "@/Core/Compile/Compiler";
-import * as ts from "typescript";
 import { BaseWindow } from "@/Utils/Designer/Form";
+
+// 仅在开发模式下导入的模块
+const UtilControl = () => import("@/Utils/Designer/Controls");
+const UtilVFS = () => import("@/Utils/VirtualFileSystem/Index");
+const AsyncTs = () => import("typescript");
 
 type SubWindowConfig = ControlDeclare.SubWindowConfig;
 type ControlConfig = ControlDeclare.ControlConfig;
@@ -105,7 +106,11 @@ export default class SubWindowControl extends Control {
   }
 }
 
-export function GetProps(config: SubWindowConfig, instance: SubWindowControl) {
+export async function GetProps(config: SubWindowConfig, instance: SubWindowControl) {
+  let { baseProps } = await UtilControl();
+  let { GetAllFormFiles, GetFileById } = await UtilVFS();
+  let ts = await AsyncTs();
+
   let subWins = GetAllFormFiles();
   const fieldMap: ConfiguratorItem[] = [
     ...baseProps.filter(
@@ -154,7 +159,8 @@ export function GetProps(config: SubWindowConfig, instance: SubWindowControl) {
   return fieldMap;
 }
 
-export function GetEvents() {
+export async function GetEvents() {
+  let { baseEvents } = await UtilControl();
   const eventMap: ConfiguratorItem[] = [...baseEvents];
   return eventMap;
 }

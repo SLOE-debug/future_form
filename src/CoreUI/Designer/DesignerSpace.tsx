@@ -16,7 +16,6 @@ import { AddControlDeclareToDesignerCode } from "@/Utils/Designer/Designer";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 
 type ControlConfig = ControlDeclare.ControlConfig;
-
 type Coord = UtilsDeclare.Coord;
 
 /**
@@ -80,9 +79,16 @@ export default class DesignerSpace extends Vue {
     } while (refs.length);
   }
 
-  DeleteControl(e: KeyboardEvent): ControlConfig[] {
+  async DeleteControl(e: KeyboardEvent): Promise<ControlConfig[]> {
     if (!this.$Store.get.Designer.Active) return;
-    let delControls = this.$Store.get.Designer.SelectedContainerControls.map((c) => c.Delete()?.del).filter((c) => c);
+
+    let delControls = [];
+    for (const c of this.$Store.get.Designer.SelectedContainerControls) {
+      delControls.push(await c.Delete());
+    }
+    // this.$Store.get.Designer.SelectedContainerControls.map(async (c) => {
+    //   return (await c.Delete())?.del;
+    // }).filter((c) => c);
     if (delControls.length) this.$Store.dispatch("Designer/ClearSelected");
 
     return delControls;

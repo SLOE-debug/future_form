@@ -21,14 +21,17 @@ import {
 import { SortOrder } from "element-plus/es/components/table-v2/src/constants";
 import { CellRendererParams, SortBy } from "element-plus/es/components/table-v2/src/types";
 import { Component } from "vue-facing-decorator";
-import DataSourceGroupControl from "./DataSourceGroupControl";
-import { baseProps, baseEvents } from "@/Utils/Designer/Controls";
+// import { baseProps, baseEvents } from "@/Utils/Designer/Controls";
 import { EventDeclare } from "@/Types/EventDeclare";
 import { CapitalizeFirstLetter, Guid } from "@/Utils/Index";
-import { GetFileById } from "@/Utils/VirtualFileSystem/Index";
+// import { GetFileById } from "@/Utils/VirtualFileSystem/Index";
 import { globalCache } from "@/Utils/Caches";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watch } from "vue";
+
+// 仅在开发模式下导入的模块
+const UtilControl = () => import("@/Utils/Designer/Controls");
+const UtilVFS = () => import("@/Utils/VirtualFileSystem/Index");
 
 type ColumnItem = ControlDeclare.ColumnItem;
 type TableConfig = ControlDeclare.TableConfig;
@@ -327,6 +330,8 @@ export default class TableControl extends Control {
 
           // 如果是预览模式，则请求GetSourceInDebug
           if (this.$Store.get.Designer.Preview) {
+            let { GetFileById } = await UtilVFS();
+
             mehtodName = "GetSourceInDebug";
             let file = GetFileById(dataSource);
             params = { sql: file.content, param: file.extraData.params, args: params };
@@ -731,7 +736,9 @@ export default class TableControl extends Control {
   }
 }
 
-export function GetProps() {
+export async function GetProps() {
+  let { baseProps } = await UtilControl();
+
   const fieldMap: ConfiguratorItem[] = [...baseProps];
   fieldMap.push(
     ...[
@@ -759,7 +766,9 @@ export function GetProps() {
   return fieldMap;
 }
 
-export function GetEvents() {
+export async function GetEvents() {
+  let { baseEvents } = await UtilControl();
+
   const eventMap: ConfiguratorItem[] = [
     ...baseEvents,
     {

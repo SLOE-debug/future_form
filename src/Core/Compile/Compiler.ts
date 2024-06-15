@@ -1,10 +1,12 @@
-import { editor } from "@/CoreUI/Editor/EditorPage";
 import { GlobalApi } from "@/Plugins/Api/ExtendApi";
 import { CompileDeclare } from "@/Types/CompileDeclare";
 import { DeepCompareObject } from "@/Utils/Index";
 import { backupRoot } from "@/Utils/VirtualFileSystem/Index";
 import { Path } from "@/Utils/VirtualFileSystem/Path";
-const monacoImport = import("monaco-editor");
+
+// 仅在开发模式下导入的模块
+const monacoImport = () => import("monaco-editor");
+const editorImport = () => import("@/CoreUI/Editor/EditorPage");
 
 type CompiledFile = CompileDeclare.CompiledFile;
 
@@ -48,7 +50,8 @@ export default class Compiler {
    * @returns 编译后的文件
    */
   static async Compile(debug: boolean = true, publishAll: boolean = false) {
-    let monaco = await monacoImport;
+    let monaco = await monacoImport();
+    let { editor } = await editorImport();
 
     let models = monaco.editor.getModels();
     let worker = await monaco.languages.typescript.getTypeScriptWorker();

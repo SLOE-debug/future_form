@@ -1,9 +1,11 @@
 import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { baseProps, baseEvents } from "@/Utils/Designer/Controls";
 import { ElCheckbox } from "element-plus";
 import { Component } from "vue-facing-decorator";
+
+// 仅在开发模式下导入的模块
+const UtilControl = () => import("@/Utils/Designer/Controls");
 
 type CheckConfig = ControlDeclare.CheckConfig;
 
@@ -41,7 +43,9 @@ export default class CheckControl extends Control {
   }
 }
 
-export function GetProps(config: CheckConfig) {
+export async function GetProps(config: CheckConfig) {
+  let { baseProps } = await UtilControl();
+
   let selectValue = (config.selectValue || true).toString();
   let unSelectValue = (config.unSelectValue || true).toString();
 
@@ -70,7 +74,9 @@ export function GetProps(config: CheckConfig) {
   return fieldMap;
 }
 
-export function GetEvents() {
+export async function GetEvents() {
+  let { baseEvents } = await UtilControl();
+
   const eventMap: ConfiguratorItem[] = [...baseEvents];
   return eventMap;
 }

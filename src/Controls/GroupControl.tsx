@@ -1,13 +1,15 @@
 import Control from "@/CoreUI/Designer/Control";
-import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
-import { baseProps } from "@/Utils/Designer/Controls";
-import { CreateControlByDragEvent, CreateControlName } from "@/Utils/Designer/Designer";
 import { Guid } from "@/Utils/Index";
 import { defineAsyncComponent } from "vue";
 import { Component, Provide } from "vue-facing-decorator";
+
+// 仅在开发模式下导入的模块
+const UtilDesigner = () => import("@/Utils/Designer/Designer");
+const UtilControl = () => import("@/Utils/Designer/Controls");
+const CoreUndoStack = () => import("@/Core/Designer/UndoStack/Stack");
 
 type GroupConfig = ControlDeclare.GroupConfig;
 type ControlConfig = ControlDeclare.ControlConfig;
@@ -21,7 +23,10 @@ const AsyncSvgIcon = defineAsyncComponent(() => import("@/Components/SvgIcon"));
 export default class GroupControl extends Control {
   declare config: GroupConfig;
 
-  Drop(e: DragEvent) {
+  async Drop(e: DragEvent) {
+    let { CreateControlByDragEvent, CreateControlName } = await UtilDesigner();
+    let { Stack, StackAction } = await CoreUndoStack();
+
     let config = CreateControlByDragEvent.call(this, e) as ControlConfig;
 
     config.id = Guid.NewGuid();
@@ -124,7 +129,9 @@ export default class GroupControl extends Control {
   }
 }
 
-export function GetProps() {
+export async function GetProps() {
+  let { baseProps } = await UtilControl();
+
   const fieldMap: ConfiguratorItem[] = [
     ...baseProps.filter(
       (p) => p.field != "readonly" && p.field != "disabled" && p.field != "required" && p.field != "errorMessage"
