@@ -40,7 +40,6 @@ export default class DesignerSpace extends Vue {
       CreateControlName(c);
       c.top -= paste ? this.pasteOffset : c.height / 2;
       c.left -= paste ? this.pasteOffset : c.width / 2;
-      console.log(c);
 
       let containerConfig =
         c.fromContainer && FindControlsByKeyValue(this.$Store.get.Designer.FormConfig, "name", c.fromContainer);

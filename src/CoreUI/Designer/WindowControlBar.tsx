@@ -34,8 +34,6 @@ export default class WindowControlBar extends Vue {
   showMaximize: boolean;
   @Prop({ default: true })
   showClose: boolean;
-  @Prop({ default: true })
-  showTitleBarControls: boolean;
 
   @Prop({
     default: WindowDeclare.StartPosition.CenterScreen,

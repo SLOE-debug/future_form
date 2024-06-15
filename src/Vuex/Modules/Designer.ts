@@ -9,6 +9,7 @@ import { Module, ActionTree, GetterTree } from "vuex";
 import { GetProps as GetBaseProps } from "@/CoreUI/Designer/Control";
 import * as ts from "typescript";
 import { GetDesignerBackgroundFile } from "@/Utils/VirtualFileSystem/Index";
+import { Debounce, DebounceFunction } from "@/Utils/Index";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 
@@ -94,6 +95,9 @@ function SameType(controls: Control[]) {
 let pushStackTimeOut: NodeJS.Timeout;
 let tempStacks: Stack[] = [];
 
+// 延迟执行 RenderControlConfigurator 的 timeOut
+let renderControlConfiguratorTimeOut: NodeJS.Timeout;
+
 const actions: ActionTree<DesignerState, any> = {
   Undo({ state }) {
     let stack = state.Stacks.pop();
@@ -125,36 +129,34 @@ const actions: ActionTree<DesignerState, any> = {
   SetFormDesigner({ state }, formDesigner) {
     state.$FormDesigner = formDesigner;
   },
-  async RenderControlConfigurator({ state }) {
+  RenderControlConfigurator: DebounceFunction(async ({ state }) => {
     let props: ConfiguratorItem[] = [];
     let events: ConfiguratorItem[] = [];
     if (state.SelectedControls.length == 1 || SameType(state.SelectedControls)) {
-      let { GetProps, GetEvents } = await import(`@/Controls/${state.SelectedControls[0].config.type}Control.tsx`);
-      // let { GetProps, GetEvents } = require(`@/Controls/${state.SelectedControls[0].config.type}Control.tsx`);
+      let control = state.SelectedControls[0];
+      let { type } = control.config;
+      let { GetProps, GetEvents } = await import(`@/Controls/${type}Control.tsx`);
 
       if (GetProps) {
-        props = [
-          ...GetBaseProps(state.SelectedControls[0].config, state.SelectedControls[0]),
-          ...GetProps(state.SelectedControls[0].config, state.SelectedControls[0]),
-        ];
+        props = [...GetBaseProps(control.config, control), ...GetProps(control.config, control)];
       }
 
-      events = GetEvents ? GetEvents(state.SelectedControls[0].config, state.SelectedControls[0]) : [];
+      events = GetEvents ? GetEvents(control.config, control) : [];
 
       props = props.map((m) => {
         let p = { ...m };
-        p.config = state.SelectedControls[0].config;
+        p.config = control.config;
         return p;
       });
       events = events.map((m) => {
         let e = { ...m };
-        e.config = state.SelectedControls[0].config;
+        e.config = control.config;
         return e;
       });
     }
     state.ControlProps = props;
     state.ControlEvents = events;
-  },
+  }, 50),
   SelectControlByConfig({ state, dispatch }, configs: ControlConfig[]) {
     let refs = GetAllRefs(state.$FormDesigner);
     let controls = configs.map((c) => refs[c.name]) as Control[];
@@ -163,21 +165,31 @@ const actions: ActionTree<DesignerState, any> = {
   },
   SelectControl({ state, dispatch }, controls: Control[]) {
     if (!state.Debug) return;
+    // 清除选中
     state.SelectedControls.forEach((oc) => {
       oc.selected = false;
       oc.bigShot = false;
+      // 调用 unSelected 方法
+      oc.unSelected();
     });
+    // 选中
     controls.forEach((c) => {
       c.selected = true;
     });
+    // 设置选中
     state.SelectedControls = controls;
     dispatch("RenderControlConfigurator");
+    // 如果只有一个控件，清除 "大人物"
     if (controls.length == 1) {
       state.BigShotControl = null;
     } else {
-      controls[controls.length - 1].bigShot = true;
-      state.BigShotControl = controls[controls.length - 1];
+      // 如果有多个控件，最后一个控件为 "大人物"，为对齐/调整/缩放等操作的参考控件
+      let bigShotControl = controls[controls.length - 1];
+      bigShotControl.bigShot = true;
+      // 设置 "大人物"
+      state.BigShotControl = bigShotControl;
     }
+    // 设置菜单
     dispatch("SetMenus", controls);
 
     return controls;

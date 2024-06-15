@@ -7,10 +7,6 @@ import { Component, Vue } from "vue-facing-decorator";
 export default class WindowCollection extends Vue {
   declare $refs: { [x: string]: WindowControlBar };
 
-  created() {
-    // this.$Store.dispatch("Window/SetWindowCollection", this);
-  }
-
   // el-Select 复制
   CopyElSelect(e: KeyboardEvent) {
     let target = e.target as HTMLElement;
@@ -64,17 +60,32 @@ export default class WindowCollection extends Vue {
   unmounted() {
     RegisterEvent.call(window, this.winEventHandlers, true);
     this.winEventHandlers = null;
-    // this.$Store.dispatch("Window/SetWindowCollection", null);
-    // this.$Store.dispatch("Window/ClearWindowConfigs");
   }
 
   render() {
     let keys = Object.keys(this.$Store.get.Window.Windows)
       .filter((s) => !this.$Store.get.Window.Windows[s].subWindow)
-      .sort((a, b) => this.$Store.get.Window.Windows[a].focusIndex - this.$Store.get.Window.Windows[b].focusIndex);
+      .sort((a, b) => {
+        let win1 = this.$Store.get.Window.Windows[a];
+        let win2 = this.$Store.get.Window.Windows[b];
+
+        let win1CustomRenderIndex = win1.config.customRenderIndex;
+        let win2CustomRenderIndex = win2.config.customRenderIndex;
+
+        // 如果 customRenderIndex = -1，则永远在最底层
+        if (win1CustomRenderIndex == -1) return -1;
+        if (win2CustomRenderIndex == -1) return 1;
+        // 如果 customRenderIndex = 0，则永远在最顶层
+        if (win1CustomRenderIndex == 0) return 1;
+        if (win2CustomRenderIndex == 0) return -1;
+
+        console.log(win1CustomRenderIndex, win2CustomRenderIndex, win1.focusIndex, win2.focusIndex);
+
+        return win1.focusIndex - win2.focusIndex;
+      });
 
     return keys.map((instanceId, i) => {
-      let { config, dialog, subWindow } = this.$Store.get.Window.Windows[instanceId];
+      let { config, dialog, subWindow, selected } = this.$Store.get.Window.Windows[instanceId];
 
       if (subWindow) return null;
       return (
@@ -85,13 +96,14 @@ export default class WindowCollection extends Vue {
             title: config.title,
             // 最大化
             max: config.maximize,
-            showTitleBarControls: config.showTitleBarControls,
             ref: instanceId,
+            showMaximize: config.showMaximize,
+            showClose: config.showClose,
             zIndex: i + 1,
             instanceId: instanceId,
             key: instanceId,
             dialogWindow: dialog,
-            active: i == keys.length - 1,
+            active: selected,
           }}
         >
           <FormControl

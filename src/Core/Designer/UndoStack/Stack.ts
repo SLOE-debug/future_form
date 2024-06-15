@@ -26,7 +26,7 @@ export class Stack {
     return !!this._instance.config;
   }
 
-  Undo() {
+  async Undo() {
     this._instance.disableStack = true;
     switch (this._action) {
       case StackAction.Delete:

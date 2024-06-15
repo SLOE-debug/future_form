@@ -29,6 +29,9 @@ type ColumnItem = ControlDeclare.ColumnItem;
 export default class ColumnsConfigurator extends Vue {
   @Prop
   columns: ColumnItem[] = [];
+  // 是否是下拉框的表格列配置
+  @Prop
+  isSelectColumn: boolean = false;
 
   visible = false;
 
@@ -67,6 +70,9 @@ export default class ColumnsConfigurator extends Vue {
     },
   ];
 
+  /**
+   * 根据列类型返回对应的配置项
+   */
   Adhering(col: ColumnItem) {
     switch (col.type) {
       case "select":
@@ -101,6 +107,16 @@ export default class ColumnsConfigurator extends Vue {
       dataSource: "",
       btnColor: "#409eff",
     };
+
+    // 如果是下拉框列
+    if (this.isSelectColumn) {
+      option = {
+        title: "col",
+        field: "field",
+        width: 120,
+      };
+    }
+
     this.columns.push(option);
   }
 
@@ -111,7 +127,6 @@ export default class ColumnsConfigurator extends Vue {
           v-model={this.visible}
           title="表格列配置"
           onClose={() => {
-            // this.$Store.dispatch("RenderControlConfigurator");
             this.$Store.dispatch("Designer/RenderControlConfigurator");
           }}
           width={"80%"}
@@ -127,28 +142,14 @@ export default class ColumnsConfigurator extends Vue {
             {{ icon: () => <FontAwesomeIcon icon="plus" />, default: () => "新建" }}
           </ElButton>
           <ElTable data={this.columns} maxHeight="50vh">
-            <ElTableColumn property="title" label="标题" width={160}>
+            <ElTableColumn property="title" label="标题">
               {({ row }) => {
                 return <ElInput v-model={row.title}></ElInput>;
               }}
             </ElTableColumn>
-            <ElTableColumn property="field" label="字段" width={160}>
+            <ElTableColumn property="field" label="字段">
               {({ row }) => {
                 return <ElInput v-model={row.field}></ElInput>;
-              }}
-            </ElTableColumn>
-            <ElTableColumn property="type" class-name={css.type} width={160} label="显示类型">
-              {({ row }) => {
-                return (
-                  <>
-                    <ElSelect v-model={row.type}>
-                      {this.columnType.map((t) => (
-                        <ElOption key={t.value} label={t.label} value={t.value}></ElOption>
-                      ))}
-                    </ElSelect>
-                    {this.Adhering(row)}
-                  </>
-                );
               }}
             </ElTableColumn>
             <ElTableColumn property="width" label="宽度">
@@ -165,26 +166,48 @@ export default class ColumnsConfigurator extends Vue {
                 );
               }}
             </ElTableColumn>
-            <ElTableColumn property="hidden" label="不可见">
-              {({ row }) => {
-                return <ElSwitch v-model={row.hidden}></ElSwitch>;
-              }}
-            </ElTableColumn>
-            <ElTableColumn property="readonly" label="只读">
-              {({ row }) => {
-                return <ElSwitch v-model={row.readonly}></ElSwitch>;
-              }}
-            </ElTableColumn>
-            <ElTableColumn property="sortable" label="排序">
-              {({ row }) => {
-                return <ElSwitch v-model={row.sortable}></ElSwitch>;
-              }}
-            </ElTableColumn>
-            <ElTableColumn property="filter" label="筛选">
-              {({ row }) => {
-                return <ElSwitch v-model={row.filter}></ElSwitch>;
-              }}
-            </ElTableColumn>
+
+            {
+              // 如果不是下拉框列，则显示更多列的配置信息
+              !this.isSelectColumn && (
+                <>
+                  <ElTableColumn property="type" class-name={css.type} width={160} label="显示类型">
+                    {({ row }) => {
+                      return (
+                        <>
+                          <ElSelect v-model={row.type}>
+                            {this.columnType.map((t) => (
+                              <ElOption key={t.value} label={t.label} value={t.value}></ElOption>
+                            ))}
+                          </ElSelect>
+                          {this.Adhering(row)}
+                        </>
+                      );
+                    }}
+                  </ElTableColumn>
+                  <ElTableColumn property="hidden" label="不可见">
+                    {({ row }) => {
+                      return <ElSwitch v-model={row.hidden}></ElSwitch>;
+                    }}
+                  </ElTableColumn>
+                  <ElTableColumn property="readonly" label="只读">
+                    {({ row }) => {
+                      return <ElSwitch v-model={row.readonly}></ElSwitch>;
+                    }}
+                  </ElTableColumn>
+                  <ElTableColumn property="sortable" label="排序">
+                    {({ row }) => {
+                      return <ElSwitch v-model={row.sortable}></ElSwitch>;
+                    }}
+                  </ElTableColumn>
+                  <ElTableColumn property="filter" label="筛选">
+                    {({ row }) => {
+                      return <ElSwitch v-model={row.filter}></ElSwitch>;
+                    }}
+                  </ElTableColumn>
+                </>
+              )
+            }
 
             <ElTableColumn label="操作" width={180}>
               {({ row, $index: i }) => {

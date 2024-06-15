@@ -4,13 +4,7 @@ import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { baseEvents, baseProps } from "@/Utils/Designer/Controls";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import {
-  ElButton,
-  ElDropdown,
-  ElDropdownItem,
-  ElDropdownMenu,
-  ElSelectV2,
-} from "element-plus";
+import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElSelectV2 } from "element-plus";
 import { Component } from "vue-facing-decorator";
 import { JSX } from "vue/jsx-runtime";
 
@@ -99,6 +93,7 @@ export default class ToolStripControl extends Control {
         item.placeholder = "选择框";
         item.options = [];
         item.display = "list";
+        item.columns = [];
         break;
     }
 
@@ -368,6 +363,12 @@ export default class ToolStripControl extends Control {
     });
   }
 
+  unSelected() {
+    // 清空 itemCheckedMap
+    this.itemCheckedMap = new WeakMap();
+    super.unSelected();
+  }
+
   render() {
     return super.render(
       <div
@@ -625,6 +626,9 @@ function GetSelectProps(item: ToolStripItem) {
       field: { ref: item, key: "columns" },
       des: "工具条控件的下拉框表格列",
       type: DesignerDeclare.InputType.Columns,
+      extra: {
+        isSelectColumn: true,
+      },
     },
   ];
 }
@@ -734,6 +738,11 @@ export function GetEvents(config: ToolStripConfig, instance: ToolStripControl) {
           field: { ref: item, key: "onRemoteMethod" },
           des: "工具条控件的下拉框远程搜索事件",
           type: DesignerDeclare.InputType.ElSelect,
+          paramTypes: [
+            ["item", "ToolStripItem"],
+            ["query", "string"],
+          ],
+          unuseDefaultParam: true,
         }
       );
       break;

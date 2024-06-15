@@ -133,7 +133,7 @@ export default class Configurator extends Vue {
       case DesignerDeclare.InputType.Columns:
         return (
           this.$Store.get.Designer.SelectedControls.length == 1 && (
-            <ColumnsConfigurator {...{ columns: ref[key] }}></ColumnsConfigurator>
+            <ColumnsConfigurator {...{ columns: ref[key], ...m.extra }}></ColumnsConfigurator>
           )
         );
     }
@@ -165,11 +165,13 @@ export default class Configurator extends Vue {
 
       let type = m.config.type;
       let params = [{ name: "sender", type: `${type}Config` }];
-      params.concat(
+      params = params.concat(
         m.paramTypes?.map(({ 0: name, 1: type }) => {
           return { name, type };
         })
       );
+
+      if (m.unuseDefaultParam) params.splice(0, 1);
 
       AddMethodToDesignerBackground(methodName, params);
       ref[key] = methodName;

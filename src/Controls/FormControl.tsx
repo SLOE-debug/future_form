@@ -148,7 +148,8 @@ export default class FormControl extends Control {
       bgColor: "#F1F1F1",
       enterBtn: "",
       maximize: false,
-      showTitleBarControls: true,
+      showMaximize: true,
+      showClose: true,
       $children: [],
     };
   }
@@ -188,6 +189,30 @@ export function GetProps(config: FormConfig) {
       des: "窗体是否最大化",
       type: DesignerDeclare.InputType.ElSwitch,
       field: "maximize",
+    },
+    // 是否显示最大化按钮
+    {
+      name: "显示最大化按钮",
+      des: "窗体是否显示最大化按钮",
+      type: DesignerDeclare.InputType.ElSwitch,
+      field: "showMaximize",
+    },
+    // 是否显示关闭按钮
+    {
+      name: "显示关闭按钮",
+      des: "窗体是否显示关闭按钮",
+      type: DesignerDeclare.InputType.ElSwitch,
+      field: "showClose",
+    },
+    // 自定义的渲染顺序
+    {
+      name: "自定义渲染顺序",
+      des: "窗体的自定义渲染顺序，-1永远在最底层，0永远在最顶层",
+      type: DesignerDeclare.InputType.ElInputNumber,
+      field: "customRenderIndex",
+      max: Infinity,
+      min: -Infinity,
+      precision: 0,
     },
   ];
   return fieldMap;

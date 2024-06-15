@@ -52,6 +52,17 @@ export function Debounce(wait: number) {
   };
 }
 
+// 防抖函数
+export function DebounceFunction(func: Function, wait: number) {
+  let timeout: NodeJS.Timeout;
+  return function (...args: any[]) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      func.apply(this, args);
+    }, wait);
+  };
+}
+
 /**
  * 克隆对象
  * @param obj 对象

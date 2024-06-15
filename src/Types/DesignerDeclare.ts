@@ -28,12 +28,24 @@ export namespace DesignerDeclare {
     options?: { label: string; value: string | number | boolean | object }[];
     onChange?: (value: any) => void;
     paramTypes?: string[][];
+    /**
+     * 不使用默认参数配置
+     */
+    unuseDefaultParam?: boolean;
     multiple?: boolean;
     field: string | RefValue;
     max?: number;
     min?: number;
+    /**
+     * 保留几位小数
+     */
     precision?: number;
     step?: number;
+
+    /**
+     * 特殊配置类型时传递的额外参数
+     */
+    extra?: any;
   };
 
   export type MenuItem = {

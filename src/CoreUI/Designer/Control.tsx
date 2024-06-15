@@ -10,7 +10,7 @@ import {
   RemoveControlDeclareToDesignerCode,
 } from "@/Utils/Designer/Designer";
 import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
-import { BindEventContext, RegisterEvent } from "@/Utils/Index";
+import { BindEventContext, Debounce, RegisterEvent } from "@/Utils/Index";
 import DataSourceGroupControl from "@/Controls/DataSourceGroupControl";
 import { JSX } from "vue/jsx-runtime";
 import { GetFileById } from "@/Utils/VirtualFileSystem/Index";
@@ -95,23 +95,11 @@ export class DataSourceControl extends Vue {
     }
   }
 
-  // beforeUpdate() {
-  //   let newConfig = this.GetInjectConfig();
-  //   if (newConfig["#concordance"] != this.config["#concordance"]) {
-  //     this.config = newConfig;
-  //   }
-  // }
-
   unmounted() {
     if (!this.$Store.get.Designer.Debug) this.config = null;
   }
 
   async GetInnerSource(params) {
-    // let req =
-    //   sourceCache.get(this.config.dataSource) || this.$Api.GetSource({ id: this.config.dataSource, args: params });
-    // sourceCache.set(this.config.dataSource, req);
-    // let data = (await req).data;
-
     let methodName = "GetSource";
     // 请求参数
     let reqParams: any = { id: this.config.dataSource, args: params };
@@ -172,40 +160,51 @@ export default class Control extends DataSourceControl {
   pushTimeOut: NodeJS.Timeout;
   watchOldValue: ControlConfig;
   @Watch("watchConfig")
-  ConfigChange(nv, ov) {
-    // 存在疑问，ov 为 false 但 nv 有值时，是否要执行
-    if (!this.$Store.get.Designer.Debug || !ov) return;
+  async ConfigChange(nv, ov) {
+    // 是否非 debug 模式 或 ov 为空
+    let isNotDebugOrOvIsNull = !this.$Store.get.Designer.Debug || !ov;
+    // 是否非选中状态或者禁用堆栈
+    let isUnSelectedOrDisableStack = !this.selected || this.disableStack;
+    // 是否与大人物的父容器控件不一致
+    let isNotSameParentContainer =
+      this.config.fromContainer !== this.$Store.get.Designer.BigShotControl?.config?.fromContainer;
+    // 如果符合上述条件，则不执行
+    if (isNotDebugOrOvIsNull || isUnSelectedOrDisableStack || isNotSameParentContainer) return;
 
-    if (this.pushTimeOut) clearTimeout(this.pushTimeOut);
-    if (!this.selected || this.disableStack) return;
-    if (this.$Store.get.Designer.BigShotControl) {
-      if (this.config.fromContainer != this.$Store.get.Designer.BigShotControl.config.fromContainer) return;
-    }
-
+    // 如果 watchOldValue 为空，则赋值为 ov 旧值，只记录当前控件首次更改时的旧值
     if (!this.watchOldValue) this.watchOldValue = ov;
-    this.pushTimeOut = setTimeout(async () => {
-      if (
-        nv.name != ov.name &&
-        !!FindControlsByKeyValue(this.$Store.get.Designer.FormConfig, "name", nv.name, this.config.id)
-      ) {
-        this.disableStack = true;
-        ElMessage({ message: `名称属性具有唯一性！\r\n与其他控件的名称冲突：${nv.name}！`, type: "error" });
-        CreateControlName(this.config);
 
-        this.$nextTick(() => {
-          this.disableStack = false;
-        });
-      } else {
-        // 如果是名称/数据源变更，都需要更新设计器的代码，以便在设计器的“后台”文件中使用最新的代码声明，前者是为了变量的引用统一，后者是为了数据源的获取参数统一
-        if (nv.name != ov.name || nv.sourceName != ov.sourceName) {
-          UpdateControlDeclareToDesignerCode(this.watchOldValue.name, nv);
-        }
+    this.AddStack(nv, ov);
+  }
 
-        await this.$Store.dispatch("Designer/AddStack", new Stack(this, nv, this.watchOldValue));
+  /**
+   * 向堆栈中添加当前变更
+   */
+  @Debounce(150)
+  async AddStack(nv, ov) {
+    // 如果当前控件的名称与其他控件的名称冲突，则不执行
+    if (
+      nv.name != ov.name &&
+      !!FindControlsByKeyValue(this.$Store.get.Designer.FormConfig, "name", nv.name, this.config.id)
+    ) {
+      this.disableStack = true;
+      ElMessage({ message: `名称属性具有唯一性！\r\n与其他控件的名称冲突：${nv.name}！`, type: "error" });
+      CreateControlName(this.config);
+
+      this.$nextTick(() => {
+        this.disableStack = false;
+      });
+    } else {
+      // 如果是名称/数据源变更，都需要更新设计器的代码，以便在设计器的“后台”文件中使用最新的代码声明，前者是为了变量的引用统一，后者是为了数据源的获取参数统一
+      if (nv.name != ov.name || nv.sourceName != ov.sourceName) {
+        UpdateControlDeclareToDesignerCode(this.watchOldValue.name, nv);
       }
 
-      this.watchOldValue = null;
-    }, 150);
+      // 添加到堆栈，记录变更
+      await this.$Store.dispatch("Designer/AddStack", new Stack(this, nv, this.watchOldValue));
+    }
+
+    this.watchOldValue = null;
   }
 
   @Prop({ default: true })
@@ -244,6 +243,11 @@ export default class Control extends DataSourceControl {
       RegisterEvent.call(window, this.winEventHandlers, true);
     }
   }
+
+  /**
+   * 取消选中时触发的事件，在 Vuex 的 Designer 模块中调用
+   */
+  unSelected() {}
 
   get cursor() {
     if (!this.$Store.get.Designer.Debug) return "";

@@ -33,17 +33,33 @@ function CreateWindowInstance(params: DesktopWindowInstances): DesktopWindowInst
     instance: params.instance,
     subWindow: params.subWindow,
     isRefresh: params.isRefresh || false,
+    selected: false,
   };
 }
+
+// 旧的选中窗体
+let oldSelectedId = "";
 
 const actions: ActionTree<WindowState, any> = {
   /**
    * 设置焦点窗体
    */
   SetFocusWindow({ state }, id: string) {
-    state.Windows[id].focusIndex = focusIndex++;
+    let win = state.Windows[id];
+
+    win.focusIndex = focusIndex++;
+
+    // 如果当前不是子窗体
+    if (!win.subWindow) {
+      // 如果有旧的选中窗体
+      if (oldSelectedId) state.Windows[oldSelectedId].selected = false;
+
+      // 设置当前窗体为选中
+      win.selected = true;
+      oldSelectedId = id;
+    }
     // 获取 window 实例 $Window 的 focus 事件
-    let { onFocus } = state.Windows[id].instance?.$Window?.events || {};
+    let { onFocus } = win.instance?.$Window?.events || {};
     onFocus && onFocus();
   },
   /**
@@ -54,7 +70,7 @@ const actions: ActionTree<WindowState, any> = {
     let window = CreateWindowInstance(p);
     state.Windows[id] = window;
 
-    // 如果不是刷新窗体，则设置焦点窗体
+    // 如果不是刷新窗体
     if (!p.isRefresh) dispatch("SetFocusWindow", id);
     // 设置窗体为非刷新窗体
     window.isRefresh = false;
@@ -78,6 +94,8 @@ const actions: ActionTree<WindowState, any> = {
       state.Windows[id].instance.Dispose();
       delete state.Windows[id];
     }
+
+    oldSelectedId = "";
   },
   // 刷新窗体
   async RefreshWindow({ state, dispatch }, id) {

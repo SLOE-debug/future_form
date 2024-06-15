@@ -535,7 +535,7 @@ export default class TableControl extends Control {
     this.highlightColumnStyle.type = "text/css";
     this.highlightColumnStyle.textContent = `${this.columns
       .map((c) => `.hover-${c.field}-${this.highlightColumnStyleId} div[data-key="col-${c.field}"]`)
-      .join(",")} { background: var(--el-table-row-hover-bg-color); }`;
+      .join(",")} { background: #eef5ff; }`;
 
     document.head.appendChild(this.highlightColumnStyle);
   }
@@ -746,6 +746,13 @@ export function GetProps() {
         des: "Table的行是否支持多选",
         type: DesignerDeclare.InputType.ElSwitch,
         field: "multiple",
+      },
+      // 是否高亮列
+      {
+        name: "高亮列",
+        des: "选中列时是否支持高亮",
+        type: DesignerDeclare.InputType.ElSwitch,
+        field: "highlightColumn",
       },
     ]
   );

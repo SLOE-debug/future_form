@@ -205,7 +205,7 @@ export namespace ControlDeclare {
 
     // 下拉框
     placeholder?: string;
-    options?: { label: string; value: string; m: Object }[];
+    options?: { label: string; value: string; m?: Object }[];
     value?: string;
     // 是否可清空
     clearable?: boolean;
