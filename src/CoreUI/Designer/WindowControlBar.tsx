@@ -111,7 +111,13 @@ export default class WindowControlBar extends Vue {
     let { width, height } = this.windowSize;
     height -= this.headHeight;
 
-    return { width: width + "px", height: height + "px" };
+    let style: any = { width: width + "px", height: height + "px" };
+    // 如果是最大化
+    if (this.maximize) {
+      style = { ...style, minHeight: height + "px", minWidth: width + "px" };
+    }
+
+    return style;
   }
 
   left = 0;
