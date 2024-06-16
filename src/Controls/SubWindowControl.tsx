@@ -58,6 +58,58 @@ export default class SubWindowControl extends Control {
     }
   }
 
+  get baseStyle() {
+    let style: any = {};
+
+    // 父窗体的配置
+    let { config: formConfig } = this.parentFormControl;
+
+    // 是否是全部
+    if (this.config.padding.includes("all")) {
+      return {
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+      };
+    }
+
+    this.config.padding.sort();
+
+    // 上下左右
+    for (const p of this.config.padding) {
+      switch (p) {
+        case "top":
+          // 如果有height属性，则设置高度
+          style = {
+            ...style,
+            top: 0,
+            minHeight: style.minHeight ? "100%" : this.config.height + this.config.top + "px",
+          };
+          break;
+        case "bottom":
+          style = {
+            ...style,
+            minHeight: this.config.height + (formConfig.height - (this.config.top + this.config.height)) + "px",
+          };
+          break;
+        case "left":
+          style = { ...style, left: 0, minWidth: this.config.width + this.config.left + "px" };
+          break;
+        case "right":
+          style = {
+            ...style,
+            minWidth: style.minWidth
+              ? "100%"
+              : this.config.width + (formConfig.width - (this.config.left + this.config.width)) + "px",
+          };
+          break;
+      }
+    }
+
+    return style;
+  }
+
   /**
    * 是否正在加载窗体
    */
@@ -67,15 +119,17 @@ export default class SubWindowControl extends Control {
       <div
         class={css.subWin + (this.$Store.get.Designer.Debug ? " " + css.debugViewBox : "")}
         style={{
-          width: this.config.width + "px",
-          height: this.config.height + "px",
+          width: "100%",
+          height: "100%",
           overflowX: "hidden",
+          minWidth: "inherit",
+          minHeight: "inherit",
         }}
         onClick={(e) => {
           this.$Store.get.Window.Windows[this.subWinInstanceId].focusIndex--;
           this.$Store.dispatch("Window/SetFocusWindow", this.subWinInstanceId);
         }}
-        v-loading={this.contentLoading}
+        v-loading={this.contentLoading && !this.$Store.get.Designer.Debug}
         element-loading-text="正在加载窗体..."
         element-loading-background="black"
       >
@@ -110,6 +164,7 @@ export default class SubWindowControl extends Control {
       subWindowId: "",
       createClassName: "",
       form: null,
+      padding: [],
     };
   }
 }
@@ -162,6 +217,21 @@ export async function GetProps(config: SubWindowConfig, instance: SubWindowContr
         ts.forEachChild(sourceFile, GetClassName);
         config.createClassName = className;
       },
+    },
+    // 填充，上下左右
+    {
+      name: "填充",
+      des: "子窗体的填充",
+      type: DesignerDeclare.InputType.ElSelect,
+      field: "padding",
+      options: [
+        { label: "上", value: "top" },
+        { label: "下", value: "bottom" },
+        { label: "左", value: "left" },
+        { label: "右", value: "right" },
+        { label: "全部", value: "all" },
+      ],
+      multiple: true,
     },
   ];
   return fieldMap;

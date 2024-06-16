@@ -23,9 +23,6 @@ const AsyncSlideSelector = defineAsyncComponent(() => import("@/CoreUI/Designer/
 
 @Component
 export default class FormControl extends Control {
-  @Prop
-  id: string;
-
   /**
    * 窗体实例ID
    */
@@ -123,6 +120,13 @@ export default class FormControl extends Control {
       let btn = this.instance.$refs[this.config.enterBtn];
       if (btn) btn.events.onClick && btn.events.onClick(this, e);
     }
+  }
+
+  get baseStyle() {
+    return {
+      minWidth: "inherit",
+      minHeight: "inherit",
+    };
   }
 
   render() {
