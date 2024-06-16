@@ -61,8 +61,20 @@ export default class SubWindowControl extends Control {
   get baseStyle() {
     let style: any = {};
 
-    // 父窗体的配置
-    let { config: formConfig } = this.parentFormControl;
+    let winControl = this.parentFormControl.windowControlBar;
+    let {
+      config: { width, height },
+    } = this.parentFormControl;
+
+    let {
+      maximize,
+      containerStyle: { minHeight, minWidth },
+    } = winControl;
+
+    if (maximize) {
+      width = minWidth.replace("px", "") - 0;
+      height = minHeight.replace("px", "") - 0;
+    }
 
     // 是否是全部
     if (this.config.padding.includes("all")) {
@@ -90,7 +102,7 @@ export default class SubWindowControl extends Control {
         case "bottom":
           style = {
             ...style,
-            minHeight: this.config.height + (formConfig.height - (this.config.top + this.config.height)) + "px",
+            minHeight: this.config.height + (height - (this.config.top + this.config.height)) + "px",
           };
           break;
         case "left":
@@ -101,7 +113,7 @@ export default class SubWindowControl extends Control {
             ...style,
             minWidth: style.minWidth
               ? "100%"
-              : this.config.width + (formConfig.width - (this.config.left + this.config.width)) + "px",
+              : this.config.width + (width - (this.config.left + this.config.width)) + "px",
           };
           break;
       }

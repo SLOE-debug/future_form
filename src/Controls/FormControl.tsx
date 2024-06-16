@@ -29,6 +29,15 @@ export default class FormControl extends Control {
   @Prop
   instanceId: string;
 
+  /**
+   * 窗体控制条
+   */
+  get windowControlBar() {
+    let parent = this.$parent.$options.__vfdConstructor;
+    if (parent == WindowControlBar) return this.$parent as WindowControlBar;
+    return null;
+  }
+
   slideStartCoord: Coord;
   SlideStart(e: MouseEvent) {
     if (e.button == 0 && e.activity != false && this.$Store.get.Designer.Debug)
