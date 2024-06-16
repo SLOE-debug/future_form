@@ -91,29 +91,3 @@
     color: #409eff;
   }
 }
-
-.selectPopper {
-  :global(.el-select-dropdown) {
-    min-width: max-content;
-    :global(.el-select-dropdown__list) {
-      width: auto !important;
-      min-width: max-content;
-      > div {
-        width: auto !important;
-        > li {
-          .clip {
-            // 文本超出部分隐藏
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-          }
-        }
-      }
-    }
-  }
-}
-.tableSelectPopper {
-  li {
-    width: auto !important;
-  }
-}

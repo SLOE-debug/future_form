@@ -205,7 +205,6 @@ export function AddDataSourceProps(fieldMap: ConfiguratorItem[], config: Control
   ];
 
   if (config.dataSource) {
-    // let source = store.get.Designer.Sources.find((m) => m.name == config.dataSource);
     let source = sqlFiles.find((m) => m.id == config.dataSource);
     let fields = GetFields(source.content).map((m) => m.field) as string[];
     let params = source.extraData.params;
@@ -232,7 +231,6 @@ export function AddDataSourceProps(fieldMap: ConfiguratorItem[], config: Control
           if (m.indexOf(".") >= 0) m = m.split(".")[1];
           return { label: m, value: m };
         }),
-        multiple: true,
       },
       {
         name: "数据字段",

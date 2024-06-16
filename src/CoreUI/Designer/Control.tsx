@@ -595,6 +595,8 @@ export default class Control extends DataSourceControl {
 
     RemoveControlDeclareToDesignerCode(this.config.name);
 
+    this.$Store.dispatch("Designer/RenderControlConfigurator");
+
     return { children: par.config.$children, i, del: par.config.$children.splice(i, 1)[0] };
   }
 

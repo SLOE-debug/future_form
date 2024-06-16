@@ -50,7 +50,7 @@ export namespace ControlDeclare {
    */
   export type DataSourceControlConfig = {
     dataSource?: string;
-    displayField?: string[];
+    displayField?: string;
     dataField?: string;
     params?: ParamItem[];
   };
@@ -128,11 +128,19 @@ export namespace ControlDeclare {
   } & ControlConfig;
 
   export type SelectConfig = {
-    options: { label: string; value: string }[];
+    options: { label: string; value: string; m?: Object }[];
     value: string;
     clearable: boolean;
     placeholder: string;
     filterable: boolean;
+    // 显示方式
+    display: "list" | "table";
+    // 列
+    columns?: {
+      title: string;
+      field: string;
+      width?: number;
+    }[];
   } & DataSourceControlConfig &
     ControlConfig;
 

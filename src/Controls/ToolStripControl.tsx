@@ -215,7 +215,7 @@ export default class ToolStripControl extends Control {
   }
 
   /**
-   * 通过 item 的配置，获取表格下拉框的列样式
+   * 获取表格下拉框的列样式
    */
   GetTableSelectColumnsStyle(item: ToolStripItem) {
     return {
@@ -243,7 +243,7 @@ export default class ToolStripControl extends Control {
         v-model={item.value}
         options={item.options}
         remote={item.remote}
-        popperClass={[css.selectPopper, item.display == "table" ? css.tableSelectPopper : ""].join(" ")}
+        popperClass={["selectPopper", item.display == "table" ? "tableSelectPopper" : ""].join(" ")}
         remoteMethod={(e) => {
           let {
             events: { systemRemoteMethod, onRemoteMethod },

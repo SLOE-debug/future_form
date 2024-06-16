@@ -1,8 +1,8 @@
 import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { ElSelectV2, ElTooltip } from "element-plus";
-import { Component, Watch } from "vue-facing-decorator";
+import { ElSelectV2 } from "element-plus";
+import { Component } from "vue-facing-decorator";
 
 // 仅在开发模式下导入的模块
 const UtilControl = () => import("@/Utils/Designer/Controls");
@@ -13,113 +13,35 @@ type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 @Component
 export default class SelectControl extends Control {
   declare config: SelectConfig;
-
-  colWidths = [];
-
-  @Watch("config.options")
-  optionsChange(nv: any[]) {
-    if (!this.config.displayField?.length) return;
-    this.config.displayField.forEach((f, i) => {
-      let str = "";
-      f = this.Desuffix(f);
-      nv.forEach(({ m }) => {
-        if (m[f]?.toString().length > str.length) {
-          str = m[f]?.toString();
-        }
-      });
-      this.colWidths[i] = this.CalculateVWWidthForText(str);
-    });
-  }
-
-  async created() {
-    this.$PaleData = {};
-  }
-
   mounted() {
     this.config.GetSources = this.GetInnerSource;
-  }
-
-  unmounted() {
-    this.$PaleData = null;
-  }
-
-  Vw2Px(vw: number): number {
-    const screenWidth = window.innerWidth;
-    const oneVwInPx = screenWidth / 100;
-    const pxValue = vw * oneVwInPx;
-    return pxValue;
-  }
-
-  CalculateVWWidthForText(text: string, fontSizeInPixels: number = 14): number {
-    const stringLength = text.split("").reduce((length, char) => {
-      if (char.charCodeAt(0) <= 127) {
-        return length + 0.6;
-      } else {
-        return length + 1;
-      }
-    }, 0);
-    const screenWidthInPixels = window.innerWidth;
-    const textWidthInPixels = stringLength * fontSizeInPixels;
-    const vwWidth = (textWidthInPixels / screenWidthInPixels) * 100;
-    return vwWidth;
   }
 
   Desuffix(field: string) {
     return field?.replace(/\[|\]/g, "");
   }
 
-  charWidth = 0.4;
-  DisplayTable(fields: string[], item: any) {
-    return (
-      <div>
-        {fields.map((f, i) => {
-          f = this.Desuffix(f);
-
-          let wide = this.colWidths[i] > 15;
-          let width = "";
-
-          if (fields.length == 1 && this.Vw2Px(this.colWidths[0]) < this.config.width)
-            width = this.config.width - this.Vw2Px(1) + "px";
-          else if (wide) width = "12vw";
-          else width = this.colWidths[i] + "vw";
-
-          if (wide)
-            return (
-              <ElTooltip content={item[f]} showAfter={500}>
-                <span class={css.option + " " + css.wide} style={{ width }}>
-                  {item[f] || ""}
-                </span>
-              </ElTooltip>
-            );
-
-          return (
-            <span class={css.option} style={{ width }}>
-              {item[f] || ""}
-            </span>
-          );
-        })}
-      </div>
-    );
-  }
-
-  isRemoteData = false;
   async GetInnerSource(params) {
-    this.isRemoteData = true;
     let data = await super.GetInnerSource(params);
-
-    this.$PaleData.options = data.map((m) => {
+    this.config.options = data.map((m) => {
       return {
-        label: m[this.Desuffix(this.config.displayField[0])],
+        label: m[this.Desuffix(this.config.displayField)],
         value: m[this.Desuffix(this.config.dataField)].toString(),
         m,
       };
     });
-
-    this.$forceUpdate();
-    return data;
   }
 
-  tiggerEnter = false;
+  /**
+   * 获取表格下拉框的列样式
+   */
+  GetTableSelectColumnsStyle() {
+    return {
+      display: "grid",
+      "grid-template-columns": this.config.columns.map((col) => col.width + "px").join(" "),
+    };
+  }
+
   render() {
     return super.render(
       <ElSelectV2
@@ -130,34 +52,38 @@ export default class SelectControl extends Control {
         filterable={this.config.filterable}
         disabled={this.disabled}
         key={this.config.id}
-        popper-class={this.isRemoteData ? css.customPopper : ""}
-        options={this.$PaleData.options || []}
-        onVisible-change={(v) => {
-          setTimeout(() => {
-            this.tiggerEnter = v;
-          }, 300);
-        }}
-        {...{
-          onKeyup: (e: KeyboardEvent) => {
-            if (this.tiggerEnter && e.key === "Enter") {
-              let ls = this.$PaleData.options;
-              let target = e.target as HTMLInputElement;
-              if (this.config.filterable)
-                ls = this.$PaleData.options.filter((o) => o.label?.indexOf(target.value) >= 0);
-              if (ls.length) {
-                this.config.value = ls[0].value;
-                e.currentTarget.dispatchEvent(new Event("click"));
-              }
-            }
-          },
-        }}
+        popperClass={["selectPopper", this.config.display == "table" ? "tableSelectPopper" : ""].join(" ")}
+        options={this.config.options || []}
       >
-        {({ item }) => {
-          if (this.isRemoteData) {
-            return this.DisplayTable(this.config.displayField, item.m);
-          } else {
-            return <span style={{ width: "100%" }}>{item.label}</span>;
-          }
+        {{
+          default: ({ item: { label, m } }) => {
+            if (this.config.display == "table") {
+              return (
+                <span style={this.GetTableSelectColumnsStyle()}>
+                  {this.config.columns.map((col) => {
+                    return (
+                      <span class={css.clip} title={m[col.field]}>
+                        {m[col.field]}
+                      </span>
+                    );
+                  })}
+                </span>
+              );
+            }
+            return label;
+          },
+          header:
+            this.config.display == "table"
+              ? () => {
+                  return (
+                    <div class={css.tableHeader} style={this.GetTableSelectColumnsStyle()}>
+                      {this.config.columns.map((col) => (
+                        <div>{col.title}</div>
+                      ))}
+                    </div>
+                  );
+                }
+              : null,
         }}
       </ElSelectV2>
     );
@@ -173,6 +99,8 @@ export default class SelectControl extends Control {
       clearable: false,
       placeholder: "",
       filterable: false,
+      display: "list",
+      columns: [],
     };
   }
 }
@@ -187,6 +115,28 @@ export async function GetProps(config: SelectConfig) {
     { name: "清空按钮", des: "是否可以清空选项", type: DesignerDeclare.InputType.ElSwitch, field: "clearable" },
     { name: "占位符", des: "下拉框的占位符", type: DesignerDeclare.InputType.ElInput, field: "placeholder" },
     { name: "筛选", des: "下拉框是否支持筛选", type: DesignerDeclare.InputType.ElSwitch, field: "filterable" },
+    // 显示方式
+    {
+      name: "显示方式",
+      des: "下拉框的显示方式",
+      type: DesignerDeclare.InputType.ElSelect,
+      field: "display",
+      options: [
+        { label: "列表", value: "list" },
+        { label: "表格", value: "table" },
+      ],
+    },
+    // 显示列配置
+    {
+      name: "显示列",
+      des: "下拉框的显示列",
+      type: DesignerDeclare.InputType.Columns,
+      field: "columns",
+      extra: {
+        // 下拉框的列配置
+        isSelectColumn: true,
+      },
+    },
   ];
 
   AddDataSourceProps(fieldMap, config);
