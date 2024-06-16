@@ -28,7 +28,6 @@ function CreateWindowInstance(params: DesktopWindowInstances): DesktopWindowInst
     dialog: params.dialog,
     instance: params.instance,
     subWindow: params.subWindow,
-    isRefresh: params.isRefresh || false,
     selected: false,
   };
 }
@@ -48,7 +47,9 @@ const actions: ActionTree<WindowState, any> = {
     // 如果当前不是子窗体
     if (!win.subWindow) {
       // 如果有旧的选中窗体
-      if (oldSelectedId) state.Windows[oldSelectedId].selected = false;
+      if (oldSelectedId && state.Windows[oldSelectedId]) {
+        state.Windows[oldSelectedId].selected = false;
+      }
 
       // 设置当前窗体为选中
       win.selected = true;
@@ -66,10 +67,8 @@ const actions: ActionTree<WindowState, any> = {
     let window = CreateWindowInstance(p);
     state.Windows[id] = window;
 
-    // 如果不是刷新窗体
-    if (!p.isRefresh) dispatch("SetFocusWindow", id);
-    // 设置窗体为非刷新窗体
-    window.isRefresh = false;
+    // 如果不是子窗体
+    if (!p.subWindow) dispatch("SetFocusWindow", id);
 
     // 如果是子窗体，并且p.instance.$Window存在，则更新子窗体的实例ID
     if (p.subWindow && p.instance.$Window) {
@@ -97,7 +96,6 @@ const actions: ActionTree<WindowState, any> = {
   async RefreshWindow({ state, dispatch }, id) {
     // 存储当前窗体的配置
     let window = state.Windows[id];
-    window.isRefresh = true;
     // // 关闭当前窗体
     window.instance.Dispose(true);
     delete state.Windows[id];

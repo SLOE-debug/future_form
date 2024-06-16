@@ -53,8 +53,8 @@ export async function GetProps(config: CheckConfig) {
     ...baseProps,
     { name: "标签", des: "多选按钮的显示标签", type: DesignerDeclare.InputType.ElInput, field: "label" },
     {
-      name: "属性值",
-      des: "多选按钮的属性值",
+      name: "值",
+      des: "多选按钮的值",
       type: DesignerDeclare.InputType.ElSelect,
       field: "value",
       options: [

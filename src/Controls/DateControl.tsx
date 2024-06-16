@@ -46,8 +46,8 @@ export async function GetProps() {
   const fieldMap: ConfiguratorItem[] = [
     ...baseProps,
     {
-      name: "属性值",
-      des: "时间控件的属性值",
+      name: "值",
+      des: "时间控件的值",
       type: DesignerDeclare.InputType.ElInput,
       field: "value",
     },

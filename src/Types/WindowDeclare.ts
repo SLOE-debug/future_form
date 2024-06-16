@@ -44,10 +44,6 @@ export namespace WindowDeclare {
      */
     subWindow: boolean;
     /**
-     * 是否是刷新的窗体
-     */
-    isRefresh: boolean;
-    /**
      * 是否选中
      */
     selected: boolean;

@@ -3,9 +3,10 @@ import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { ComponentBase, Inject, Prop, Vue, Watch } from "vue-facing-decorator";
 import FormControl from "@/Controls/FormControl";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { BindEventContext, Debounce, RegisterEvent } from "@/Utils/Index";
+import { BindEventContext, Debounce, RegisterEvent, sourceArgsPrefix } from "@/Utils/Index";
 import DataSourceGroupControl from "@/Controls/DataSourceGroupControl";
 import { JSX } from "vue/jsx-runtime";
+import { globalCache } from "@/Utils/Caches";
 
 // 仅在开发模式下导入的模块
 
@@ -24,7 +25,7 @@ type Coord = UtilsDeclare.Coord;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 type ContainerInfo = DesignerDeclare.ContainerInfo;
 
-const sourceCache = new Map<string, Promise<any>>();
+// const sourceCache = new Map<string, Promise<any>>();
 
 @ComponentBase
 export class DataSourceControl extends Vue {
@@ -80,8 +81,8 @@ export class DataSourceControl extends Vue {
       this.parentFormControl.$nextTick(() => {
         let sourceParams = {};
         for (let k in this.config) {
-          if (k.startsWith("sourceArgs_")) {
-            let name = k.split("sourceArgs_")[1];
+          if (k.startsWith(sourceArgsPrefix)) {
+            let name = k.split(sourceArgsPrefix)[1];
             sourceParams[name] = this.parentFormControl.instance.$refs[this.config[k]].config.value;
           }
         }
@@ -96,23 +97,27 @@ export class DataSourceControl extends Vue {
   }
 
   async GetInnerSource(params) {
-    let methodName = "GetSource";
-    // 请求参数
-    let reqParams: any = { id: this.config.dataSource, args: params };
+    // 优先从缓存中获取数据源
+    let promise = globalCache.dataSourceCache.get(this.config.dataSource);
+    if (!promise) {
+      promise = new Promise(async (resolve) => {
+        let methodName = "GetSource";
+        // 请求参数
+        let reqParams: any = { id: this.config.dataSource, args: params };
 
-    // 如果是预览模式，则请求 GetSourceInDebug
-    if (this.$Store.get.Designer.Preview) {
-      let { GetFileById } = await UtilVFS();
+        // 如果是预览模式，则请求 GetSourceInDebug
+        if (this.$Store.get.Designer.Preview) {
+          let { GetFileById } = await UtilVFS();
 
-      methodName = "GetSourceInDebug";
-      let file = GetFileById(this.config.dataSource);
-      reqParams = { sql: file.content, param: file.extraData.params, args: params };
+          methodName = "GetSourceInDebug";
+          let file = GetFileById(this.config.dataSource);
+          reqParams = { sql: file.content, param: file.extraData.params, args: params };
+        }
+
+        resolve((await this.$Api[methodName](reqParams)).data);
+      });
     }
-
-    let req = sourceCache.get(this.config.dataSource) || this.$Api[methodName](reqParams);
-    let data = (await req).data;
-
-    return data;
+    return await promise;
   }
 }
 

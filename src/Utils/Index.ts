@@ -133,3 +133,8 @@ export function GetOrCreateLocalStorageObject<T>(key: string, defaultValue: T): 
   }
   return JSON.parse(value);
 }
+
+/**
+ * 数据源参数前缀
+ */
+export const sourceArgsPrefix = "@";

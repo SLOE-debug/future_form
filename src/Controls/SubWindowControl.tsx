@@ -23,10 +23,11 @@ export default class SubWindowControl extends Control {
   subWinInstanceId: string = null;
 
   /**
-   * 监听subWinInstanceId的变化
+   * 监听subWinInstanceId的变化，意味着子窗体被刷新
    */
   @Watch("subWinInstanceId")
   onSubWinInstanceIdChanged(val: string) {
+    this.contentLoading = true;
     this.rootConfig = [this.$Store.get.Window.Windows[val].config];
   }
 
@@ -57,6 +58,10 @@ export default class SubWindowControl extends Control {
     }
   }
 
+  /**
+   * 是否正在加载窗体
+   */
+  contentLoading = true;
   render() {
     return super.render(
       <div
@@ -70,6 +75,9 @@ export default class SubWindowControl extends Control {
           this.$Store.get.Window.Windows[this.subWinInstanceId].focusIndex--;
           this.$Store.dispatch("Window/SetFocusWindow", this.subWinInstanceId);
         }}
+        v-loading={this.contentLoading}
+        element-loading-text="正在加载窗体..."
+        element-loading-background="black"
       >
         {this.$Store.get.Designer.Debug ? (
           <>

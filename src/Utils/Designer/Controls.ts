@@ -3,6 +3,7 @@ import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import store from "@/Vuex/Store";
 import { GetFields } from "./Designer";
 import { GetAllSqlFiles } from "../VirtualFileSystem/Index";
+import { sourceArgsPrefix } from "../Index";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceControlConfig = ControlDeclare.DataSourceControlConfig;
@@ -214,7 +215,7 @@ export function AddDataSourceProps(fieldMap: ConfiguratorItem[], config: Control
         name: m.name,
         des: "该数据源的参数",
         type: DesignerDeclare.InputType.ElSelect,
-        field: "sourceArgs_" + m.name,
+        field: sourceArgsPrefix + m.name,
         options: GetFlatConfig().map((c) => {
           return { label: c.name, value: c.name };
         }),

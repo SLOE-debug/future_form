@@ -64,7 +64,7 @@ export async function GetProps(config: InputConfig) {
 
   const fieldMap: ConfiguratorItem[] = [
     ...baseProps,
-    { name: "属性值", des: "输入框的属性值", type: DesignerDeclare.InputType.ElInput, field: "value" },
+    { name: "值", des: "输入框的值", type: DesignerDeclare.InputType.ElInput, field: "value" },
     { name: "占位符", des: "输入框的占位符", type: DesignerDeclare.InputType.ElInput, field: "placeholder" },
     { name: "最大长度", des: "输入框的最大长度", type: DesignerDeclare.InputType.ElInputNumber, field: "maxlength" },
   ];

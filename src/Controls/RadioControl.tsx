@@ -57,7 +57,7 @@ export async function GetProps() {
   const fieldMap: ConfiguratorItem[] = [
     ...baseProps,
     { name: "选项", des: "单选按钮的选项", type: DesignerDeclare.InputType.Options, field: "options" },
-    { name: "属性值", des: "单选按钮的属性值", type: DesignerDeclare.InputType.ElInput, field: "value" },
+    { name: "值", des: "单选按钮的值", type: DesignerDeclare.InputType.ElInput, field: "value" },
     {
       name: "选项边距",
       des: "单选按钮的边距",

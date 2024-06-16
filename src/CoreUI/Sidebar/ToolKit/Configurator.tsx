@@ -3,7 +3,7 @@ import { ElColorPicker, ElInput, ElInputNumber, ElOption, ElSelect, ElSwitch } f
 import { Component, Prop, Vue } from "vue-facing-decorator";
 import OptionsConfigurator from "./OptionsConfigurator";
 import ColumnsConfigurator from "./ColumnsConfigurator";
-import { CapitalizeFirstLetter } from "@/Utils/Index";
+import { CapitalizeFirstLetter, sourceArgsPrefix } from "@/Utils/Index";
 import { AddMethodToDesignerBackground, LocateMethod } from "@/Utils/Designer/Designer";
 import { GetDesignerBackgroundFile } from "@/Utils/VirtualFileSystem/Index";
 import Control from "@/CoreUI/Designer/Control";
@@ -165,11 +165,13 @@ export default class Configurator extends Vue {
 
       let type = m.config.type;
       let params = [{ name: "sender", type: `${type}Config` }];
-      params = params.concat(
-        m.paramTypes?.map(({ 0: name, 1: type }) => {
-          return { name, type };
-        })
-      );
+      if (m.paramTypes?.length) {
+        params = params.concat(
+          m.paramTypes?.map(({ 0: name, 1: type }) => {
+            return { name, type };
+          })
+        );
+      }
 
       if (m.unuseDefaultParam) params.splice(0, 1);
 
@@ -192,7 +194,7 @@ export default class Configurator extends Vue {
                   onMouseenter={(e) => {
                     this.des = m.des;
                   }}
-                  class={typeof m.field == "string" && m.field.startsWith("sourceArgs_") ? css.args : ""}
+                  class={typeof m.field == "string" && m.field.startsWith(sourceArgsPrefix) ? css.args : ""}
                 >
                   <div class={css.item}>
                     <div class={css.label}>{m.name}</div>

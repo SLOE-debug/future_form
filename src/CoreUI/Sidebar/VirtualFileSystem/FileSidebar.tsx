@@ -49,23 +49,19 @@ export default class FileSidebar extends Vue {
       {
         icon: this.isRun ? "stop" : "play",
         active: false,
-        title: "运行",
+        title: "运行（F5）",
         color: this.isRun ? "#C85961" : "#9AE69A",
         tiggerEventName: "Preview",
       },
       {
         icon: "cloud-arrow-up",
-        title: "保存到云端",
+        title: "保存到云端（Ctrl + Shift + Alt + S）",
         color: "#409eff",
-        // tiggerEventName: () => {
-        //   this.saveVisible = true;
-        //   this.versionDescription = this.$Store.get.VirtualFileSystem.RootVersions[1]?.versionDescription;
-        // },
         tiggerEventName: "SaveToCloud",
       },
       {
         icon: "rocket",
-        title: "发布",
+        title: "发布（Ctrl + Shift + Alt + P）",
         color: "rgb(65 209 178)",
         tiggerEventName: "Publish",
       },
@@ -291,7 +287,6 @@ export default class FileSidebar extends Vue {
       ElMessage.success("发布成功！");
       BackupRoot(this.$Store.get.VirtualFileSystem.Root);
     } catch (err) {
-      debugger;
       if (err !== "cancel") ElMessage.error("发布失败！");
     }
   }

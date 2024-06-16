@@ -75,6 +75,7 @@ export default class Sidebar extends Vue {
       this.$refs.fileSidebar.Preview();
     });
   }
+
   async Key_F2() {
     ((await this.$Store.dispatch("VirtualFileSystem/GetCurrentEntity")) as IDirectory | IFile).Rename();
   }
@@ -83,6 +84,22 @@ export default class Sidebar extends Vue {
     if (this.$Store.get.Designer.Active || this.activeTab != "project") return;
 
     ((await this.$Store.dispatch("VirtualFileSystem/GetCurrentEntity")) as IDirectory | IFile).Delete();
+  }
+
+  // Ctrl + Shift + Alt + S，保存至云端
+  async Ctrl_Shift_Alt_Key_S() {
+    this.activeTab = "project";
+    this.$nextTick(() => {
+      this.$refs.fileSidebar.SaveToCloud();
+    });
+  }
+
+  // Ctrl + Shift + Alt + P，发布
+  async Ctrl_Shift_Alt_Key_P() {
+    this.activeTab = "project";
+    this.$nextTick(() => {
+      this.$refs.fileSidebar.Publish();
+    });
   }
 
   activeTab = "project";

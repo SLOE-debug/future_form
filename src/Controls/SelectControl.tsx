@@ -111,7 +111,7 @@ export async function GetProps(config: SelectConfig) {
   const fieldMap: ConfiguratorItem[] = [
     ...baseProps,
     { name: "选项", des: "下拉框的选项", type: DesignerDeclare.InputType.Options, field: "options" },
-    { name: "属性值", des: "下拉框的属性值", type: DesignerDeclare.InputType.ElInput, field: "value" },
+    { name: "值", des: "下拉框的值", type: DesignerDeclare.InputType.ElInput, field: "value" },
     { name: "清空按钮", des: "是否可以清空选项", type: DesignerDeclare.InputType.ElSwitch, field: "clearable" },
     { name: "占位符", des: "下拉框的占位符", type: DesignerDeclare.InputType.ElInput, field: "placeholder" },
     { name: "筛选", des: "下拉框是否支持筛选", type: DesignerDeclare.InputType.ElSwitch, field: "filterable" },

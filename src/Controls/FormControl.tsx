@@ -8,10 +8,11 @@ import { Component, Prop, Provide } from "vue-facing-decorator";
 import DataSourceGroupControl from "./DataSourceGroupControl";
 import store from "@/Vuex/Store";
 import { BaseWindow } from "@/Utils/Designer/Form";
+import SubWindowControl from "./SubWindowControl";
 
 // 仅在开发模式下导入的模块
-const UtilControl = ()=>import("@/Utils/Designer/Controls");
-const UtilDesigner = ()=>import("@/Utils/Designer/Designer");
+const UtilControl = () => import("@/Utils/Designer/Controls");
+const UtilDesigner = () => import("@/Utils/Designer/Designer");
 
 type FormConfig = ControlDeclare.FormConfig;
 
@@ -63,6 +64,10 @@ export default class FormControl extends Control {
     if (parent == WindowControlBar) {
       let windowBar = this.$parent as WindowControlBar;
       windowBar.contentLoading = false;
+    }
+    if (parent == SubWindowControl) {
+      let subWin = this.$parent as SubWindowControl;
+      subWin.contentLoading = false;
     }
   }
 
@@ -223,7 +228,7 @@ export async function GetProps(config: FormConfig) {
 }
 
 export async function GetEvents() {
-  let { baseEvents } = await UtilControl()
+  let { baseEvents } = await UtilControl();
 
   const eventMap: ConfiguratorItem[] = [
     ...baseEvents,
