@@ -36,7 +36,7 @@ export default class LabelControl extends Control {
 
   render() {
     return super.render(
-      <div style={`width: 100%;height: 100%;fontSize: ${this.config.fontSize}px;${this.align}`}>
+      <div style={`width: 100%;height: 100%;user-select: none;fontSize: ${this.config.fontSize}px;${this.align}`}>
         <span style={this.config.align == "center" ? "text-align:center" : ""}>{this.config.text}</span>
       </div>
     );

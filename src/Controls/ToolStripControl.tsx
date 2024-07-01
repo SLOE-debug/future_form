@@ -232,12 +232,15 @@ export default class ToolStripControl extends Control {
       <ElSelectV2
         key={item.name}
         class={css.select}
+        v-el-select-copy
+        v-el-select-delete={(e) => {
+          if (item.clearable) this.config.value = "";
+        }}
         style={{
           width: item.width + "px",
           height: item.height + "px",
         }}
         filterable
-        clearable={item.clearable}
         loading={item.loading}
         placeholder={item.placeholder}
         v-model={item.value}
@@ -280,10 +283,10 @@ export default class ToolStripControl extends Control {
             // 如果显示方式是 table，则显示列
             if (item.display == "table") {
               return (
-                <span style={this.GetTableSelectColumnsStyle(item)}>
+                <span class={css.row} style={this.GetTableSelectColumnsStyle(item)}>
                   {item.columns.map((col) => {
                     return (
-                      <span class={css.clip} title={m[col.field]}>
+                      <span class="clip" title={m[col.field]}>
                         {m[col.field]}
                       </span>
                     );

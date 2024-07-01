@@ -11,11 +11,6 @@ export namespace ControlDeclare {
 
   export type OptionValue = string | number;
 
-  export type Locate = {
-    filter?: Record<string, string>;
-    index: number;
-  };
-
   export type ControlConfig = {
     width: number;
     height: number;
@@ -133,6 +128,8 @@ export namespace ControlDeclare {
     clearable: boolean;
     placeholder: string;
     filterable: boolean;
+    // 行高
+    itemHeight: number;
     // 显示方式
     display: "list" | "table";
     // 列
@@ -140,6 +137,7 @@ export namespace ControlDeclare {
       title: string;
       field: string;
       width?: number;
+      isHtml?: boolean;
     }[];
   } & DataSourceControlConfig &
     ControlConfig;
@@ -285,7 +283,7 @@ export namespace ControlDeclare {
     /**
      * 全局变量对象
      */
-    GlobalVariate: GlobalVariate;
+    $globalVariate: GlobalVariate;
     /**
      * 显示窗体
      */
@@ -302,10 +300,33 @@ export namespace ControlDeclare {
      */
     Alert(message: string, type: "success" | "warning" | "info" | "error" = "info", duration: number = 3000): void {}
     /**
+     * 弹出确认框
+     */
+    Confirm(
+      message: string,
+      title: string = "提示",
+      type: "success" | "warning" | "info" | "error" = "info",
+      confirmButtonText: string = "确定",
+      cancelButtonText: string = "取消",
+      showConfirmButton: boolean = true,
+      showCancelButton: boolean = true
+    ): Promise<boolean> {
+      return new Promise((resolve) => {});
+    }
+    /**
+     * 关闭窗体
+     */
+    Close(): void {}
+
+    /**
      * 获取公共的ToolStrips配置
      */
     GetCommonToolStrips(): ToolStripItem[] {
       return [];
     }
+    /**
+     * Watch函数，用于监控数据变化
+     */
+    Watch(data: any, prop: string, callback: (nv: any, ov: any) => void) {}
   }
 }

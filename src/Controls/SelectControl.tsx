@@ -17,6 +17,10 @@ export default class SelectControl extends Control {
     this.config.GetSources = this.GetInnerSource;
   }
 
+  unmounted() {
+    delete this.config.GetSources;
+  }
+
   Desuffix(field: string) {
     return field?.replace(/\[|\]/g, "");
   }
@@ -42,28 +46,58 @@ export default class SelectControl extends Control {
     };
   }
 
+  // 行数
+  rows = 1;
+  // 是否已检测行数
+  hasCheckRows = false;
+  // 检测行数
+  CheckRows(html: string) {
+    if (this.hasCheckRows) return;
+    // 检查 html 中有多少个br标签
+    let brs = html.match(/<br\s?\/>/g);
+    if (brs) {
+      this.rows = brs.length + 1;
+    }
+  }
+
   render() {
     return super.render(
       <ElSelectV2
         class={`${css.select} ${this.$Store.get.Designer.Debug ? css.eventNone : ""}`}
         v-model={this.config.value}
-        clearable={this.config.clearable}
+        v-el-select-copy
+        v-el-select-delete={(e) => {
+          if (this.config.clearable) this.config.value = "";
+        }}
         placeholder={this.config.placeholder || " "}
         filterable={this.config.filterable}
         disabled={this.disabled}
         key={this.config.id}
         popperClass={["selectPopper", this.config.display == "table" ? "tableSelectPopper" : ""].join(" ")}
         options={this.config.options || []}
+        persistent={false}
+        itemHeight={this.rows * 34}
       >
         {{
-          default: ({ item: { label, m } }) => {
+          default: (e) => {
+            let {
+              item: { label, m },
+              index,
+            } = e;
             if (this.config.display == "table") {
               return (
                 <span style={this.GetTableSelectColumnsStyle()}>
-                  {this.config.columns.map((col) => {
+                  {this.config.columns.map(({ field, isHtml }) => {
+                    let value = m[field];
+                    if (isHtml) {
+                      if (index == 0) this.CheckRows(value);
+                      else this.hasCheckRows = true;
+                      return <span class={"clip"} title={value} v-html={value}></span>;
+                    }
+
                     return (
-                      <span class={css.clip} title={m[col.field]}>
-                        {m[col.field]}
+                      <span class={"clip"} title={value}>
+                        {value}
                       </span>
                     );
                   })}
@@ -96,6 +130,7 @@ export default class SelectControl extends Control {
       type: "Select",
       options: [],
       value: "",
+      itemHeight: 34,
       clearable: false,
       placeholder: "",
       filterable: false,
@@ -108,6 +143,8 @@ export default class SelectControl extends Control {
 export async function GetProps(config: SelectConfig) {
   let { baseProps, AddDataSourceProps } = await UtilControl();
 
+  config.columns = config.columns || [];
+
   const fieldMap: ConfiguratorItem[] = [
     ...baseProps,
     { name: "选项", des: "下拉框的选项", type: DesignerDeclare.InputType.Options, field: "options" },
@@ -115,6 +152,13 @@ export async function GetProps(config: SelectConfig) {
     { name: "清空按钮", des: "是否可以清空选项", type: DesignerDeclare.InputType.ElSwitch, field: "clearable" },
     { name: "占位符", des: "下拉框的占位符", type: DesignerDeclare.InputType.ElInput, field: "placeholder" },
     { name: "筛选", des: "下拉框是否支持筛选", type: DesignerDeclare.InputType.ElSwitch, field: "filterable" },
+    // 行高
+    {
+      name: "行高",
+      des: "下拉框的行高",
+      type: DesignerDeclare.InputType.ElInput,
+      field: "itemHeight",
+    },
     // 显示方式
     {
       name: "显示方式",

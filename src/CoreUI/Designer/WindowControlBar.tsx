@@ -2,12 +2,10 @@ import SvgIcon from "@/Components/SvgIcon";
 import { WindowDeclare } from "@/Types/WindowDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { BindEventContext, RegisterEvent } from "@/Utils/Index";
-import { Component, Prop, Provide, Vue, Watch } from "vue-facing-decorator";
-import { ControlDeclare } from "@/Types/ControlDeclare";
+import { Component, Prop, Vue, Watch } from "vue-facing-decorator";
 import { JSX } from "vue/jsx-runtime";
 
 type Coord = UtilsDeclare.Coord;
-type ControlConfig = ControlDeclare.ControlConfig;
 
 @Component
 export default class WindowControlBar extends Vue {
@@ -23,8 +21,6 @@ export default class WindowControlBar extends Vue {
   title: string;
   @Prop({ default: false })
   active: boolean;
-  @Prop({ default: true })
-  showBaseToolKits: boolean;
   @Prop
   zIndex: number;
   @Prop({ default: false })
@@ -44,11 +40,10 @@ export default class WindowControlBar extends Vue {
   max: boolean;
   @Prop
   instanceId: string;
-  @Prop
-  winId: string;
 
-  @Provide
-  rootConfig: ControlConfig[];
+  // 是否需要高度滚动条
+  @Prop({ default: true })
+  heightScroll: boolean;
 
   maximize = false;
 
@@ -66,7 +61,7 @@ export default class WindowControlBar extends Vue {
 
   get windowSize() {
     let w = this.formWidth;
-    let h = this.formHeight;
+    let h = this.formHeight + this.headHeight;
 
     if (this.maximize) {
       w = this.desktopSize.x;
@@ -75,10 +70,10 @@ export default class WindowControlBar extends Vue {
 
     let size = {
       width: w,
-      height: h + this.headHeight,
+      height: h,
     };
 
-    if (size.height > innerHeight) {
+    if (size.height > innerHeight && this.heightScroll) {
       size.height = innerHeight;
       size.width += this.maximize ? 0 : 8;
     }
@@ -109,12 +104,16 @@ export default class WindowControlBar extends Vue {
 
   get containerStyle() {
     let { width, height } = this.windowSize;
+
     height -= this.headHeight;
 
     let style: any = { width: width + "px", height: height + "px" };
     // 如果是最大化
     if (this.maximize) {
       style = { ...style, minHeight: height + "px", minWidth: width + "px" };
+    }
+    if (!this.heightScroll) {
+      style.overflowY = "hidden";
     }
 
     return style;
@@ -181,6 +180,13 @@ export default class WindowControlBar extends Vue {
   }
 
   created() {
+    this.winEventHandlers = {
+      mousemove: this.Move,
+      mouseup: this.CancelMove,
+      resize: function () {
+        this.UpdateDesktopSize();
+      },
+    };
     switch (this.startPosition) {
       case WindowDeclare.StartPosition.Default:
         this.top = this.left = 0;
@@ -201,16 +207,9 @@ export default class WindowControlBar extends Vue {
         this.maximize = true;
       }
     });
-    this.rootConfig = [this.$Store.get.Window.Windows[this.instanceId].config];
   }
 
-  winEventHandlers = {
-    mousemove: this.Move,
-    mouseup: this.CancelMove,
-    resize: function () {
-      this.UpdateDesktopSize();
-    },
-  };
+  declare winEventHandlers;
   mounted() {
     BindEventContext(this.winEventHandlers, this);
     RegisterEvent.call(window, this.winEventHandlers);
@@ -219,7 +218,6 @@ export default class WindowControlBar extends Vue {
   unmounted() {
     RegisterEvent.call(window, this.winEventHandlers, true);
     this.winEventHandlers = null;
-    this.rootConfig = null;
   }
 
   ShowDialogWindow(jsx: JSX.Element) {

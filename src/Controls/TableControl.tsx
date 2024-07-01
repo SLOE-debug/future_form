@@ -286,6 +286,7 @@ export default class TableControl extends Control {
     return (
       <ElSelectV2
         v-model={rowData[field]}
+        v-el-select-copy
         disabled={isReadOnly}
         filterable
         options={

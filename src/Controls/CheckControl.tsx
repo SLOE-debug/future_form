@@ -18,11 +18,11 @@ export default class CheckControl extends Control {
   render() {
     return super.render(
       <ElCheckbox
-        style={{ width: "100%", height: "100%" }}
+        style={{ width: "100%", height: "100%", color: "black" }}
         v-model={this.config.value}
         label={this.config.label}
-        trueLabel={this.config.selectValue}
-        falseLabel={this.config.unSelectValue}
+        trueValue={this.config.selectValue}
+        falseValue={this.config.unSelectValue}
         disabled={this.disabled}
       ></ElCheckbox>
     );

@@ -14,6 +14,7 @@ import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import Control from "./Control";
 import { AddControlDeclareToDesignerCode } from "@/Utils/Designer/Designer";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
+import { OptionBuilder } from "vue-facing-decorator/dist/optionBuilder";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type Coord = UtilsDeclare.Coord;
@@ -23,6 +24,7 @@ type Coord = UtilsDeclare.Coord;
  */
 @Component
 export default class DesignerSpace extends Vue {
+
   @Prop
   height: string;
 
@@ -157,38 +159,36 @@ export default class DesignerSpace extends Vue {
     });
   }
 
-  @Provide
-  rootConfig;
   created() {
+    this.winEventHandlers = {
+      keydown: function (e: KeyboardEvent) {
+        if (
+          (e.target as HTMLElement).nodeName == "INPUT" || // 输入框
+          (e.target as HTMLElement).nodeName == "TEXTAREA" || // 文本框
+          this.$Store.get.VirtualFileSystem.CurrentFile?.suffix != VritualFileSystemDeclare.FileType.FormDesigner
+        )
+          return;
+
+        let funcName = e.code + "Control";
+        if (e.ctrlKey) funcName = "Ctrl" + funcName;
+
+        if (e.code.startsWith("Arrow")) {
+          this.Arrow(e.code);
+          e.preventDefault();
+        } else this[funcName]?.(e);
+      },
+      mousedown: function () {
+        this.menu = false;
+      },
+    };
     if (!this.$Store.get.VirtualFileSystem.CurrentFile.extraData) {
       this.$Store.get.VirtualFileSystem.CurrentFile.extraData = FormControl.GetDefaultConfig();
     }
-    this.rootConfig = [this.$Store.get.VirtualFileSystem.CurrentFile.extraData];
     this.$Store.dispatch("Designer/ClearSelected");
-    this.$Store.dispatch("Designer/SetFormConfig", this.rootConfig[0]);
+    this.$Store.dispatch("Designer/SetFormConfig", this.$Store.get.VirtualFileSystem.CurrentFile.extraData);
   }
 
-  winEventHandlers = {
-    keydown: function (e: KeyboardEvent) {
-      if (
-        (e.target as HTMLElement).nodeName == "INPUT" || // 输入框
-        (e.target as HTMLElement).nodeName == "TEXTAREA" || // 文本框
-        this.$Store.get.VirtualFileSystem.CurrentFile?.suffix != VritualFileSystemDeclare.FileType.FormDesigner
-      )
-        return;
-
-      let funcName = e.code + "Control";
-      if (e.ctrlKey) funcName = "Ctrl" + funcName;
-
-      if (e.code.startsWith("Arrow")) {
-        this.Arrow(e.code);
-        e.preventDefault();
-      } else this[funcName]?.(e);
-    },
-    mousedown: function () {
-      this.menu = false;
-    },
-  };
+  declare winEventHandlers;
   async mounted() {
     BindEventContext(this.winEventHandlers, this);
     RegisterEvent.call(window, this.winEventHandlers);
@@ -237,7 +237,8 @@ export default class DesignerSpace extends Vue {
             lb: false,
             rt: false,
             move: false,
-            locate: { index: 0 },
+            // locate: { index: 0 },
+            config: this.$Store.get.VirtualFileSystem.CurrentFile.extraData,
             ref: "form",
           }}
         ></FormControl>

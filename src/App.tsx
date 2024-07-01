@@ -1,6 +1,5 @@
 import { ElConfigProvider } from "element-plus";
 import { Component, Vue } from "vue-facing-decorator";
-
 import zhCn from "element-plus/dist/locale/zh-cn.mjs";
 
 @Component

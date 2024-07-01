@@ -52,9 +52,6 @@ export default class EditorPage extends Vue {
       case VritualFileSystemDeclare.FileType.Sql:
         this.isSqlEditor = true;
         this.isDesigner = false;
-        this.$nextTick(() => {
-          this.$refs.sqlConfigurator.AnalysisSql(nv.content);
-        });
         break;
       case VritualFileSystemDeclare.FileType.FormDesigner:
         this.isDesigner = true;
@@ -134,7 +131,12 @@ export default class EditorPage extends Vue {
           {this.isDesigner && this.$Store.get.VirtualFileSystem.CurrentFile && (
             <DesignerSpace ref={"designerSpace"} key={this.$Store.get.VirtualFileSystem.CurrentFile.id}></DesignerSpace>
           )}
-          {this.isSqlEditor && <SqlConfigurator ref="sqlConfigurator"></SqlConfigurator>}
+          {this.isSqlEditor && (
+            <SqlConfigurator
+              ref="sqlConfigurator"
+              key={this.$Store.get.VirtualFileSystem.CurrentFile.id}
+            ></SqlConfigurator>
+          )}
           <div
             ref="editor"
             class={css.editorInstance}

@@ -2,7 +2,7 @@ import FormControl from "@/Controls/FormControl";
 import store from "@/Vuex/Store";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import Compiler from "@/Core/Compile/Compiler";
-import { reactive, watch } from "vue";
+import { WatchStopHandle, reactive, watch } from "vue";
 import DataSourceGroupControl from "@/Controls/DataSourceGroupControl";
 import { GlobalApi } from "@/Plugins/Api/ExtendApi";
 import { GetOrCreateLocalStorageObject } from "../Index";
@@ -52,7 +52,16 @@ export function PropertyChange(m, p, nv, ov) {
 /**
  * 不需要释放的键
  */
-const noDisposeMembers = ["$refs", "$Window", "GlobalVariate", "isLoaded", "id", "formConfig"];
+const noDisposeMembers = [
+  "$refs",
+  "$Window",
+  "$globalVariate",
+  "$watchList",
+  "$historySelectRefNoKey",
+  "isLoaded",
+  "id",
+  "formConfig",
+];
 
 /**
  * 窗体基类
@@ -85,7 +94,7 @@ export class BaseWindow {
   }
 
   // 全局变量对象
-  GlobalVariate = globalVariate;
+  $globalVariate = globalVariate;
 
   // 是否已经加载过窗体的Config
   isLoaded: boolean = false;
@@ -113,6 +122,41 @@ export class BaseWindow {
   }
 
   /**
+   * 弹出确认框
+   */
+  Confirm(
+    message: string,
+    title: string = "提示",
+    type: "success" | "warning" | "info" | "error" = "info",
+    confirmButtonText: string = "确定",
+    cancelButtonText: string = "取消",
+    showConfirmButton: boolean = true,
+    showCancelButton: boolean = true
+  ): Promise<boolean> {
+    return new Promise((resolve) => {
+      try {
+        ElMessageBox.confirm(message, title, {
+          confirmButtonText,
+          cancelButtonText,
+          type,
+          showClose: false,
+          showConfirmButton,
+          showCancelButton,
+          draggable: true,
+          closeOnClickModal: false,
+          callback: (action) => {
+            resolve(action == "confirm");
+          },
+        });
+      } catch (e) {
+        console.log(e);
+
+        resolve(false);
+      }
+    });
+  }
+
+  /**
    * 显示窗体
    */
   async Show(dialog: boolean = false, subWindow: boolean = false) {
@@ -136,6 +180,13 @@ export class BaseWindow {
    */
   async ShowSubWindow() {
     return await this.Show(false, true);
+  }
+
+  /**
+   * 关闭窗体
+   */
+  Close() {
+    store.dispatch("Window/CloseWindow", this.$Window.instanceId);
   }
 
   /**
@@ -224,7 +275,9 @@ export class BaseWindow {
         height: 24,
         icon: "file:WindowBarSave",
         disabled: true,
-        events: {},
+        events: {
+          systemOnClick: this.Save.bind(this),
+        },
       },
       {
         name: "$_refresh",
@@ -242,7 +295,7 @@ export class BaseWindow {
   }
 
   // 历史案号列表key
-  protected readonly historySelectRefNoKey = "historySelectRefNo";
+  protected readonly $historySelectRefNoKey = "historySelectRefNo";
 
   /**
    * 远程搜索案号
@@ -281,7 +334,7 @@ export class BaseWindow {
         item.loading = false;
       }
     } else {
-      let history = GetOrCreateLocalStorageObject(this.historySelectRefNoKey, []);
+      let history = GetOrCreateLocalStorageObject(this.$historySelectRefNoKey, []);
       item.options = history.map((h) => ({
         label: h.ref_no,
         value: h.ref_no,
@@ -294,13 +347,12 @@ export class BaseWindow {
    * 选择案号
    */
   private systemOnChange(config: ToolStripConfig, item: ToolStripItem, e: string) {
-    globalVariate.ref_no = e || "";
     if (!e) return;
     // 筛选出当前案号的数据
     let m = item.options.find((o) => o.value == e)?.m;
 
     // 获取历史选择的案号
-    let history = GetOrCreateLocalStorageObject(this.historySelectRefNoKey, []);
+    let history = GetOrCreateLocalStorageObject(this.$historySelectRefNoKey, []);
     // 如果历史数据中没有当前案号，则添加
     if (!history.find((h) => h.ref_no == e)) history.push(m);
     // 如果历史案号大于5个，则删除第一个
@@ -319,9 +371,9 @@ export class BaseWindow {
       }
     });
 
-    this.$Window.dataSourceControls.forEach((d) => {
+    for (const d of this.$Window.dataSourceControls) {
       d.config.readonly = !d.config.readonly;
-    });
+    }
   }
 
   /**
@@ -330,6 +382,15 @@ export class BaseWindow {
   Refresh(config: ToolStripConfig, item: ToolStripItem, e: MouseEvent) {
     store.dispatch("Window/RefreshWindow", this.$Window.instanceId);
     e.stopPropagation();
+  }
+
+  /**
+   * 保存
+   */
+  Save(config: ToolStripConfig, item: ToolStripItem, e: MouseEvent) {
+    for (const d of this.$Window.dataSourceControls) {
+      d.SaveSource(null);
+    }
   }
 
   /**
@@ -393,15 +454,29 @@ export class BaseWindow {
     }
   }
 
+  // watch列表
+  private $watchList: WatchStopHandle[] = [];
+
+  /**
+   * Watch函数，用于监控数据变化
+   */
+  Watch(data: any, prop: string, callback: (nv: any, ov: any) => void) {
+    let stop = watch(() => data[prop], callback);
+    this.$watchList.push(stop);
+    return stop;
+  }
+
   /**
    * 释放资源
    */
   Dispose(refresh: boolean = false) {
+    // 释放watch
+    while (this.$watchList.length) {
+      this.$watchList.shift()();
+    }
     let members = Object.keys(this);
     for (const k of members) {
-      /**
-       * 如果是刷新，则不释放以下资源
-       */
+      // 如果是刷新，则不释放以下资源
       if (refresh && noDisposeMembers.includes(k)) {
         continue;
       }

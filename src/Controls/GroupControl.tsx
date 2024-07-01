@@ -69,13 +69,6 @@ export default class GroupControl extends Control {
     this.slideStartCoord = null;
   }
 
-  @Provide
-  rootConfig;
-
-  async created() {
-    this.rootConfig = this.config.$children;
-  }
-
   render() {
     return super.render(
       <>
@@ -118,7 +111,7 @@ export default class GroupControl extends Control {
 
           {this.config.$children.map((c, i) => {
             let control = this.$.appContext.components[c.type + "Control"];
-            return <control key={c.id} locate={{ index: i }} ref={c.name} style={{ zIndex: i }}></control>;
+            return <control key={c.id} config={c} ref={c.name} style={{ zIndex: i }}></control>;
           })}
         </div>
       </>

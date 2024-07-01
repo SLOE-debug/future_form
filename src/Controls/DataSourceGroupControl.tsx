@@ -10,6 +10,7 @@ import { defineAsyncComponent, watch } from "vue";
 import { CloneStruct } from "@/Utils/Index";
 import { Guid } from "@/Utils/Index";
 import { TwoWayBinding } from "@/Utils/Designer/Form";
+import { OptionBuilder } from "vue-facing-decorator/dist/optionBuilder";
 
 // 仅在开发模式下导入的模块
 const UtilsDesigner = () => import("@/Utils/Designer/Designer");
@@ -32,8 +33,8 @@ export default class DataSourceGroupControl extends Control {
   declare config: DataSourceGroupConfig;
 
   async Drop(e: DragEvent) {
-    let { CreateControlByDragEvent, CreateControlName, AddControlDeclareToDesignerCode } = await UtilsDesigner()
-    let { Stack, StackAction } = await CoreUndoStack()
+    let { CreateControlByDragEvent, CreateControlName, AddControlDeclareToDesignerCode } = await UtilsDesigner();
+    let { Stack, StackAction } = await CoreUndoStack();
 
     let config = CreateControlByDragEvent.call(this, e) as ControlConfig;
 
@@ -78,11 +79,9 @@ export default class DataSourceGroupControl extends Control {
     this.slideStartCoord = null;
   }
 
-  @Provide
-  rootConfig;
-
   async created() {
-    this.rootConfig = this.config.$children;
+    this.twoWayBindingList = [];
+    this.diffData = new Map();
     this.parentFormControl.dataSourceControls.push(this);
   }
 
@@ -126,7 +125,7 @@ export default class DataSourceGroupControl extends Control {
           )}
           {this.config.$children.map((c, i) => {
             let control = this.$.appContext.components[c.type + "Control"];
-            return <control key={c.id} locate={{ index: i }} ref={c.name} style={{ zIndex: i }}></control>;
+            return <control key={c.id} config={c} ref={c.name} style={{ zIndex: i }}></control>;
           })}
         </div>
       </>
@@ -136,7 +135,7 @@ export default class DataSourceGroupControl extends Control {
   async GetSource(param: any) {
     let res: { data: any };
     if (this.$Store.get.Designer.Preview) {
-      let { GetFileById } = await UtilVFS()
+      let { GetFileById } = await UtilVFS();
 
       let sqlFile = GetFileById(this.config.sourceName);
 
@@ -159,7 +158,7 @@ export default class DataSourceGroupControl extends Control {
   }
 
   // 输出差异数据的定时器
-  outputDiffDataTimer: NodeJS.Timeout;
+  declare outputDiffDataTimer: NodeJS.Timeout;
 
   /**
    * 根据类型填充数据
@@ -181,7 +180,7 @@ export default class DataSourceGroupControl extends Control {
   }
 
   // 数据源数据被修改时的数据差异集合
-  diffData: Map<any, any> = new Map();
+  declare diffData: Map<any, any>;
 
   /**
    * 获取或创建差异数据
@@ -268,7 +267,7 @@ export default class DataSourceGroupControl extends Control {
   }
 
   // 双向绑定监听列表
-  twoWayBindingList: Function[] = [];
+  declare twoWayBindingList: Function[];
   /**
    * 填充表单数据
    */
@@ -335,7 +334,7 @@ export default class DataSourceGroupControl extends Control {
   }
 
   // 共享的关联控件，A 中是 B，B 中是 A
-  sharedControl: DataSourceGroupControl;
+  declare sharedControl: DataSourceGroupControl;
   /**
    * 共享数据
    * @param control 目标控件
@@ -428,7 +427,7 @@ export default class DataSourceGroupControl extends Control {
    * 保存数据
    */
   private async SaveData(data: any[]) {
-    let { GetFileById } = await UtilVFS()
+    let { GetFileById } = await UtilVFS();
     if (this.$Store.get.Designer.Preview) {
       let sqlFile = GetFileById(this.config.sourceName);
       return await this.$Api.SaveDataSourceGroupDataInDebug({
@@ -449,8 +448,15 @@ export default class DataSourceGroupControl extends Control {
   unmounted() {
     this.sharedControl = null;
 
-    this.twoWayBindingList.forEach((stop) => stop());
+    while (this.twoWayBindingList.length) {
+      this.twoWayBindingList.pop()();
+      this.twoWayBindingList.splice(0, 1);
+    }
     this.twoWayBindingList = null;
+
+    delete this.config.GetSource;
+    delete this.config.SaveSource;
+    delete this.config.SharedData;
 
     this.data = null;
   }
@@ -469,8 +475,8 @@ export default class DataSourceGroupControl extends Control {
 }
 
 export async function GetProps(config: DataSourceGroupConfig, instance: DataSourceGroupControl) {
-  let { GetAllSqlFiles } = await UtilVFS()
-  let { baseProps } = await UtilControl()
+  let { GetAllSqlFiles } = await UtilVFS();
+  let { baseProps } = await UtilControl();
 
   let sqlFiles = GetAllSqlFiles();
 
@@ -502,7 +508,7 @@ export async function GetProps(config: DataSourceGroupConfig, instance: DataSour
 }
 
 export async function GetEvents() {
-  let { baseEvents } = await UtilControl()
+  let { baseEvents } = await UtilControl();
   const eventMap: ConfiguratorItem[] = [...baseEvents];
   return eventMap;
 }

@@ -104,27 +104,28 @@ export default class Sidebar extends Vue {
 
   activeTab = "project";
 
-  winEventHandlers = {
-    keydown: function (e: KeyboardEvent) {
-      // 如果按下的事件来源是 input 或者 textarea，则不响应
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      let methodName = "";
-
-      if (e.ctrlKey) methodName = "Ctrl_";
-      if (e.shiftKey) methodName += "Shift_";
-      if (e.altKey) methodName += "Alt_";
-
-      let key = isNaN(parseInt(e.key)) ? e.key : "Number";
-
-      methodName += `Key_${key}`;
-      this[methodName]?.(e);
-
-      e.stopPropagation();
-      e.preventDefault();
-    },
-  };
+  declare winEventHandlers;
 
   created() {
+    this.winEventHandlers = {
+      keydown: function (e: KeyboardEvent) {
+        // 如果按下的事件来源是 input 或者 textarea，则不响应
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+        let methodName = "";
+
+        if (e.ctrlKey) methodName = "Ctrl_";
+        if (e.shiftKey) methodName += "Shift_";
+        if (e.altKey) methodName += "Alt_";
+
+        let key = isNaN(parseInt(e.key)) ? e.key : "Number";
+
+        methodName += `Key_${key}`;
+        this[methodName]?.(e);
+
+        e.stopPropagation();
+        e.preventDefault();
+      },
+    };
     BindEventContext(this.winEventHandlers, this);
     RegisterEvent.call(window, this.winEventHandlers);
   }

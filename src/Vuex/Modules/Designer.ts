@@ -95,9 +95,6 @@ function SameType(controls: Control[]) {
 let pushStackTimeOut: NodeJS.Timeout;
 let tempStacks: Stack[] = [];
 
-// 延迟执行 RenderControlConfigurator 的 timeOut
-let renderControlConfiguratorTimeOut: NodeJS.Timeout;
-
 const actions: ActionTree<DesignerState, any> = {
   Undo({ state }) {
     let stack = state.Stacks.pop();
@@ -129,7 +126,7 @@ const actions: ActionTree<DesignerState, any> = {
   SetFormDesigner({ state }, formDesigner) {
     state.$FormDesigner = formDesigner;
   },
-  RenderControlConfigurator: DebounceFunction(async ({ state }) => {
+  async RenderControlConfigurator({ state }) {
     let props: ConfiguratorItem[] = [];
     let events: ConfiguratorItem[] = [];
     if (state.SelectedControls.length == 1 || SameType(state.SelectedControls)) {
@@ -156,7 +153,7 @@ const actions: ActionTree<DesignerState, any> = {
     }
     state.ControlProps = props;
     state.ControlEvents = events;
-  }, 50),
+  },
   SelectControlByConfig({ state, dispatch }, configs: ControlConfig[]) {
     let refs = GetAllRefs(state.$FormDesigner);
     let controls = configs.map((c) => refs[c.name]) as Control[];

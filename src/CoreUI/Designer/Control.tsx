@@ -7,6 +7,7 @@ import { BindEventContext, Debounce, RegisterEvent, sourceArgsPrefix } from "@/U
 import DataSourceGroupControl from "@/Controls/DataSourceGroupControl";
 import { JSX } from "vue/jsx-runtime";
 import { globalCache } from "@/Utils/Caches";
+import { OptionBuilder } from "vue-facing-decorator/dist/optionBuilder";
 
 // 仅在开发模式下导入的模块
 
@@ -17,7 +18,6 @@ const CoreUndoStack = () => import("@/Core/Designer/UndoStack/Stack");
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceControlConfig = ControlDeclare.DataSourceControlConfig;
 type TabsConfig = ControlDeclare.TabsConfig;
-type Locate = ControlDeclare.Locate;
 
 type EventHandlers = UtilsDeclare.EventHandlers;
 type Coord = UtilsDeclare.Coord;
@@ -25,25 +25,18 @@ type Coord = UtilsDeclare.Coord;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 type ContainerInfo = DesignerDeclare.ContainerInfo;
 
-// const sourceCache = new Map<string, Promise<any>>();
-
 @ComponentBase
 export class DataSourceControl extends Vue {
-  config: ControlConfig & DataSourceControlConfig;
   @Prop
-  locate: Locate;
-
-  @Inject({ from: "rootConfig" })
-  parentChildren: ControlConfig[];
-
-  parentFormControl: FormControl;
+  config: ControlConfig & DataSourceControlConfig;
+  declare parentFormControl: FormControl;
   GetParentFormControl(control: DataSourceControl = this): FormControl {
     if (!("config" in control)) return null;
     if (control?.config?.type == "Form") return control as FormControl;
     return this.GetParentFormControl(control.$parent as Control);
   }
 
-  parentDataSourceControl: DataSourceGroupControl;
+  declare parentDataSourceControl: DataSourceGroupControl;
   GetParentDataSourceGroupControl(control: Control = this.$parent as Control): DataSourceGroupControl {
     if (!("config" in control)) return null;
     if (control?.config.type == "Form") return null;
@@ -51,25 +44,9 @@ export class DataSourceControl extends Vue {
     return this.GetParentDataSourceGroupControl(control.$parent as Control);
   }
 
-  /**
-   * 获取注入的配置
-   * @returns 注入的配置
-   */
-  GetInjectConfig() {
-    let children = this.parentChildren;
-    if (this.locate.filter) {
-      for (const k in this.locate.filter) {
-        children = children.filter((c) => c[k] == this.locate.filter[k]);
-      }
-    }
-
-    let config = children[this.locate.index];
-    return config;
-  }
-
+  declare events: EventHandlers;
   async created() {
-    this.config = this.GetInjectConfig();
-
+    this.events = {};
     this.parentFormControl = this.GetParentFormControl();
     this.parentDataSourceControl = this.GetParentDataSourceGroupControl();
 
@@ -92,10 +69,6 @@ export class DataSourceControl extends Vue {
     }
   }
 
-  unmounted() {
-    if (!this.$Store.get.Designer.Debug) this.config = null;
-  }
-
   async GetInnerSource(params) {
     // 优先从缓存中获取数据源
     let promise = globalCache.dataSourceCache.get(this.config.dataSource);
@@ -116,8 +89,18 @@ export class DataSourceControl extends Vue {
 
         resolve((await this.$Api[methodName](reqParams)).data);
       });
+      globalCache.dataSourceCache.set(this.config.dataSource, promise);
     }
     return await promise;
+  }
+
+  unmounted() {
+    this.parentDataSourceControl = null;
+    this.parentFormControl = null;
+    for (const k in this.events) {
+      this.events[k] = null;
+    }
+    this.events = null;
   }
 }
 
@@ -177,13 +160,16 @@ export default class Control extends DataSourceControl {
     // 如果 watchOldValue 为空，则赋值为 ov 旧值，只记录当前控件首次更改时的旧值
     if (!this.watchOldValue) this.watchOldValue = ov;
 
-    this.AddStack(nv, ov);
+    // 延迟 150ms 执行
+    clearTimeout(this.pushTimeOut);
+    this.pushTimeOut = setTimeout(() => {
+      this.AddStack(nv, ov);
+    }, 150);
   }
 
   /**
    * 向堆栈中添加当前变更
    */
-  @Debounce(150)
   async AddStack(nv, ov) {
     let { FindControlsByKeyValue, CreateControlName, UpdateControlDeclareToDesignerCode } = await UtilDesigner();
     let { Stack } = await CoreUndoStack();
@@ -205,6 +191,8 @@ export default class Control extends DataSourceControl {
       if (nv.name != ov.name || nv.sourceName != ov.sourceName) {
         UpdateControlDeclareToDesignerCode(this.watchOldValue.name, nv);
       }
+
+      console.log(this.config.name, "添加到堆栈");
 
       // 添加到堆栈，记录变更
       await this.$Store.dispatch("Designer/AddStack", new Stack(this, nv, this.watchOldValue));
@@ -234,7 +222,7 @@ export default class Control extends DataSourceControl {
   move: boolean;
 
   get disabled() {
-    if (this.config.limit && this.parentDataSourceControl?.config?.limit) {
+    if (this.config.limit == true && this.parentDataSourceControl?.config?.limit == true) {
       return this.parentDataSourceControl?.config?.readonly || this.config.disabled;
     }
     return this.config.disabled;
@@ -260,12 +248,13 @@ export default class Control extends DataSourceControl {
     return this.config.type != "Form" ? "pointer" : "auto";
   }
 
-  winEventHandlers = {
-    mousemove: this.Adjust,
-    mouseup: this.Cancel,
-  };
+  declare winEventHandlers;
   mounted() {
     if (this.$Store.get.Designer.Debug) {
+      this.winEventHandlers = {
+        mousemove: this.Adjust,
+        mouseup: this.Cancel,
+      };
       BindEventContext(this.winEventHandlers, this);
 
       this.$nextTick(() => {
@@ -275,15 +264,8 @@ export default class Control extends DataSourceControl {
   }
 
   unmounted() {
-    this.parentDataSourceControl = null;
-    this.parentFormControl = null;
     RegisterEvent.call(window, this.winEventHandlers, true);
     this.winEventHandlers = null;
-    for (const k in this.events) {
-      this.events[k] = null;
-    }
-    this.events = null;
-    super.unmounted();
   }
 
   Pick(e: MouseEvent) {
@@ -642,8 +624,6 @@ export default class Control extends DataSourceControl {
     return style;
   }
 
-  events: EventHandlers = {};
-
   /**大人物(是否是以此为依据对齐/移动/调整的控件) */
   bigShot = false;
 
@@ -671,7 +651,7 @@ export default class Control extends DataSourceControl {
           this.events.onClick && this.events.onClick(this.config, e);
         }}
       >
-        {<ele style={this.eleStyle}></ele>}
+        {<ele style={this.eleStyle} key={this.config.id}></ele>}
         {this.error && <div class={css.error}></div>}
         {this.$Store.get.Designer.Debug && this.selected && this.HelpPoint()}
       </div>

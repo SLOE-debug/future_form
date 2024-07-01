@@ -1,6 +1,7 @@
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { BindEventContext, RegisterEvent } from "@/Utils/Index";
 import { Component, Emit, Prop, Vue, Watch } from "vue-facing-decorator";
+import { OptionBuilder } from "vue-facing-decorator/dist/optionBuilder";
 
 type Coord = UtilsDeclare.Coord;
 
@@ -61,12 +62,13 @@ export default class SlideSelector extends Vue {
     };
   }
 
-  winEventHandlers = {
-    mousemove: this.Resize,
-    mouseup: this.SlideEnd,
-  };
+  declare winEventHandlers;
   mounted() {
     if (this.$Store.get.Designer.Debug) {
+      this.winEventHandlers = {
+        mousemove: this.Resize,
+        mouseup: this.SlideEnd,
+      };
       BindEventContext(this.winEventHandlers, this);
     }
   }

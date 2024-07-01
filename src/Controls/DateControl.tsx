@@ -17,12 +17,13 @@ export default class DateControl extends Control {
   render() {
     return super.render(
       <ElDatePicker
-        class={`${css.date} ${this.$Store.get.Designer.Debug ? css.eventNone : ""}`}
         v-model={this.config.value}
+        class={`${css.date} ${this.$Store.get.Designer.Debug ? css.eventNone : ""}`}
         placeholder={this.config.placeholder}
         startPlaceholder={this.config.startPlaceholder || " "}
         endPlaceholder={this.config.endPlaceholder || " "}
         disabled={this.disabled}
+        clearable={false}
       ></ElDatePicker>
     );
   }

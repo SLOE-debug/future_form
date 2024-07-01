@@ -51,6 +51,7 @@ export default class Configurator extends Vue {
             size="small"
             precision={m.precision == undefined ? 2 : m.precision}
             key={m.config.id}
+            placeholder={m.des}
             step={m.step || 0.1}
             {...{
               onWheel: (e: WheelEvent) => {
@@ -70,6 +71,7 @@ export default class Configurator extends Vue {
             size="small"
             clearable={true}
             key={m.config.id}
+            placeholder={m.des}
             onChange={(_) => {
               this.SyncConfiguration(m, isEvent);
             }}
@@ -94,6 +96,7 @@ export default class Configurator extends Vue {
             clearable={true}
             size="small"
             multiple={m.multiple || false}
+            placeholder={m.des}
             key={m.config.id}
             {...{
               onDblclick: (e) => {

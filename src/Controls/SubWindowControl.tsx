@@ -28,11 +28,7 @@ export default class SubWindowControl extends Control {
   @Watch("subWinInstanceId")
   onSubWinInstanceIdChanged(val: string) {
     this.contentLoading = true;
-    this.rootConfig = [this.$Store.get.Window.Windows[val].config];
   }
-
-  @Provide
-  rootConfig: ControlConfig[];
 
   async created() {
     if (!this.$Store.get.Designer.Debug || this.$Store.get.Designer.Preview) {
@@ -66,14 +62,17 @@ export default class SubWindowControl extends Control {
       config: { width, height },
     } = this.parentFormControl;
 
-    let {
-      maximize,
-      containerStyle: { minHeight, minWidth },
-    } = winControl;
+    // 开发模式下，没有 windowControlBar，所以不需要计算
+    if (winControl) {
+      let {
+        maximize,
+        containerStyle: { minHeight, minWidth },
+      } = winControl;
 
-    if (maximize) {
-      width = minWidth.replace("px", "") - 0;
-      height = minHeight.replace("px", "") - 0;
+      if (maximize) {
+        width = minWidth.replace("px", "") - 0;
+        height = minHeight.replace("px", "") - 0;
+      }
     }
 
     // 是否是全部
@@ -119,6 +118,10 @@ export default class SubWindowControl extends Control {
       }
     }
 
+    // 如果有最小高度，则设置最大高度为最小高度
+    if (style.minHeight) style.maxHeight = style.minHeight;
+    if (style.minWidth) style.maxWidth = style.minWidth;
+
     return style;
   }
 
@@ -156,7 +159,8 @@ export default class SubWindowControl extends Control {
           this.$Store.get.Window.Windows[this.subWinInstanceId] && (
             <FormControl
               {...{
-                locate: { index: 0 },
+                // locate: { index: 0 },
+                config: this.$Store.get.Window.Windows[this.subWinInstanceId].config,
                 instanceId: this.subWinInstanceId,
                 key: this.subWinInstanceId,
                 ref: "form",

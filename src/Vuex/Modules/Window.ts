@@ -96,7 +96,7 @@ const actions: ActionTree<WindowState, any> = {
   async RefreshWindow({ state, dispatch }, id) {
     // 存储当前窗体的配置
     let window = state.Windows[id];
-    // // 关闭当前窗体
+    // 关闭当前窗体
     window.instance.Dispose(true);
     delete state.Windows[id];
 

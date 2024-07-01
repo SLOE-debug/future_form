@@ -3,7 +3,7 @@ import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { GetFields } from "@/Utils/Designer/Designer";
 import { CapitalizeFirstLetter } from "@/Utils/Index";
-import { GetAllSqlFiles } from "@/Utils/VirtualFileSystem/Index";
+import { GetAllSqlFiles, GetFileById } from "@/Utils/VirtualFileSystem/Index";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
   ElButton,
@@ -147,11 +147,6 @@ export default class ColumnsConfigurator extends Vue {
                 return <ElInput v-model={row.title}></ElInput>;
               }}
             </ElTableColumn>
-            <ElTableColumn property="field" label="字段">
-              {({ row }) => {
-                return <ElInput v-model={row.field}></ElInput>;
-              }}
-            </ElTableColumn>
             <ElTableColumn property="width" label="宽度">
               {({ row }) => {
                 return (
@@ -166,11 +161,48 @@ export default class ColumnsConfigurator extends Vue {
                 );
               }}
             </ElTableColumn>
+            {
+              // 如果是下拉框列
+              this.isSelectColumn && (
+                <>
+                  <ElTableColumn prop="field" label="字段">
+                    {({ row }) => {
+                      let dataSource = this.$Store.state.Designer.SelectedControls[0].config.dataSource;
+                      if (dataSource) {
+                        let sqlFile = GetFileById(dataSource);
+                        let fields = GetFields(sqlFile.content).map(({ field }) => {
+                          if (field.indexOf(".") >= 0) field = field.split(".")[1];
+                          return field;
+                        });
+                        return (
+                          <ElSelect v-model={row.field} filterable clearable>
+                            {fields.map((f) => {
+                              return <ElOption key={f} label={f} value={f}></ElOption>;
+                            })}
+                          </ElSelect>
+                        );
+                      }
 
+                      return <ElInput v-model={row.field}></ElInput>;
+                    }}
+                  </ElTableColumn>
+                  <ElTableColumn prop="isHtml" label="是否以html显示">
+                    {({ row }) => {
+                      return <ElSwitch v-model={row.isHtml}></ElSwitch>;
+                    }}
+                  </ElTableColumn>
+                </>
+              )
+            }
             {
               // 如果不是下拉框列，则显示更多列的配置信息
               !this.isSelectColumn && (
                 <>
+                  <ElTableColumn property="field" label="字段">
+                    {({ row }) => {
+                      return <ElInput v-model={row.field}></ElInput>;
+                    }}
+                  </ElTableColumn>
                   <ElTableColumn property="type" class-name={css.type} width={160} label="显示类型">
                     {({ row }) => {
                       return (

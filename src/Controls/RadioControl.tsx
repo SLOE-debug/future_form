@@ -30,7 +30,11 @@ export default class RadioControl extends Control {
     return super.render(
       <ElRadioGroup v-model={this.config.value} style={this.alignStyle} disabled={this.disabled}>
         {this.config.options.map((o) => (
-          <ElRadio label={o.value} style={{ marginRight: this.config.optionRight + "px", color: "black" }}>
+          <ElRadio
+            label={o.value}
+            value={o.value}
+            style={{ marginRight: this.config.optionRight + "px", color: "black" }}
+          >
             {o.label}
           </ElRadio>
         ))}

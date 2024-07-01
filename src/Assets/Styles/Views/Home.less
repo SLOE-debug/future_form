@@ -13,30 +13,3 @@
   color: #eee;
   font-weight: bold;
 }
-
-// 全局的下拉框显示列样式
-:global(.selectPopper) {
-  :global(.el-select-dropdown) {
-    min-width: max-content;
-    :global(.el-select-dropdown__list) {
-      width: auto !important;
-      min-width: max-content;
-      > div {
-        width: auto !important;
-        > li {
-          .clip {
-            // 文本超出部分隐藏
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-          }
-        }
-      }
-    }
-  }
-}
-:global(.tableSelectPopper) {
-  li {
-    width: auto !important;
-  }
-}

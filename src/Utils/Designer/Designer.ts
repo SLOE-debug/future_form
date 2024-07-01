@@ -6,6 +6,7 @@ import store from "@/Vuex/Store";
 import * as ts from "typescript";
 import { editor } from "@/CoreUI/Editor/EditorPage";
 import { GetDesignerBackgroundFile, GetFileById } from "../VirtualFileSystem/Index";
+import * as monaco from "monaco-editor";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceGroupConfig = ControlDeclare.DataSourceGroupConfig;
@@ -178,7 +179,17 @@ export function GetFields(sql: string) {
     const fieldList = match[1];
     const fields = [];
 
-    const fieldRegex = /(\[?\w+(?:\.\w+)?\]?)(?:\s+as\s+(\w+))?/gi;
+    // AS 的字段名
+    const asFieldRegex = /\bAS\s+(\w+)\b/gi;
+    let asFieldMatch;
+    while ((asFieldMatch = asFieldRegex.exec(fieldList)) !== null) {
+      const field = asFieldMatch[1];
+      if (field == "AS") continue;
+      fields.push({ field });
+    }
+
+    // 非 AS 的字段名
+    const fieldRegex = /(\[?\w+(?:\.\w+)+\]?)(?:\s+as\s+(\w+))?/gi;
     let fieldMatch;
 
     while ((fieldMatch = fieldRegex.exec(fieldList)) !== null) {
@@ -213,7 +224,7 @@ export function GetParams(sql: string) {
  * @returns 表
  */
 export function GetTables(sql: string) {
-  let fromRegex = /FROM\s+([\[\]\w\d\.\s,]+)(?=(?:\s+JOIN|WHERE|GROUP BY|ORDER BY|$))/i;
+  let fromRegex = /FROM\s+([\[\]\w\d\.\s,]*?)(?=(?:\s+JOIN|WHERE|GROUP BY|ORDER BY|$))/i;
 
   let match = sql.match(fromRegex);
   if (match && match[1]) {

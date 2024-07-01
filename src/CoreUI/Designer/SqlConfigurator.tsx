@@ -1,4 +1,4 @@
-import {  GetFields, GetParams, GetTables } from "@/Utils/Designer/Designer";
+import { GetFields, GetParams, GetTables } from "@/Utils/Designer/Designer";
 import { CloneStruct } from "@/Utils/Index";
 import {
   ElForm,
@@ -126,6 +126,7 @@ export default class SqlConfigurator extends Vue {
 
   created() {
     this.source = CloneStruct(this.$Store.get.VirtualFileSystem.CurrentFile?.extraData);
+    this.AnalysisSql(this.$Store.get.VirtualFileSystem.CurrentFile.content);
   }
 
   /**
@@ -157,6 +158,7 @@ export default class SqlConfigurator extends Vue {
         m.$__check__$ = this.source.primaryFields.includes(m.field);
       });
     }
+    console.log(this.source.table);
   }
 
   /**

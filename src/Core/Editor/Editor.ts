@@ -359,6 +359,27 @@ export default class Editor {
         }
       },
     });
+
+    // 覆盖 Ctrl + Alt + Shift + S
+    this.editor.addCommand(
+      monaco.KeyMod.CtrlCmd | monaco.KeyMod.Alt | monaco.KeyMod.Shift | monaco.KeyCode.KeyS,
+      () => {
+        this.Save();
+        let event = new KeyboardEvent("keydown", { key: "S", ctrlKey: true, altKey: true, shiftKey: true });
+        window.dispatchEvent(event);
+      }
+    );
+
+    // 覆盖 Ctrl + Alt + Shift + P
+    this.editor.addCommand(
+      monaco.KeyMod.CtrlCmd | monaco.KeyMod.Alt | monaco.KeyMod.Shift | monaco.KeyCode.KeyP,
+      () => {
+        this.Save();
+        let event = new KeyboardEvent("keydown", { key: "P", ctrlKey: true, altKey: true, shiftKey: true });
+        window.dispatchEvent(event);
+      }
+    );
+
     this.isConfigured = true;
   }
 
@@ -412,7 +433,7 @@ export default class Editor {
       suggestions.push({
         label: "import",
         kind: monaco.languages.CompletionItemKind.Keyword,
-        insertText: "import {} from '${1}'",
+        insertText: "import ${2} from '${1}'",
         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
         detail: "import ... from ...",
         sortText: "0",

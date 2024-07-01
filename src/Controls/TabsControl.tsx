@@ -125,12 +125,6 @@ export default class TabsControl extends Control {
   headHeight = 40;
   headHide = false;
 
-  @Provide
-  rootConfig;
-  async created() {
-    this.rootConfig = this.config.$children;
-  }
-
   mounted() {
     this.ShouldAddScrollbar();
     if (this.$Store.get.Designer.Debug) this.config.scrollTop = {};
@@ -295,14 +289,7 @@ export default class TabsControl extends Control {
                     .filter((c) => c.fromTabId == t.id)
                     .map((c, i) => {
                       let control = this.$.appContext.components[c.type + "Control"];
-                      return (
-                        <control
-                          key={c.id}
-                          locate={{ filter: { fromTabId: t.id }, index: i }}
-                          ref={c.name}
-                          style={{ zIndex: i }}
-                        ></control>
-                      );
+                      return <control key={c.id} config={c} ref={c.name} style={{ zIndex: i }}></control>;
                     })}
                 </div>
               );

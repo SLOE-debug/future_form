@@ -4,7 +4,7 @@ import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { defineAsyncComponent } from "vue";
-import { Component, Prop, Provide } from "vue-facing-decorator";
+import { Component, Prop } from "vue-facing-decorator";
 import DataSourceGroupControl from "./DataSourceGroupControl";
 import store from "@/Vuex/Store";
 import { BaseWindow } from "@/Utils/Designer/Form";
@@ -77,16 +77,12 @@ export default class FormControl extends Control {
     }
   }
 
-  instance: BaseWindow;
+  declare instance: BaseWindow;
 
-  @Provide
-  rootConfig;
-
-  dataSourceControls: DataSourceGroupControl[] = [];
-  createEventPromise: Promise<any>;
+  declare dataSourceControls: DataSourceGroupControl[];
+  declare createEventPromise: Promise<any>;
   async created() {
-    this.rootConfig = this.config.$children;
-
+    this.dataSourceControls = [];
     this.$Store.get.Designer.Debug &&
       !this.$Store.get.Designer.Preview &&
       (await this.$Store.dispatch("Designer/SetFormDesigner", this));
@@ -120,6 +116,10 @@ export default class FormControl extends Control {
 
   async unmounted() {
     super.unmounted();
+    // splice 依次删除 dataSourceControls
+    while (this.dataSourceControls.length) {
+      this.dataSourceControls.splice(0, 1);
+    }
     this.dataSourceControls = null;
     this.instance = null;
   }
@@ -151,7 +151,7 @@ export default class FormControl extends Control {
         )}
         {this.config.$children.map((c, i) => {
           let control = this.$.appContext.components[c.type + "Control"];
-          return <control key={c.id} locate={{ index: i }} ref={c.name} style={{ zIndex: i }}></control>;
+          return <control key={c.id} config={c} ref={c.name} style={{ zIndex: i }}></control>;
         })}
       </div>
     );
@@ -212,6 +212,13 @@ export async function GetProps(config: FormConfig) {
       type: DesignerDeclare.InputType.ElSwitch,
       field: "maximize",
     },
+    // 是否需要高度滚动条
+    {
+      name: "高度滚动条",
+      des: "窗体是否需要高度滚动条",
+      type: DesignerDeclare.InputType.ElSwitch,
+      field: "heightScroll",
+    },
     // 是否显示最大化按钮
     {
       name: "显示最大化按钮",
@@ -263,6 +270,13 @@ export async function GetEvents() {
       des: "窗体获取焦点事件",
       type: DesignerDeclare.InputType.ElSelect,
       field: "focus",
+    },
+    // 关闭前
+    {
+      name: "关闭",
+      des: "窗体关闭前触发的事件",
+      type: DesignerDeclare.InputType.ElSelect,
+      field: "beforeClose",
     },
   ];
   return eventMap;

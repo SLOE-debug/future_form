@@ -136,12 +136,16 @@ export default class FileSidebar extends Vue {
   /**
    * 将平铺的文件数组转为root
    */
-  Files2Root(files: File[]) {
+  Files2Root(files: any[]) {
+    files.sort((a, b) => {
+      return a.fullPath.localeCompare(b.fullPath);
+    });
+
     let root = new Directory("");
     // 文件夹map
     this.dirMap.set("", root);
     for (let i = 0; i < files.length; i++) {
-      const fileInDb = files[i] as any;
+      const fileInDb = files[i];
 
       let file = new File(fileInDb.name, fileInDb.isProtected, false);
       file.id = fileInDb.fileId;
@@ -249,22 +253,27 @@ export default class FileSidebar extends Vue {
   isNotifyUser = false;
   async Publish() {
     try {
-      await ElMessageBox({
-        title: "是否发布？",
-        message: () => (
-          <div>
-            <p>请检查当前版本是否是要发布的版本！</p>
-            <p>
-              当前版本：<strong>{this.selectedRootVersion}</strong>
-            </p>
-            <ElCheckbox v-model={this.isPublishAll} label="发布全部"></ElCheckbox>
-            <ElCheckbox v-model={this.isNotifyUser} label="提示用户更新"></ElCheckbox>
-          </div>
-        ),
-        confirmButtonText: "发布",
-        center: true,
-        draggable: true,
-      });
+      await ElMessageBox(
+        {
+          title: "是否发布？",
+          message: () => (
+            <div>
+              <p>请检查当前版本是否是要发布的版本！</p>
+              <p>
+                当前版本：<strong>{this.selectedRootVersion}</strong>
+              </p>
+
+              <ElCheckbox v-model={this.isPublishAll} label="发布全部" tabindex={-1} v-focus></ElCheckbox>
+              <ElCheckbox v-model={this.isNotifyUser} label="提示用户更新" tabindex={0}></ElCheckbox>
+            </div>
+          ),
+          confirmButtonText: "发布",
+          center: true,
+          draggable: true,
+          closeOnClickModal: false,
+        },
+        this.$.appContext
+      );
 
       editor.SaveAll();
 
@@ -318,34 +327,39 @@ export default class FileSidebar extends Vue {
       // 填补versionDescription为上次的描述
       this.versionDescription = this.$Store.get.VirtualFileSystem.RootVersions[1]?.versionDescription;
 
-      await ElMessageBox({
-        title: "保存到云端",
-        message: () => (
-          <>
-            <div
-              style={{
-                height: "24px",
-              }}
-            >
-              版本描述：
-            </div>
-            <ElInput
-              v-model={this.versionDescription}
-              {...{ rows: 12 }}
-              style={{ width: "45vw" }}
-              type="textarea"
-              placeholder="请输入版本描述"
-              resize="none"
-            />
-            <ElCheckbox v-model={this.isCreateNewVersion} label="创建新版本"></ElCheckbox>
-          </>
-        ),
-        confirmButtonText: "保存",
-        center: true,
-        draggable: true,
-        customClass: css.saveToCloud,
-        closeOnClickModal: false,
-      });
+      await ElMessageBox(
+        {
+          title: "保存到云端",
+          message: () => (
+            <>
+              <div
+                style={{
+                  height: "24px",
+                }}
+              >
+                版本描述：
+              </div>
+              <ElInput
+                v-model={this.versionDescription}
+                {...{ rows: 12 }}
+                style={{ width: "45vw" }}
+                type="textarea"
+                placeholder="请输入版本描述"
+                resize="none"
+                v-focus
+                tabindex={-1}
+              />
+              <ElCheckbox v-model={this.isCreateNewVersion} label="创建新版本" tabindex={0}></ElCheckbox>
+            </>
+          ),
+          confirmButtonText: "保存",
+          center: true,
+          draggable: true,
+          customClass: css.saveToCloud,
+          closeOnClickModal: false,
+        },
+        this.$.appContext
+      );
 
       let files = FlatRoot(this.$Store.get.VirtualFileSystem.Root);
 
@@ -391,7 +405,6 @@ export default class FileSidebar extends Vue {
               }}
             />
           ))}
-          {/* {this.RenderRunTool()} */}
         </div>
 
         <Search v-show={this.isSearch}></Search>
