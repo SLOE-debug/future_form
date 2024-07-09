@@ -1,7 +1,7 @@
 import FormControl from "@/Controls/FormControl";
 import Control from "@/CoreUI/Designer/Control";
 import DesignerSpace from "@/CoreUI/Designer/DesignerSpace";
-import { Stack } from "@/Core/Designer/UndoStack/Stack";
+import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { FillControlNameCache } from "@/Utils/Designer/Designer";
@@ -105,7 +105,7 @@ const actions: ActionTree<DesignerState, any> = {
     }
   },
   AddStack({ state }, stack: Stack) {
-    if (!stack.Efficient()) return;
+    if (!stack.Efficient() && stack.action != StackAction.SwitchContainer) return;
     if (pushStackTimeOut) clearTimeout(pushStackTimeOut);
     tempStacks.push(stack);
     pushStackTimeOut = setTimeout(() => {
@@ -156,7 +156,11 @@ const actions: ActionTree<DesignerState, any> = {
   },
   SelectControlByConfig({ state, dispatch }, configs: ControlConfig[]) {
     let refs = GetAllRefs(state.$FormDesigner);
-    let controls = configs.map((c) => refs[c.name]) as Control[];
+    let controls = configs.map((c) => {
+      return refs[c.name];
+    }) as Control[];
+
+    refs = null;
 
     return dispatch("SelectControl", controls);
   },
@@ -294,6 +298,19 @@ const actions: ActionTree<DesignerState, any> = {
    */
   SetActive({ state }, active: boolean) {
     state.Active = active;
+  },
+  /**
+   * 通过名称获取控件实例
+   */
+  GetControlByName({ state }, name: string) {
+    let controls: any[] = [state.$FormDesigner];
+
+    while (controls.length) {
+      let control = controls.shift();
+      if (!control || !control.$refs) continue;
+      if (control.$refs[name]) return control.$refs[name];
+      controls.push(...Object.values(control.$refs));
+    }
   },
 };
 

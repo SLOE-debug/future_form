@@ -150,13 +150,18 @@ export default class ToolStripControl extends Control {
   }
 
   /**
+   * 按钮是否按下状态Map
+   */
+  buttonActiveMap: Map<string, boolean> = new Map();
+
+  /**
    * 按钮渲染器
    */
   ButtonRenderer(item: ToolStripItem) {
     return (
       <ElButton
         size="small"
-        class={css.button}
+        class={[css.button, this.buttonActiveMap.get(item.name) ? css.downStyle : ""]}
         style={{
           width: (this.config.showText ? item.showTextWidth : item.width) + "px",
           height: (this.config.showText ? item.showTextHeight : item.height) + "px",
@@ -166,6 +171,11 @@ export default class ToolStripControl extends Control {
         disabled={item.disabled}
         ref={item.name}
         onClick={(e) => {
+          // 如果拥有按下样式，则切换按下样式
+          if (item.showDownStyle) {
+            let active = this.buttonActiveMap.get(item.name);
+            this.buttonActiveMap.set(item.name, !active);
+          }
           let {
             events: { systemOnClick, onClick },
           } = item;

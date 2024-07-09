@@ -1,5 +1,5 @@
 import FormControl from "@/Controls/FormControl";
-import { Component, Prop, Provide, Vue } from "vue-facing-decorator";
+import { Component, Prop, Vue } from "vue-facing-decorator";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { BindEventContext, RegisterEvent } from "@/Utils/Index";
 import ContextMenu from "@/CoreUI/Designer/Components/ContextMenu";
@@ -14,7 +14,6 @@ import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import Control from "./Control";
 import { AddControlDeclareToDesignerCode } from "@/Utils/Designer/Designer";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
-import { OptionBuilder } from "vue-facing-decorator/dist/optionBuilder";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type Coord = UtilsDeclare.Coord;
@@ -24,7 +23,6 @@ type Coord = UtilsDeclare.Coord;
  */
 @Component
 export default class DesignerSpace extends Vue {
-
   @Prop
   height: string;
 
@@ -37,8 +35,9 @@ export default class DesignerSpace extends Vue {
   }
 
   AddControl(paste: boolean, ...configs: ControlConfig[]) {
-    configs.forEach((c) => {
+    for (const c of configs) {
       CreateControlName(c);
+
       c.top -= paste ? this.pasteOffset : c.height / 2;
       c.left -= paste ? this.pasteOffset : c.width / 2;
 
@@ -62,7 +61,7 @@ export default class DesignerSpace extends Vue {
           )
         );
       });
-    });
+    }
   }
 
   /**
@@ -129,11 +128,6 @@ export default class DesignerSpace extends Vue {
     await this.$Store.dispatch("Designer/Undo");
     e.preventDefault();
   }
-
-  // EscapeControl(e: KeyboardEvent) {
-  //   this.$router.push({ path: "/FormList" });
-  //   e.preventDefault();
-  // }
 
   F7Control(e: KeyboardEvent) {
     this.$Store.dispatch("VirtualFileSystem/SelectFile", this.$Store.get.VirtualFileSystem.CurrentFile.children[0]);

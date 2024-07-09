@@ -6,12 +6,19 @@ import { WatchStopHandle, reactive, watch } from "vue";
 import DataSourceGroupControl from "@/Controls/DataSourceGroupControl";
 import { GlobalApi } from "@/Plugins/Api/ExtendApi";
 import { GetOrCreateLocalStorageObject } from "../Index";
+import { GetParentByFile } from "../VirtualFileSystem/Index";
 
 type GlobalVariate = ControlDeclare.GlobalVariate;
 type ToolStripItem = ControlDeclare.ToolStripItem;
 type ToolStripConfig = ControlDeclare.ToolStripConfig;
 
 export const globalVariate: GlobalVariate = reactive({ ref_no: "" });
+
+// 如果有 historySelectRefNo 的历史案号，则赋值给全局变量
+let historySelectRefNos = GetOrCreateLocalStorageObject("historySelectRefNo", []);
+if (historySelectRefNos.length) {
+  globalVariate.ref_no = historySelectRefNos[0].ref_no;
+}
 
 /**
  * 数据双向绑定
@@ -85,6 +92,9 @@ export class BaseWindow {
   // 窗体ID，该ID是编译后的文件ID
   id: string;
 
+  // 继承自该窗体的窗体id列表
+  inheritIds: string[] = [];
+
   /**
    * 构造函数
    * @param id 窗体id
@@ -104,9 +114,21 @@ export class BaseWindow {
    */
   async LoadConfig() {
     if (this.isLoaded) return;
+
     let file = Compiler.CompiledFiles.find((f) => f.fileId == this.id);
     if (file) {
       this.formConfig = file.extraData;
+
+      // 如果有继承的窗体，则先加载继承的窗体
+      if (this.inheritIds.length) {
+        for (const inheritId of this.inheritIds) {
+          let inheritFile = Compiler.CompiledFiles.find((f) => f.fileId == inheritId);
+          if (inheritFile) {
+            let inheritConfig = inheritFile.extraData;
+            this.formConfig.$children.push(...inheritConfig.$children);
+          }
+        }
+      }
     }
     this.isLoaded = true;
   }
@@ -240,6 +262,7 @@ export class BaseWindow {
         width: 24,
         height: 24,
         icon: "file:WindowBarEdit",
+        showDownStyle: true,
         events: {
           systemOnClick: this.EditMode.bind(this),
         },
@@ -354,7 +377,13 @@ export class BaseWindow {
     // 获取历史选择的案号
     let history = GetOrCreateLocalStorageObject(this.$historySelectRefNoKey, []);
     // 如果历史数据中没有当前案号，则添加
-    if (!history.find((h) => h.ref_no == e)) history.push(m);
+    if (!history.find((h) => h.ref_no == e)) {
+      history.push(m);
+    } else {
+      // 反之，将当前案号移动到第一个
+      history = history.filter((h) => h.ref_no != e);
+      history.unshift(m);
+    }
     // 如果历史案号大于5个，则删除第一个
     if (history.length > 5) history.shift();
     localStorage.setItem("historySelectRefNo", JSON.stringify(history));
@@ -379,9 +408,19 @@ export class BaseWindow {
   /**
    * 刷新
    */
-  Refresh(config: ToolStripConfig, item: ToolStripItem, e: MouseEvent) {
-    store.dispatch("Window/RefreshWindow", this.$Window.instanceId);
-    e.stopPropagation();
+  async Refresh(config: ToolStripConfig, item: ToolStripItem, e: MouseEvent) {
+    // 如果当前 $Window 有 dataSourceControls 组件，且无数据修改，则刷新窗体
+    let isChanged = this.$Window.dataSourceControls.some((d) => d.diffData.size > 0);
+    if (!isChanged) {
+      store.dispatch("Window/RefreshWindow", this.$Window.instanceId);
+      e.stopPropagation();
+    } else {
+      try {
+        await this.Confirm("当前窗体有未保存的数据，是否要刷新？", "警告", "warning");
+        store.dispatch("Window/RefreshWindow", this.$Window.instanceId);
+        e.stopPropagation();
+      } catch {}
+    }
   }
 
   /**

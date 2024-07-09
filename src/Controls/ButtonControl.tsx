@@ -17,7 +17,7 @@ export default class ButtonControl extends Control {
   render() {
     return super.render(
       <ElButton
-        style={{ width: "100%", height: "100%", fontSize: this.config.fontSize + "px" }}
+        style={{ width: "100%", height: "100%", fontSize: this.config.fontSize + "px", color: this.config.color }}
         type={this.config.style as any}
         disabled={this.disabled}
         loading={this.config.loading}
@@ -28,7 +28,16 @@ export default class ButtonControl extends Control {
   }
 
   static GetDefaultConfig(): ButtonConfig {
-    return { width: 70, height: 25, type: "Button", text: "按钮", fontSize: 14, style: "", loading: false };
+    return {
+      width: 70,
+      height: 25,
+      type: "Button",
+      text: "按钮",
+      fontSize: 14,
+      style: "",
+      color: "#000",
+      loading: false,
+    };
   }
 }
 

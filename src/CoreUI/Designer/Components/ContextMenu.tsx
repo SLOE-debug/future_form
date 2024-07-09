@@ -77,8 +77,78 @@ export default class ContextMenu extends Vue {
     }
   }
 
+  Justify(type: string) {
+    let feild = type.replace("Justify", "").replace("Same", "").toLowerCase();
+    let controls = this.$Store.get.Designer.SelectedControls.filter((c) => !c.bigShot);
+    let bigShot = this.$Store.get.Designer.BigShotControl;
+    let field = "";
+    switch (type) {
+      case "RightJustify":
+      case "VCJustify":
+        let { left: l, width: w } = bigShot.config;
+        controls.forEach((c) => {
+          if (c.config.fromContainer != bigShot.config.fromContainer) return;
+          let { left: cl, width: cw } = c.config;
+          let offset = cl + cw - (l + w);
+          if (type == "VCJustify") offset += w / 2 - cw / 2;
+
+          c.config.left -= offset;
+        });
+        break;
+      case "BottomJustify":
+      case "HCJustify":
+        let { top: t, height: h } = bigShot.config;
+        controls.forEach((c) => {
+          if (c.config.fromContainer != bigShot.config.fromContainer) return;
+          let { top: ct, height: ch } = c.config;
+          let offset = ct + ch - (t + h);
+          if (type == "HCJustify") offset += h / 2 - ch / 2;
+
+          c.config.top -= offset;
+        });
+        break;
+      case "SameSize":
+        controls.forEach((c) => {
+          if (c.config.fromContainer != bigShot.config.fromContainer) return;
+          c.config.width = bigShot.config.width;
+          c.config.height = bigShot.config.height;
+        });
+        break;
+      case "VDJustify":
+        field = "left";
+      case "HDJustify":
+        if (!field) field = "top";
+        let allControls = controls.concat(bigShot);
+        allControls.sort((a, b) => a.config[field] - b.config[field]);
+        let startControl = allControls[0];
+        let endControl = allControls[allControls.length - 1];
+
+        let insideControls = allControls.slice(1, -1);
+        if (insideControls.length) {
+          let totalLength = endControl.config[field] - startControl.config[field];
+          let n = totalLength / (insideControls.length + 1);
+          insideControls.forEach((c, i) => {
+            c.config[field] = startControl.config[field] + (i + 1) * n;
+          });
+        }
+        break;
+      default:
+        controls.forEach((c) => {
+          if (c.config.fromContainer != bigShot.config.fromContainer) return;
+          c.config[feild] = bigShot.config[feild];
+        });
+        break;
+    }
+  }
+
   @Emit("selected")
   Selected(m: MenuItem) {
+    // 如果 m.code 是与对齐有关的
+    if (m.code.includes("Justify") || m.code.includes("Same")) {
+      this.Justify(m.code);
+      return;
+    }
+
     this[m.code] && this[m.code]();
   }
 

@@ -13,7 +13,7 @@ export default class WindowCollection extends Vue {
   async EscapeCtronl(e: KeyboardEvent) {
     let keys = this.WindowInstancesKeys;
     if (!keys.length) return;
-    let { instance } = this.$Store.get.Window.Windows[keys[keys.length - 1]];
+    let { instance, config } = this.$Store.get.Window.Windows[keys[keys.length - 1]];
     let { onBeforeClose } = instance.$Window.events;
     // 获取 onBeforeClose 的返回值，如果是 Promise 则等待 Promise 结束
     let result = onBeforeClose?.();
@@ -23,6 +23,8 @@ export default class WindowCollection extends Vue {
 
     // 如果 result 为 false，则不关闭窗体
     if (result === false) return;
+    // 如果 config.showClose 为 false，则不关闭窗体
+    if (config.showClose === false) return;
     instance.Close();
   }
 
@@ -110,6 +112,8 @@ export default class WindowCollection extends Vue {
             active: selected,
             // 是否需要高度滚动条
             heightScroll: config.heightScroll,
+            // 是否显示窗体控制条
+            showControlBar: config.showControlBar,
           }}
         >
           <FormControl

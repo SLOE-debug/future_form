@@ -3,11 +3,10 @@ import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { ComponentBase, Inject, Prop, Vue, Watch } from "vue-facing-decorator";
 import FormControl from "@/Controls/FormControl";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { BindEventContext, Debounce, RegisterEvent, sourceArgsPrefix } from "@/Utils/Index";
+import { BindEventContext, Debounce, Guid, RegisterEvent, sourceArgsPrefix } from "@/Utils/Index";
 import DataSourceGroupControl from "@/Controls/DataSourceGroupControl";
 import { JSX } from "vue/jsx-runtime";
 import { globalCache } from "@/Utils/Caches";
-import { OptionBuilder } from "vue-facing-decorator/dist/optionBuilder";
 
 // 仅在开发模式下导入的模块
 
@@ -144,7 +143,7 @@ export default class Control extends DataSourceControl {
   }
 
   pushTimeOut: NodeJS.Timeout;
-  watchOldValue: ControlConfig;
+  declare watchOldValue: ControlConfig;
   @Watch("watchConfig")
   async ConfigChange(nv, ov) {
     // 是否非 debug 模式 或 ov 为空
@@ -154,8 +153,17 @@ export default class Control extends DataSourceControl {
     // 是否与大人物的父容器控件不一致
     let isNotSameParentContainer =
       this.config.fromContainer !== this.$Store.get.Designer.BigShotControl?.config?.fromContainer;
+
+    // 是否是 新旧 fromContainer 不一致，且大人物为空
+    let isModifyFromContainer =
+      this.config.fromContainer != ov.fromContainer && !this.$Store.get.Designer.BigShotControl;
+
     // 如果符合上述条件，则不执行
-    if (isNotDebugOrOvIsNull || isUnSelectedOrDisableStack || isNotSameParentContainer) return;
+    if (isNotDebugOrOvIsNull || isUnSelectedOrDisableStack || isNotSameParentContainer) {
+      if (!isModifyFromContainer) {
+        return;
+      }
+    }
 
     // 如果 watchOldValue 为空，则赋值为 ov 旧值，只记录当前控件首次更改时的旧值
     if (!this.watchOldValue) this.watchOldValue = ov;
@@ -192,7 +200,7 @@ export default class Control extends DataSourceControl {
         UpdateControlDeclareToDesignerCode(this.watchOldValue.name, nv);
       }
 
-      console.log(this.config.name, "添加到堆栈");
+      // console.log("添加到堆栈", nv, this.watchOldValue);
 
       // 添加到堆栈，记录变更
       await this.$Store.dispatch("Designer/AddStack", new Stack(this, nv, this.watchOldValue));
@@ -250,6 +258,8 @@ export default class Control extends DataSourceControl {
 
   declare winEventHandlers;
   mounted() {
+    this.config.limit = true;
+
     if (this.$Store.get.Designer.Debug) {
       this.winEventHandlers = {
         mousemove: this.Adjust,
@@ -263,9 +273,13 @@ export default class Control extends DataSourceControl {
     }
   }
 
+  // 是否已卸载的标识
+  isUnmounted = false;
+
   unmounted() {
     RegisterEvent.call(window, this.winEventHandlers, true);
     this.winEventHandlers = null;
+    this.isUnmounted = true;
   }
 
   Pick(e: MouseEvent) {
@@ -417,16 +431,18 @@ export default class Control extends DataSourceControl {
     return containers;
   }
 
-  Cancel(e: MouseEvent) {
+  async Cancel(e: MouseEvent) {
     // 判断当前 e.target 的 data-control 是不是为 true
-    let isControl = (e.target as HTMLElement).dataset.control == "true";
+    // let isControl = (e.target as HTMLElement).dataset.control == "true";
 
     if (e.button != 0 || !this.$Store.get.Designer.Debug) return;
+
+    let { Stack, StackAction } = await CoreUndoStack();
 
     if (
       this.adjustType == ControlDeclare.AdjustType.Move &&
       this.selected &&
-      !isControl &&
+      // !isControl &&
       this.config.type != "ToolStrip"
     ) {
       let rect = (this.$Store.get.Designer.$FormDesigner.$el as HTMLDivElement).getBoundingClientRect();
@@ -459,21 +475,46 @@ export default class Control extends DataSourceControl {
           }
         }
 
-        if (newContainer) {
-          if (newContainer != oldContainer) {
-            c.OutContainer(oldContainer);
-            c.JoinContainer(newContainer);
+        if (newContainer != oldContainer) {
+          // 禁用 c 的堆栈
+          c.disableStack = true;
+
+          let oldConfig = this.watchOldValue;
+          // 如果 oldConfig 为空，意味着最近已经添加过一次堆栈了，watchOldValue 已经被清空，则需要克隆当前的配置
+          if (!oldConfig) {
+            oldConfig = CloneControlConfig(c.config);
+            // 为 oldConfig 添加 “最近一次的” 标记
+            oldConfig.$last = true;
           }
-        } else if (!!oldContainer) {
-          c.Delete(false);
-          this.$Store.get.Designer.FormConfig.$children.push(c.config);
+
           c.OutContainer(oldContainer);
+          await c.JoinContainer(newContainer);
+
+          // 添加到堆栈
+          this.$Store.dispatch(
+            "Designer/AddStack",
+            new Stack(c, CloneControlConfig(c.config), oldConfig, StackAction.SwitchContainer)
+          );
+          this.watchOldValue = null;
         }
       }
     }
 
     this.startCoord = null;
     this.adjustType = null;
+  }
+
+  /**
+   * 切换容器
+   */
+  async SwitchContainer(newContainerName) {
+    let allContainer = this.GetAllContainer(this.$Store.get.Designer.FormConfig);
+
+    let oldContainer = allContainer.find((c) => c.container.name == this.config.fromContainer);
+    let newContainer = allContainer.find((c) => c.container.name == newContainerName);
+
+    this.OutContainer(oldContainer);
+    await this.JoinContainer(newContainer);
   }
 
   OutContainer(container: ContainerInfo) {
@@ -485,7 +526,21 @@ export default class Control extends DataSourceControl {
     delete this.config.fromTabId;
   }
 
-  JoinContainer(container: ContainerInfo) {
+  async JoinContainer(
+    container: ContainerInfo = {
+      globalLeft: 0,
+      globalTop: 0,
+      screenLeft: 0,
+      screenTop: 0,
+      container: {
+        name: undefined,
+        value: undefined,
+        $children: this.$Store.get.Designer.FormConfig.$children,
+      } as any,
+    }
+  ) {
+    let { AddControlDeclareToDesignerCode } = await UtilDesigner();
+
     let {
       globalLeft,
       globalTop,
@@ -494,12 +549,15 @@ export default class Control extends DataSourceControl {
       container: { name, value, $children },
     } = container;
 
+    await this.Delete(false);
     this.config.left -= globalLeft;
     this.config.top -= globalTop - screenTop;
-    this.Delete(false);
-    this.config.fromContainer = name;
+    // 如果要加入的容器是 Tab，则需要将 fromTabId 设置为当前选中的 Tab
     if (value) this.config.fromTabId = value;
-    else $children.push(this.config);
+    this.config.fromContainer = name;
+    $children.push(this.config);
+
+    AddControlDeclareToDesignerCode(this.config);
   }
 
   HelpPoint() {
@@ -561,11 +619,6 @@ export default class Control extends DataSourceControl {
     let { RemoveControlDeclareToDesignerCode } = await UtilDesigner();
     let { Stack, StackAction } = await CoreUndoStack();
 
-    // 如果父组件是 DesignerSpace,则意味着当前组件是主Form窗体，不允许删除
-    // if (this.$parent.$options.__vfdConstructor == DesignerSpace) {
-    //   ElMessage({ message: "不允许删除主Form窗体！", type: "error" });
-    //   return;
-    // }
     // 如果当前窗体是 Form，则不允许删除
     if (this.config.type == "Form") {
       ElMessage({ message: "不允许删除窗体！", type: "error" });
@@ -600,7 +653,13 @@ export default class Control extends DataSourceControl {
    * 获取基础样式，用于在子类中重写，在 render 中覆盖
    */
   get baseStyle() {
-    return {};
+    let style: any = {};
+
+    // 如果非 debug 模式且 visible 为 false，则隐藏
+    if (this.config.visible == false && !this.$Store.get.Designer.Debug) {
+      style.display = "none";
+    }
+    return style;
   }
 
   /**
@@ -608,10 +667,12 @@ export default class Control extends DataSourceControl {
    */
   get eleStyle() {
     let style: any = {
-      display: this.config.visible || this.config.type == "Form" ? "" : "none",
-      pointerEvents: this.$Store.get.Designer.Debug ? "none" : "initial",
+      // display: this.$Store.get.Designer.Debug || this.config.visible || this.config.type == "Form" ? "" : "none",
+      pointerEvents: this.$Store.get.Designer.Debug ? "none" : "all",
     };
+
     if (this.config.transparent) style.opacity = this.config.transparent;
+
     if (this.config.round) style.borderRadius = this.config.round + "px";
     if (this.config.border) {
       style.borderWidth = this.config.border + "px";
@@ -639,6 +700,9 @@ export default class Control extends DataSourceControl {
           height: this.config.height + "px",
           cursor: this.cursor,
           ...this.baseStyle,
+        }}
+        {...{
+          "data-name": this.config.name,
         }}
         onMousedown={(e) => {
           if (this.$Store.get.Designer.Debug) {

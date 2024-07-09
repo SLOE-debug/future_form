@@ -25,7 +25,10 @@ body {
   }
   :global(.el-select__wrapper.is-disabled) {
     box-shadow: none;
-    border: 1px solid var(--el-select-disabled-border);
+    border: 1px solid var(--el-select-disabled-border) !important;
+    :global(.el-select__placeholder) {
+      user-select: all;
+    }
   }
 }
 
@@ -39,6 +42,7 @@ body {
       > div {
         width: auto !important;
         > li {
+          text-overflow: initial;
           padding-left: 10px;
           :global(.clip) {
             // 文本超出部分隐藏
@@ -75,31 +79,5 @@ body {
   overflow-y: hidden;
   li {
     width: auto !important;
-  }
-}
-
-// 自定义的右键复制上下文菜单
-:global(.custom-contextmenu) {
-  position: fixed;
-  z-index: 9999;
-  background-color: #ffffff;
-  border: 1px solid #dcdfe6;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
-  font-size: 14px;
-  cursor: pointer;
-  overflow: hidden;
-
-  div {
-    padding: 0 14px;
-    line-height: 24px;
-    border-bottom: 1px solid #dcdfe6;
-    &:hover {
-      color: #409eff;
-      background-color: #409eff2e;
-    }
-    &:last-child {
-      border-bottom: none;
-    }
   }
 }

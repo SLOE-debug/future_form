@@ -224,6 +224,7 @@ export default class Editor {
    */
   ModelContentChanged() {
     if (!store.get.VirtualFileSystem.CurrentFile) return;
+
     store.get.VirtualFileSystem.CurrentFile.isUnsaved =
       this.editor.getValue() != store.get.VirtualFileSystem.CurrentFile.content;
     this.modelChangeCallbacks.forEach((m) => m());

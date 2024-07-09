@@ -1,20 +1,9 @@
 import { App } from "vue";
 
 /**
- * 选中ElEslectV2的内容
+ * 计算宽度并将Input的内容设置为占位符
  */
-function SelectContent(e: MouseEvent) {
-  let el = e.currentTarget as HTMLElement;
-  let input = el.querySelector("input") as HTMLInputElement;
-  if (!input) return;
-  input.onkeydown = (e) => {
-    if (e.key === "Delete") {
-      el?.dispatchEvent(new KeyboardEvent("keydown", { key: "Delete" }));
-    }
-  };
-  // 占位符 div
-  let placeholder = el.querySelector(".el-select__placeholder") as HTMLSpanElement;
-
+function CalculateWidthAndSetPlaceholder(input: HTMLInputElement, placeholder: HTMLSpanElement) {
   setTimeout(() => {
     input.value = placeholder.innerText;
     placeholder.style.display = "none";
@@ -29,6 +18,36 @@ function SelectContent(e: MouseEvent) {
     span.remove();
     input.select();
   }, 0);
+}
+
+/**
+ * 选中ElEslectV2的内容
+ */
+function SelectContent(e: MouseEvent) {
+  let el = e.currentTarget as HTMLElement;
+  let input = el.querySelector("input") as HTMLInputElement;
+
+  // 占位符 div
+  let placeholder = el.querySelector(".el-select__placeholder") as HTMLSpanElement;
+
+  if (!input) return;
+  input.onkeydown = (e) => {
+    if (e.key === "Delete") {
+      el?.dispatchEvent(new KeyboardEvent("keydown", { key: "Delete" }));
+    }
+  };
+  input.onclick = (e) => {
+    // 如果当前 input 没有内容，则显示占位符
+    if (!input.value) {
+      CalculateWidthAndSetPlaceholder(input, placeholder);
+    }
+  };
+  input.onblur = (e) => {
+    el?.dispatchEvent(new Event("blur"));
+  };
+
+  if (!placeholder) return;
+  CalculateWidthAndSetPlaceholder(input, placeholder);
 }
 
 /**
@@ -62,21 +81,29 @@ export const Instruction = {
         el.querySelector("input").onfocus = null;
       },
     });
-    // 对于 ElSelectV2 组件的复制扩展
+    // ElSelectV2 组件的复制扩展
     app.directive("el-select-copy", {
       mounted(el: HTMLElement, binding) {
-        el.addEventListener("click", SelectContent);
-        el.addEventListener("mouseleave", ShowPlaceholder);
+        let wrapper = el.querySelector(".el-select__wrapper") as HTMLElement;
+
+        // let selection = el.querySelector(".el-select__selection") as HTMLElement;
+        wrapper.addEventListener("click", SelectContent);
+        wrapper.addEventListener("mouseleave", ShowPlaceholder);
+        wrapper.onblur = ShowPlaceholder;
       },
       unmounted(el: HTMLElement) {
-        el.removeEventListener("click", SelectContent);
-        el.removeEventListener("mouseleave", ShowPlaceholder);
+        let wrapper = el.querySelector(".el-select__wrapper") as HTMLElement;
+        // let selection = el.querySelector(".el-select__selection") as HTMLElement;
+        wrapper.removeEventListener("click", SelectContent);
+        wrapper.removeEventListener("mouseleave", ShowPlaceholder);
+        wrapper.onblur = null;
       },
     });
-    // 对于ElSelectV2的Delete键删除扩展
+    // ElSelectV2的Delete键删除扩展
     app.directive("el-select-delete", {
       mounted(el: HTMLElement, binding) {
-        el.onkeydown = (e) => {
+        let wrapper = el.querySelector(".el-select__wrapper") as HTMLElement;
+        wrapper.onkeydown = (e) => {
           if (e.key === "Delete") {
             binding && binding.value && binding.value();
           }
@@ -84,7 +111,8 @@ export const Instruction = {
         };
       },
       unmounted(el: HTMLElement) {
-        el.onkeydown = null;
+        let wrapper = el.querySelector(".el-select__wrapper") as HTMLElement;
+        wrapper.onkeydown = null;
       },
     });
   },

@@ -71,6 +71,10 @@
               margin-right: -10px;
             }
           }
+          // 不是最后一个，将左边框去掉
+          &:not(:last-child) {
+            border-right: none;
+          }
         }
         .active {
           background-color: #409eff;

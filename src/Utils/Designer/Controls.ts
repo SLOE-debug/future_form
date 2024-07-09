@@ -34,6 +34,24 @@ export const ControlAlias = {
  * 控件类型
  */
 export const baseProps: ConfiguratorItem[] = [
+  // top
+  {
+    name: "上边距",
+    des: "控件上边距",
+    type: DesignerDeclare.InputType.ElInputNumber,
+    field: "top",
+    min: -Infinity,
+    max: Infinity,
+  },
+  // left
+  {
+    name: "左边距",
+    des: "控件左边距",
+    type: DesignerDeclare.InputType.ElInputNumber,
+    field: "left",
+    min: -Infinity,
+    max: Infinity,
+  },
   {
     name: "名称",
     des: "控件的唯一名称",

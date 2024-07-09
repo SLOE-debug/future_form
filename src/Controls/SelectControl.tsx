@@ -2,6 +2,7 @@ import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { ElSelectV2 } from "element-plus";
+import { toRaw } from "vue";
 import { Component } from "vue-facing-decorator";
 
 // 仅在开发模式下导入的模块
@@ -13,8 +14,21 @@ type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 @Component
 export default class SelectControl extends Control {
   declare config: SelectConfig;
+
+  // 定义脱离响应的options
+  declare options: any[];
+
+  async created() {
+    this.options = [];
+  }
+
   mounted() {
     this.config.GetSources = this.GetInnerSource;
+
+    // 如果非数据源模式，直接设置options
+    if (!this.config.dataSource) {
+      this.SetOptions(this.config.options);
+    }
   }
 
   unmounted() {
@@ -27,13 +41,24 @@ export default class SelectControl extends Control {
 
   async GetInnerSource(params) {
     let data = await super.GetInnerSource(params);
-    this.config.options = data.map((m) => {
-      return {
-        label: m[this.Desuffix(this.config.displayField)],
-        value: m[this.Desuffix(this.config.dataField)].toString(),
-        m,
-      };
-    });
+
+    this.SetOptions(
+      data.map((m) => {
+        return {
+          label: m[this.Desuffix(this.config.displayField)],
+          value: m[this.Desuffix(this.config.dataField)].toString(),
+          m,
+        };
+      })
+    );
+  }
+
+  /**
+   * 设置 options
+   */
+  SetOptions(options) {
+    this.options = options;
+    this.$forceUpdate();
   }
 
   /**
@@ -73,8 +98,9 @@ export default class SelectControl extends Control {
         filterable={this.config.filterable}
         disabled={this.disabled}
         key={this.config.id}
+        ref={this.config.id}
         popperClass={["selectPopper", this.config.display == "table" ? "tableSelectPopper" : ""].join(" ")}
-        options={this.config.options || []}
+        options={this.options || []}
         persistent={false}
         itemHeight={this.rows * 34}
       >
@@ -84,6 +110,7 @@ export default class SelectControl extends Control {
               item: { label, m },
               index,
             } = e;
+
             if (this.config.display == "table") {
               return (
                 <span style={this.GetTableSelectColumnsStyle()}>
@@ -104,7 +131,7 @@ export default class SelectControl extends Control {
                 </span>
               );
             }
-            return label;
+            return <span title={label}>{label}</span>;
           },
           header:
             this.config.display == "table"

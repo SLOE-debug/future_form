@@ -64,8 +64,8 @@ export default class GroupControl extends Control {
     }
   }
 
-  Cancel(e: MouseEvent) {
-    super.Cancel(e);
+  async Cancel(e: MouseEvent) {
+    await super.Cancel(e);
     this.slideStartCoord = null;
   }
 
@@ -88,8 +88,8 @@ export default class GroupControl extends Control {
         )}
         <div
           class={css.group}
-          onDrop={this.Drop}
-          onMousedown={this.SlideStart}
+          onDrop={this.$Store.get.Designer.Debug && this.Drop}
+          onMousedown={this.$Store.get.Designer.Debug && this.SlideStart}
           style={{
             borderRadius: this.config.round + "px",
             backgroundColor: this.config.bgColor,

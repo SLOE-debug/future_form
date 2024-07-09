@@ -85,8 +85,8 @@ export namespace ControlDeclare {
 
   export type FormConfig = {
     maximize?: boolean;
-    // 是否显示标题栏的控件组
-    showTitleBarControls?: boolean;
+    // 是否显示窗体控制条
+    showControlBar?: boolean;
   } & ControlConfig;
 
   export type GroupConfig = {
@@ -143,10 +143,14 @@ export namespace ControlDeclare {
     ControlConfig;
 
   export type SubWindowConfig = {
-    form: { [x: string]: ControlConfig & Function };
+    padding: string[];
     subWindowId: string;
     // 实例化时 new 的类名
     createClassName: string;
+    /**
+     * 显示子窗体
+     */
+    ShowSubWindow?: () => Promise<void>;
   } & ControlConfig;
 
   export type ColumnItem = {
@@ -208,6 +212,8 @@ export namespace ControlDeclare {
     iconSize?: number;
     // 禁用
     disabled?: boolean;
+    // 是否拥有按下样式
+    showDownStyle?: boolean;
 
     // 下拉框
     placeholder?: string;
@@ -284,6 +290,10 @@ export namespace ControlDeclare {
      * 全局变量对象
      */
     $globalVariate: GlobalVariate;
+    /**
+     * 继承自该窗体的子窗体id列表
+     */
+    inheritIds: string[];
     /**
      * 显示窗体
      */

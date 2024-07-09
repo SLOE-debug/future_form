@@ -2,4 +2,59 @@
   pointer-events: initial !important;
   position: relative;
   overflow: hidden;
+
+  // 全局的禁用样式
+  :global(.is-disabled) {
+    cursor: auto !important;
+    :global(.el-radio__label),
+    :global(.el-radio__inner),
+    :global(.el-checkbox__label),
+    :global(.el-checkbox__inner),
+    :global(.el-select__placeholder),
+    :global(.el-input__inner),
+    :global(.el-textarea__inner),
+    input {
+      color: black !important;
+      -webkit-text-fill-color: inherit !important;
+      cursor: auto !important;
+      &::after {
+        cursor: auto !important;
+      }
+    }
+  }
+
+  :global(.el-button.is-disabled) {
+    color: var(--el-button-disabled-text-color) !important;
+  }
+
+  :global(.is-disabled.is-checked) {
+    :global(.el-radio__inner) {
+      background: var(--el-color-primary);
+      border-color: var(--el-color-primary);
+      &::after {
+        background-color: var(--el-disabled-bg-color);
+      }
+    }
+
+    :global(.el-checkbox__inner) {
+      background: var(--el-color-primary);
+      border-color: var(--el-color-primary);
+      &::after {
+        border-color: var(--el-checkbox-checked-icon-color);
+      }
+    }
+  }
+
+  :global(.el-select__placeholder) {
+    color: black !important;
+  }
+
+  // 全局的 input 样式
+  :global(.el-input__inner) {
+    color: black !important;
+  }
+  // 全局的 textarea 样式
+  :global(.el-textarea__inner) {
+    color: black !important;
+  }
 }

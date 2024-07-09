@@ -6,7 +6,6 @@ import store from "@/Vuex/Store";
 import * as ts from "typescript";
 import { editor } from "@/CoreUI/Editor/EditorPage";
 import { GetDesignerBackgroundFile, GetFileById } from "../VirtualFileSystem/Index";
-import * as monaco from "monaco-editor";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceGroupConfig = ControlDeclare.DataSourceGroupConfig;
@@ -314,6 +313,12 @@ export function AddControlDeclareToDesignerCode(config: ControlConfig) {
     if (config.type === "DataSourceGroup") {
       identifier += DataSourceControlTypeDeclare(config as DataSourceGroupConfig);
     }
+
+    // 判断当前是否已经存在相同名称的属性
+    if (members.some((m) => m.name?.getText() === config.name)) {
+      return;
+    }
+
     const typeRefNode = ts.factory.createTypeReferenceNode(ts.factory.createIdentifier(identifier), undefined);
     const newMember = ts.factory.createPropertyDeclaration(undefined, config.name, undefined, typeRefNode, undefined);
     return [...members, newMember];

@@ -15,8 +15,6 @@ export default class WindowControlBar extends Vue {
   formWidth: number;
   @Prop
   formHeight: number;
-  @Prop({ default: 25 })
-  headHeight: number;
   @Prop({ default: "默认标题" })
   title: string;
   @Prop({ default: false })
@@ -31,6 +29,12 @@ export default class WindowControlBar extends Vue {
   @Prop({ default: true })
   showClose: boolean;
 
+  /**
+   * 是否显示窗体控制条
+   */
+  @Prop({ default: true })
+  showControlBar: boolean;
+
   @Prop({
     default: WindowDeclare.StartPosition.CenterScreen,
   })
@@ -44,6 +48,9 @@ export default class WindowControlBar extends Vue {
   // 是否需要高度滚动条
   @Prop({ default: true })
   heightScroll: boolean;
+
+  // 窗体头部高度，默认25
+  headHeight: number = 25;
 
   maximize = false;
 
@@ -180,6 +187,11 @@ export default class WindowControlBar extends Vue {
   }
 
   created() {
+    // 如果不需要显示窗体控制条
+    if (!this.showControlBar) {
+      this.headHeight = 0;
+    }
+
     this.winEventHandlers = {
       mousemove: this.Move,
       mouseup: this.CancelMove,
@@ -252,17 +264,19 @@ export default class WindowControlBar extends Vue {
           this.$Store.dispatch("Window/SetFocusWindow", this.instanceId);
         }}
       >
-        <div
-          class={css.head}
-          style={this.headStyle}
-          onMousedown={this.StartMove}
-          onDblclick={(_) => {
-            if (this.showMaximize) this.maximize = !this.maximize;
-          }}
-        >
-          {this.title}
-          {this.RenderBarButtons()}
-        </div>
+        {this.showControlBar && (
+          <div
+            class={css.head}
+            style={this.headStyle}
+            onMousedown={this.StartMove}
+            onDblclick={(_) => {
+              if (this.showMaximize) this.maximize = !this.maximize;
+            }}
+          >
+            {this.title}
+            {this.RenderBarButtons()}
+          </div>
+        )}
         <div
           class={css.container}
           style={this.containerStyle}

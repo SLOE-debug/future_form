@@ -41,6 +41,10 @@ export namespace DesignerDeclare {
      */
     precision?: number;
     step?: number;
+    /**
+     * 是否仅在设计文件中启用
+     */
+    onlyDesign?: boolean;
 
     /**
      * 特殊配置类型时传递的额外参数

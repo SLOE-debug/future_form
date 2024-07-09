@@ -3,7 +3,7 @@ import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
 
-import { ElMessage } from "element-plus";
+import { ElMessage, dayjs } from "element-plus";
 import { Component, Provide } from "vue-facing-decorator";
 import TableControl from "./TableControl";
 import { defineAsyncComponent, watch } from "vue";
@@ -74,8 +74,8 @@ export default class DataSourceGroupControl extends Control {
     }
   }
 
-  Cancel(e: MouseEvent) {
-    super.Cancel(e);
+  async Cancel(e: MouseEvent) {
+    await super.Cancel(e);
     this.slideStartCoord = null;
   }
 
@@ -112,8 +112,8 @@ export default class DataSourceGroupControl extends Control {
         <div
           class={css.dataSourceGroup}
           style={{ border: this.$Store.get.Designer.Debug ? "1px dashed #999" : "" }}
-          onDrop={this.Drop}
-          onMousedown={this.SlideStart}
+          onDrop={this.$Store.get.Designer.Debug && this.Drop}
+          onMousedown={this.$Store.get.Designer.Debug && this.SlideStart}
         >
           {this.$Store.get.Designer.Debug && (
             <AsyncSlideSelector
@@ -312,7 +312,7 @@ export default class DataSourceGroupControl extends Control {
       case "Number":
         return Number(value);
       case "Date":
-        return new Date(value);
+        return dayjs(value).format("YYYY-MM-DD");
       default:
         return value?.toString();
     }

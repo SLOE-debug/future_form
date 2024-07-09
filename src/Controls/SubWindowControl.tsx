@@ -12,13 +12,12 @@ const UtilVFS = () => import("@/Utils/VirtualFileSystem/Index");
 const AsyncTs = () => import("typescript");
 
 type SubWindowConfig = ControlDeclare.SubWindowConfig;
-type ControlConfig = ControlDeclare.ControlConfig;
-
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 
 @Component
 export default class SubWindowControl extends Control {
   declare config: SubWindowConfig;
+  declare $refs: any;
 
   subWinInstanceId: string = null;
 
@@ -30,24 +29,31 @@ export default class SubWindowControl extends Control {
     this.contentLoading = true;
   }
 
-  async created() {
-    if (!this.$Store.get.Designer.Debug || this.$Store.get.Designer.Preview) {
-      let id = this.config.subWindowId;
-      // 从服务器懒加载这个文件，并将其安装到当前浏览器中
-      await Compiler.GetPublishFile(id, "fileId");
-      let url = Compiler.fileId2BlobUrlMap.get(id);
-      // 动态加载子窗体
-      import(/* webpackIgnore: true */ url).then(async (m) => {
-        let subWin = m.default as typeof BaseWindow;
-        if (m.default.name != this.config.createClassName) {
-          subWin = m[this.config.createClassName] as typeof BaseWindow;
-        }
-        this.subWinInstanceId = await new subWin(undefined).ShowSubWindow();
-      });
+  /**
+   * 展示子窗体
+   */
+  async ShowSubWindow() {
+    if (!!this.subWinInstanceId) return;
+    this.contentLoading = true;
+    let id = this.config.subWindowId;
+    // 从服务器懒加载这个文件，并将其安装到当前浏览器中
+    await Compiler.GetPublishFile(id, "fileId");
+    let url = Compiler.fileId2BlobUrlMap.get(id);
+
+    let m = await import(/* webpackIgnore: true */ url);
+    let subWin = m.default as typeof BaseWindow;
+    if (m.default.name != this.config.createClassName) {
+      subWin = m[this.config.createClassName] as typeof BaseWindow;
     }
+    this.subWinInstanceId = await new subWin(undefined).ShowSubWindow();
+  }
+
+  async created() {
+    this.config.ShowSubWindow = this.ShowSubWindow.bind(this);
   }
 
   unmounted() {
+    this.config.ShowSubWindow = null;
     // 关闭子窗体
     if (this.subWinInstanceId) {
       this.$Store.dispatch("Window/CloseWindow", this.subWinInstanceId);
@@ -122,13 +128,16 @@ export default class SubWindowControl extends Control {
     if (style.minHeight) style.maxHeight = style.minHeight;
     if (style.minWidth) style.maxWidth = style.minWidth;
 
-    return style;
+    return {
+      ...style,
+      ...super.baseStyle,
+    };
   }
 
   /**
    * 是否正在加载窗体
    */
-  contentLoading = true;
+  contentLoading = false;
   render() {
     return super.render(
       <div
@@ -179,7 +188,6 @@ export default class SubWindowControl extends Control {
       type: "SubWindow",
       subWindowId: "",
       createClassName: "",
-      form: null,
       padding: [],
     };
   }

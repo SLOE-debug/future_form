@@ -55,9 +55,12 @@ const actions: ActionTree<WindowState, any> = {
       win.selected = true;
       oldSelectedId = id;
     }
-    // 获取 window 实例 $Window 的 focus 事件
-    let { onFocus } = win.instance?.$Window?.events || {};
-    onFocus && onFocus();
+
+    setTimeout(() => {
+      // 获取 window 实例 $Window 的 focus 事件
+      let { onFocus } = win.instance?.$Window?.events || {};
+      onFocus && onFocus();
+    }, 0);
   },
   /**
    * 创建窗体
@@ -68,7 +71,7 @@ const actions: ActionTree<WindowState, any> = {
     state.Windows[id] = window;
 
     // 如果不是子窗体
-    if (!p.subWindow) dispatch("SetFocusWindow", id);
+    dispatch("SetFocusWindow", id);
 
     // 如果是子窗体，并且p.instance.$Window存在，则更新子窗体的实例ID
     if (p.subWindow && p.instance.$Window) {

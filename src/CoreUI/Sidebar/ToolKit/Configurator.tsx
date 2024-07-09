@@ -7,6 +7,7 @@ import { CapitalizeFirstLetter, sourceArgsPrefix } from "@/Utils/Index";
 import { AddMethodToDesignerBackground, LocateMethod } from "@/Utils/Designer/Designer";
 import { GetDesignerBackgroundFile } from "@/Utils/VirtualFileSystem/Index";
 import Control from "@/CoreUI/Designer/Control";
+import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 
@@ -97,6 +98,10 @@ export default class Configurator extends Vue {
             size="small"
             multiple={m.multiple || false}
             placeholder={m.des}
+            disabled={
+              m.onlyDesign &&
+              this.$Store.get.VirtualFileSystem.CurrentFile.suffix != VritualFileSystemDeclare.FileType.FormDesigner
+            }
             key={m.config.id}
             {...{
               onDblclick: (e) => {

@@ -17,7 +17,7 @@ export default class InputControl extends Control {
   render() {
     return super.render(
       <ElInput
-        style={{ width: "100%", height: "100%", overflow: "hidden" }}
+        style={{ width: "100%", height: "100%" }}
         v-model={this.config.value}
         placeholder={this.config.placeholder}
         clearable={this.config.clearable}
