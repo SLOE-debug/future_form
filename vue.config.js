@@ -13,6 +13,20 @@ module.exports = {
     devServer: {
       hot: true,
       historyApiFallback: true,
+      client: {
+        overlay: {
+          warnings: false,
+          runtimeErrors: (error) => {
+            const ignoreErrors = [
+              "ResizeObserver loop limit exceeded",
+              "ResizeObserver loop completed with undelivered notifications.",
+            ];
+            if (ignoreErrors.includes(error.message)) {
+              return false;
+            }
+          },
+        },
+      },
     },
     devtool: "source-map",
     module: {
@@ -21,7 +35,7 @@ module.exports = {
           test: /\.tsx$/,
           use: [
             {
-              loader: path.resolve("src/Plugins/AutoImportLessLoader.ts"),
+              loader: path.resolve("src/Plugins/AutoImportSassLoader.ts"),
             },
           ],
         },
@@ -82,7 +96,8 @@ module.exports = {
       css: {
         modules: {
           auto: (p) => {
-            return p.indexOf("node_modules") == -1 && path.basename(p).indexOf(".global.") == -1;
+            // 如果是 Assets\Sass 下的文件，将启用 CSS Modules
+            return p.indexOf("Assets\\Sass") > -1;
           },
           localIdentName: "[local]_[hash:base64:5]",
         },

@@ -142,14 +142,20 @@ export default class Sidebar extends Vue {
 
   render() {
     return (
-      <div style={{ width: this.$Store.get.Page.SidebarWidth + "px" }} class={css.sidebar}>
-        <div class={css.tabs}>
+      <div
+        style={{ width: this.$Store.get.Page.SidebarWidth + "px" }}
+        class="sidebar absolute select-none h-screen bg-[#151515]"
+      >
+        <div class="tabs w-full flex items-center h-[4%] pl-[5px] overflow-hidden relative">
           {this.tabs.map((t) => {
             return (
               <SvgIcon
                 {...{
                   name: t.icon,
-                  class: [css.item, this.activeTab == t.type ? css.active : ""].join(" "),
+                  className: [
+                    "item m-[5px_2px] cursor-pointer duration-[.15s] rounded-[4px] hover:bg-[#FFFFFF1A] !fill-[#999] [&>svg]:p-[2px]",
+                    this.activeTab == t.type ? "bg-[#FFFFFF4D] !fill-[#e6e6e6]" : "",
+                  ].join(" "),
                   onClick: () => {
                     this.activeTab = t.type;
                   },
@@ -170,7 +176,10 @@ export default class Sidebar extends Vue {
             }}
           ></Configurator>
         )}
-        <div class={css.adjustEdge} onMousedown={this.BeginAdjust}></div>
+        <div
+          class="adjustEdge absolute top-0 right-0 w-[2px] h-full bg-black cursor-[ew-resize] hover:bg-[#ad9cff] hover:w-[4px]"
+          onMousedown={this.BeginAdjust}
+        ></div>
       </div>
     );
   }

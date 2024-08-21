@@ -249,21 +249,33 @@ export function GetTables(sql: string) {
  */
 function DataSourceControlTypeDeclare(config: DataSourceGroupConfig) {
   // 附加的声明
-  let declare = " & { GetSource(";
+  let declare = ` & {
+        /**
+         * 获取数据源
+         * 
+         * @param params 参数
+         * 
+         * 参数内部除 interpolations 外，请按照对应类型进行传递
+         * 
+         * 例：GetSource({ name: '张三' })
+         * 
+         * interpolations 为插值参数，用于替换sql中的插值表达式
+         * 
+         * 例：GetSource({ name: '张三', interpolations: { grade: '一年级' } })
+         */
+        GetSource(params: { `;
 
   // 通过 config.sourceName 获取引用的sql文件
   let sqlFile = GetFileById(config.sourceName);
-  if (!sqlFile) return "";
-  let params = sqlFile.extraData.params as { name: string; type: string }[];
-  if (params.length == 0) {
-    declare += "): any; }";
-  } else {
-    declare += "params: { ";
+  let params = sqlFile?.extraData?.params as { name: string; type: string }[];
+
+  if (!!params) {
     for (let i = 0; i < params.length; i++) {
       declare += `${params[i].name}: ${params[i].type};`;
     }
-    declare += " }): any; }";
   }
+  declare += "interpolations?: { [key: string]: string };";
+  declare += " }): any;\r\n\t}";
   return declare;
 }
 

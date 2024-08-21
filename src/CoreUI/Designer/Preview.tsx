@@ -1,8 +1,7 @@
 import WindowCollection from "@/Components/WindowCollection";
 import Compiler from "@/Core/Compile/Compiler";
 import { BindEventContext, RegisterEvent } from "@/Utils/Index";
-import { Component, Vue, Watch } from "vue-facing-decorator";
-import { OptionBuilder } from "vue-facing-decorator/dist/optionBuilder";
+import { Component, Vue } from "vue-facing-decorator";
 
 @Component
 export default class Preview extends Vue {
@@ -37,7 +36,7 @@ export default class Preview extends Vue {
 
   render() {
     return (
-      <div class={css.preview}>
+      <div class="preview absolute bg-[#000000CC] left-0 top-0 w-full h-full z-[999]">
         <WindowCollection></WindowCollection>
       </div>
     );

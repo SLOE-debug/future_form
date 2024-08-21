@@ -1,12 +1,12 @@
 import { GlobalApi } from "@/Plugins/Api/ExtendApi";
 import { CompileDeclare } from "@/Types/CompileDeclare";
-import { DeepCompareObject } from "@/Utils/Index";
+import { CacheFunction, DeepCompareObject } from "@/Utils/Index";
 import { backupRoot } from "@/Utils/VirtualFileSystem/Index";
 import { Path } from "@/Utils/VirtualFileSystem/Path";
 
 // 仅在开发模式下导入的模块
-const monacoImport = () => import("monaco-editor");
-const editorImport = () => import("@/CoreUI/Editor/EditorPage");
+const monacoImport = CacheFunction(() => import("monaco-editor"));
+const editorImport = CacheFunction(() => import("@/CoreUI/Editor/EditorPage"));
 
 type CompiledFile = CompileDeclare.CompiledFile;
 
@@ -63,7 +63,6 @@ export default class Compiler {
       const m = models[i];
 
       let file = editor.model2File.get(m);
-
       // 获取文件的语言
       let language = m.getLanguageId();
       if ((language == "sql" && debug) || !file) continue;
@@ -105,6 +104,7 @@ export default class Compiler {
           for (let i = 0; i < match.length; i++) {
             // 获取引用的文件路径
             let refPath = match[i].match(/['|"](.+)['|"]/)[1];
+            // 通过引用的文件路径和当前文件路径获取绝对路径
             let absPath = Path.GetAbsolutePath(m.uri.path, refPath);
             // 替换 import(...) 为 importAsync(...)
             code = code.replace(match[i], `importAsync('${absPath}')`);

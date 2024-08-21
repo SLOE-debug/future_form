@@ -1,7 +1,6 @@
 import WindowCollection from "@/Components/WindowCollection";
 import Compiler from "@/Core/Compile/Compiler";
 import { Guid } from "@/Utils/Index";
-import store from "@/Vuex/Store";
 import { ElNotification } from "element-plus";
 import { Component, Vue } from "vue-facing-decorator";
 
@@ -75,7 +74,7 @@ export default class Home extends Vue {
   render() {
     return (
       <>
-        <div class={css.bg}></div>
+        <div class="bg bg-[#2d3a4b] h-full w-full top-0 left-0 fixed z-[-1] flex text-white items-center justify-center text-[34px] font-bold"></div>
         <WindowCollection></WindowCollection>
       </>
     );

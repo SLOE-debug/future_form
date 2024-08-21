@@ -3,16 +3,15 @@ import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { ComponentBase, Inject, Prop, Vue, Watch } from "vue-facing-decorator";
 import FormControl from "@/Controls/FormControl";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { BindEventContext, Debounce, Guid, RegisterEvent, sourceArgsPrefix } from "@/Utils/Index";
+import { BindEventContext, CacheFunction, RegisterEvent, sourceArgsPrefix } from "@/Utils/Index";
 import DataSourceGroupControl from "@/Controls/DataSourceGroupControl";
 import { JSX } from "vue/jsx-runtime";
 import { globalCache } from "@/Utils/Caches";
 
 // 仅在开发模式下导入的模块
-
-const UtilDesigner = () => import("@/Utils/Designer/Designer");
-const UtilVFS = () => import("@/Utils/VirtualFileSystem/Index");
-const CoreUndoStack = () => import("@/Core/Designer/UndoStack/Stack");
+const UtilDesigner = CacheFunction(() => import("@/Utils/Designer/Designer"));
+const UtilVFS = CacheFunction(() => import("@/Utils/VirtualFileSystem/Index"));
+const CoreUndoStack = CacheFunction(() => import("@/Core/Designer/UndoStack/Stack"));
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceControlConfig = ControlDeclare.DataSourceControlConfig;
@@ -152,7 +151,8 @@ export default class Control extends DataSourceControl {
     let isUnSelectedOrDisableStack = !this.selected || this.disableStack;
     // 是否与大人物的父容器控件不一致
     let isNotSameParentContainer =
-      this.config.fromContainer !== this.$Store.get.Designer.BigShotControl?.config?.fromContainer;
+      this.config.fromContainer !== this.$Store.get.Designer.BigShotControl?.config?.fromContainer &&
+      !!this.$Store.get.Designer.BigShotControl;
 
     // 是否是 新旧 fromContainer 不一致，且大人物为空
     let isModifyFromContainer =
@@ -199,8 +199,6 @@ export default class Control extends DataSourceControl {
       if (nv.name != ov.name || nv.sourceName != ov.sourceName) {
         UpdateControlDeclareToDesignerCode(this.watchOldValue.name, nv);
       }
-
-      // console.log("添加到堆栈", nv, this.watchOldValue);
 
       // 添加到堆栈，记录变更
       await this.$Store.dispatch("Designer/AddStack", new Stack(this, nv, this.watchOldValue));

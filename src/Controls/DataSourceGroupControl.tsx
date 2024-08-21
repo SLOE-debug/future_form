@@ -7,16 +7,16 @@ import { ElMessage, dayjs } from "element-plus";
 import { Component, Provide } from "vue-facing-decorator";
 import TableControl from "./TableControl";
 import { defineAsyncComponent, watch } from "vue";
-import { CloneStruct } from "@/Utils/Index";
+import { CacheFunction, CloneStruct } from "@/Utils/Index";
 import { Guid } from "@/Utils/Index";
 import { TwoWayBinding } from "@/Utils/Designer/Form";
 import { OptionBuilder } from "vue-facing-decorator/dist/optionBuilder";
 
 // 仅在开发模式下导入的模块
-const UtilsDesigner = () => import("@/Utils/Designer/Designer");
-const UtilControl = () => import("@/Utils/Designer/Controls");
-const UtilVFS = () => import("@/Utils/VirtualFileSystem/Index");
-const CoreUndoStack = () => import("@/Core/Designer/UndoStack/Stack");
+const UtilsDesigner = CacheFunction(() => import("@/Utils/Designer/Designer"));
+const UtilControl = CacheFunction(() => import("@/Utils/Designer/Controls"));
+const UtilVFS = CacheFunction(() => import("@/Utils/VirtualFileSystem/Index"));
+const CoreUndoStack = CacheFunction(() => import("@/Core/Designer/UndoStack/Stack"));
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceGroupConfig = ControlDeclare.DataSourceGroupConfig;

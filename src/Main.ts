@@ -3,6 +3,7 @@ import App from "@/App";
 import { ElLoading } from "element-plus";
 import { vuex } from "./Vuex/Store";
 import "element-plus/dist/index.css";
+import "./tailwind.css";
 import router from "./Router/Index";
 import { Instruction } from "./Utils/Instruction";
 import RegisterControls from "@/Plugins/RegisterControls";

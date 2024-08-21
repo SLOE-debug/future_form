@@ -46,11 +46,12 @@ export default class ContextMenu extends Vue {
   render() {
     if (!this.position) return;
     return (
-      <div class={css.contextMenu} style={this.style}>
-        <ul>
+      <div class="contextMenu absolute z-[1000] bg-[#3c3c3c] w-[240px] rounded-[4px]" style={this.style}>
+        <ul class="w-full h-full p-[5px]">
           {this.ContextMenus.map((m) => {
             return (
               <li
+                class="h-[25px] text-white text-[14px] flex items-center justify-between p-[0_20px] hover:bg-[#094771]"
                 onMousedown={(e: MouseEvent) => {
                   this.Select(m);
                   e.stopPropagation();

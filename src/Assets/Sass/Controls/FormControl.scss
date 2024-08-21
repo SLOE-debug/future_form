@@ -47,6 +47,7 @@
 
   :global(.el-select__placeholder) {
     color: black !important;
+    user-select: auto;
   }
 
   // 全局的 input 样式

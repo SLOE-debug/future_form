@@ -38,31 +38,6 @@ export const Guid = {
   },
 };
 
-// 防抖装饰器
-export function Debounce(wait: number) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
-    let timeout: NodeJS.Timeout;
-    const original = descriptor.value;
-    descriptor.value = function (...args: any[]) {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => {
-        original.apply(this, args);
-      }, wait);
-    };
-  };
-}
-
-// 防抖函数
-export function DebounceFunction(func: Function, wait: number) {
-  let timeout: NodeJS.Timeout;
-  return function (...args: any[]) {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => {
-      func.apply(this, args);
-    }, wait);
-  };
-}
-
 /**
  * 克隆对象
  * @param obj 对象
@@ -138,3 +113,26 @@ export function GetOrCreateLocalStorageObject<T>(key: string, defaultValue: T): 
  * 数据源参数前缀
  */
 export const sourceArgsPrefix = "@";
+
+/**
+ * 函数结果缓存
+ */
+const functionResultCache: Map<string, any> = new Map();
+
+/**
+ * 函数结果缓存装饰器
+ */
+export function CacheFunction<T>(func: T): T {
+  let id = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+  return function (...args: any[]) {
+    let result = functionResultCache.get(id);
+    if (result) return result;
+    result = (func as Function).apply(this, args);
+    functionResultCache.set(id, result);
+    return result;
+  } as T;
+}

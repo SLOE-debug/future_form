@@ -5,11 +5,12 @@ import { Component, Provide, Watch } from "vue-facing-decorator";
 import FormControl from "./FormControl";
 import Compiler from "@/Core/Compile/Compiler";
 import { BaseWindow } from "@/Utils/Designer/Form";
+import { CacheFunction } from "@/Utils/Index";
 
 // 仅在开发模式下导入的模块
-const UtilControl = () => import("@/Utils/Designer/Controls");
-const UtilVFS = () => import("@/Utils/VirtualFileSystem/Index");
-const AsyncTs = () => import("typescript");
+const UtilControl = CacheFunction(() => import("@/Utils/Designer/Controls"));
+const UtilVFS = CacheFunction(() => import("@/Utils/VirtualFileSystem/Index"));
+const AsyncTs = CacheFunction(() => import("typescript"));
 
 type SubWindowConfig = ControlDeclare.SubWindowConfig;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
@@ -39,21 +40,46 @@ export default class SubWindowControl extends Control {
     // 从服务器懒加载这个文件，并将其安装到当前浏览器中
     await Compiler.GetPublishFile(id, "fileId");
     let url = Compiler.fileId2BlobUrlMap.get(id);
+    await this.CreateSubWindow(url);
+  }
 
+  /**
+   * 通过 fullPath 切换窗体
+   * @param fullPath 窗体的完整路径
+   * @param className 创建窗体时使用的类名
+   */
+  async SwitchSubWindow(fullPath: string, className: string) {
+    this.config.createClassName = className;
+    // 从服务器懒加载这个文件，并将其安装到当前浏览器中
+    let file = await Compiler.GetPublishFile(fullPath, "fullPath");
+    let url = Compiler.fileId2BlobUrlMap.get(file.fileId);
+    await this.CreateSubWindow(url);
+  }
+
+  /**
+   * 通过 url 创建窗体
+   * @param url 窗体的 url
+   */
+  async CreateSubWindow(url: string) {
     let m = await import(/* webpackIgnore: true */ url);
+    // 将默认导出视为 BaseWindow
     let subWin = m.default as typeof BaseWindow;
+    // 如果默认导出的 BaseWindow 不是我们指定的类名，则使用指定的类名
     if (m.default.name != this.config.createClassName) {
       subWin = m[this.config.createClassName] as typeof BaseWindow;
     }
+    // 创建并展示窗体
     this.subWinInstanceId = await new subWin(undefined).ShowSubWindow();
   }
 
   async created() {
     this.config.ShowSubWindow = this.ShowSubWindow.bind(this);
+    this.config.SwitchSubWindow = this.SwitchSubWindow.bind(this);
   }
 
   unmounted() {
     this.config.ShowSubWindow = null;
+    this.config.SwitchSubWindow = null;
     // 关闭子窗体
     if (this.subWinInstanceId) {
       this.$Store.dispatch("Window/CloseWindow", this.subWinInstanceId);
@@ -168,7 +194,6 @@ export default class SubWindowControl extends Control {
           this.$Store.get.Window.Windows[this.subWinInstanceId] && (
             <FormControl
               {...{
-                // locate: { index: 0 },
                 config: this.$Store.get.Window.Windows[this.subWinInstanceId].config,
                 instanceId: this.subWinInstanceId,
                 key: this.subWinInstanceId,
@@ -189,6 +214,8 @@ export default class SubWindowControl extends Control {
       subWindowId: "",
       createClassName: "",
       padding: [],
+      ShowSubWindow: null,
+      SwitchSubWindow: null,
     };
   }
 }

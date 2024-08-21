@@ -73,6 +73,7 @@ export default class Entity extends Vue {
       return (
         <FontAwesomeIcon
           icon={"chevron-right"}
+          class="text-[.6rem]"
           style={{
             transform: this.directory.spread ? "rotate(90deg)" : "rotate(0deg)",
             transition: "transform 0.15s",
@@ -81,7 +82,11 @@ export default class Entity extends Vue {
       );
     } else {
       let entity = this.entity as IFile;
-      return <SvgIcon {...{ name: `FileSuffix_${entity.suffix}`, color: suffix2Color[entity.suffix] }}></SvgIcon>;
+      return (
+        <SvgIcon
+          {...{ name: `FileSuffix_${entity.suffix}`, color: suffix2Color[entity.suffix], className: "text-[.6rem]" }}
+        ></SvgIcon>
+      );
     }
   }
 
@@ -183,6 +188,7 @@ export default class Entity extends Vue {
         type="text"
         v-focus
         key={this.entity.id}
+        class="ml-[.1rem] w-[calc(100%-18px)] border-none bg-transparent text-[#e6e6e6] text-[.8rem] font-medium shadow-[0_0_0_1px_#ad9cff] h-[95%] focus:outline-none"
         onKeydown={(e) => {
           if (e.key == "Enter") {
             this.RenameBlur();
@@ -211,22 +217,31 @@ export default class Entity extends Vue {
 
   render() {
     return (
-      <div class={css.entity}>
+      <div class={"entity w-full text-[#999] text-[.8rem] font-medium cursor-pointer"}>
         <div
-          class={[css.fileInfo, this.entity.selected && !this.entity.isRename ? css.active : ""].join(" ")}
+          class={[
+            "fileInfo flex items-center h-[22px] relative mr-[2px] hover:bg-[#FFFFFF1A] hover:text-[#e6e6e6]",
+            this.entity.selected && !this.entity.isRename
+              ? "active shadow-[0_0_0_1px_#ad9cff_inset] text-[#e6e6e6] bg-[#FFFFFF33]"
+              : "",
+          ].join(" ")}
           style={{ paddingLeft: this.PaddingLeft }}
           onClick={this.Open}
         >
           {this.RenderIcon()}
-          <div class={css.name}>
+          <div class={"name w-full ml-[6px] mr-[22px] h-[95%] flex items-center relative truncate"}>
             {this.entity.isRename ? this.RenderReanme() : this.entity.name}
-            {this.errorMessage && <div class={css.error}>{this.errorMessage}</div>}
+            {this.errorMessage && (
+              <div class="error absolute w-full top-[22px] z-[999] !text-[#e6e6e6] border-solid border-[#b31000] border-[1px] bg-[#5a1d1d] p-[2px]">
+                {this.errorMessage}
+              </div>
+            )}
           </div>
-          <div class={css.rightIcon}>
+          <div class="action absolute right-0 p-[2px] m-[2px] h-full text-[#999] flex items-center justify-between">
             {!this.isDirectory && (
               <FontAwesomeIcon
                 icon="code-branch"
-                class={css.branch}
+                class="text-[.8rem] m-[0_2px] hover:text-[#e6e6e6]"
                 title="历史版本"
                 {...{
                   onClick: () => {
@@ -235,7 +250,9 @@ export default class Entity extends Vue {
                 }}
               />
             )}
-            {this.entity.isProtected && <FontAwesomeIcon icon={"lock"} class={css.lock} title="不可删除和重命名的" />}
+            {this.entity.isProtected && (
+              <FontAwesomeIcon icon={"lock"} class="hover:text-[#e6e6e6]" title="不可删除和重命名的" />
+            )}
           </div>
         </div>
         {this.RenderSubDirectory()}

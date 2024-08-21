@@ -1,10 +1,11 @@
 import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
+import { CacheFunction } from "@/Utils/Index";
 import { Component } from "vue-facing-decorator";
 
 // 仅在开发模式下导入的模块
-const UtilControl = () => import("@/Utils/Designer/Controls");
+const UtilControl = CacheFunction(() => import("@/Utils/Designer/Controls"));
 
 type LabelConfig = ControlDeclare.LabelConfig;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;

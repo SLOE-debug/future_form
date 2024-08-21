@@ -2,13 +2,14 @@ import SvgIcon from "@/Components/SvgIcon";
 import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
+import { CacheFunction } from "@/Utils/Index";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElSelectV2 } from "element-plus";
 import { Component } from "vue-facing-decorator";
 import { JSX } from "vue/jsx-runtime";
 
 // 仅在开发模式下导入的模块
-const UtilControl = () => import("@/Utils/Designer/Controls");
+const UtilControl = CacheFunction(() => import("@/Utils/Designer/Controls"));
 
 type ToolStripConfig = ControlDeclare.ToolStripConfig;
 type ToolStripItem = ControlDeclare.ToolStripItem;
@@ -242,9 +243,8 @@ export default class ToolStripControl extends Control {
       <ElSelectV2
         key={item.name}
         class={css.select}
-        v-el-select-copy
-        v-el-select-delete={(e) => {
-          if (item.clearable) this.config.value = "";
+        v-el-select-selectAndDelete={(e) => {
+          if (item.clearable) item.value = "";
         }}
         style={{
           width: item.width + "px",

@@ -10,13 +10,14 @@ import store from "@/Vuex/Store";
 import { BaseWindow } from "@/Utils/Designer/Form";
 import SubWindowControl from "./SubWindowControl";
 import { editor } from "@/CoreUI/Editor/EditorPage";
+import { CacheFunction } from "@/Utils/Index";
 
 // 仅在开发模式下导入的模块
-const UtilControl = () => import("@/Utils/Designer/Controls");
-const UtilDesigner = () => import("@/Utils/Designer/Designer");
-const UtilVFS = () => import("@/Utils/VirtualFileSystem/Index");
-const UtilVFSPath = () => import("@/Utils/VirtualFileSystem/Path");
-const AsyncTs = () => import("typescript");
+const UtilControl = CacheFunction(() => import("@/Utils/Designer/Controls"));
+const UtilDesigner = CacheFunction(() => import("@/Utils/Designer/Designer"));
+const UtilVFS = CacheFunction(() => import("@/Utils/VirtualFileSystem/Index"));
+const UtilVFSPath = CacheFunction(() => import("@/Utils/VirtualFileSystem/Path"));
+const AsyncTs = CacheFunction(() => import("typescript"));
 
 type FormConfig = ControlDeclare.FormConfig;
 

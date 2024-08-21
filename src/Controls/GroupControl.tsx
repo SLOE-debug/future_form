@@ -2,14 +2,14 @@ import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
-import { Guid } from "@/Utils/Index";
+import { CacheFunction, Guid } from "@/Utils/Index";
 import { defineAsyncComponent } from "vue";
 import { Component, Provide } from "vue-facing-decorator";
 
 // 仅在开发模式下导入的模块
-const UtilDesigner = () => import("@/Utils/Designer/Designer");
-const UtilControl = () => import("@/Utils/Designer/Controls");
-const CoreUndoStack = () => import("@/Core/Designer/UndoStack/Stack");
+const UtilDesigner = CacheFunction(() => import("@/Utils/Designer/Designer"));
+const UtilControl = CacheFunction(() => import("@/Utils/Designer/Controls"));
+const CoreUndoStack = CacheFunction(() => import("@/Core/Designer/UndoStack/Stack"));
 
 type GroupConfig = ControlDeclare.GroupConfig;
 type ControlConfig = ControlDeclare.ControlConfig;

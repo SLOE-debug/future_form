@@ -14,6 +14,8 @@ export default class SvgIcon extends Vue {
   color: string;
   @Prop
   title: string;
+  @Prop
+  className: string;
 
   svgContent = "";
   async created() {
@@ -70,7 +72,7 @@ export default class SvgIcon extends Vue {
           // 如果是未知文件，且未设置颜色，则使用白色
           fill: this.isUnknownFile && !this.color ? "white" : this.color || "inherit",
         }}
-        class={css.svgIcon}
+        class={[this.className, css.svgIcon].join(" ")}
         v-html={this.svgContent}
         title={this.title}
       ></div>

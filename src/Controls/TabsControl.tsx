@@ -3,14 +3,14 @@ import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
-import { Guid } from "@/Utils/Index";
+import { CacheFunction, Guid } from "@/Utils/Index";
 import { defineAsyncComponent } from "vue";
 import { Component, Provide, Watch } from "vue-facing-decorator";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 // 仅在开发模式下导入的模块
-const UtilControl = () => import("@/Utils/Designer/Controls");
-const UtilDesigner = () => import("@/Utils/Designer/Designer");
+const UtilControl = CacheFunction(() => import("@/Utils/Designer/Controls"));
+const UtilDesigner = CacheFunction(() => import("@/Utils/Designer/Designer"));
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type TabsConfig = ControlDeclare.TabsConfig;

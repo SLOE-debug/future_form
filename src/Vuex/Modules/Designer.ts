@@ -9,7 +9,6 @@ import { Module, ActionTree, GetterTree } from "vuex";
 import { GetProps as GetBaseProps } from "@/CoreUI/Designer/Control";
 import * as ts from "typescript";
 import { GetDesignerBackgroundFile } from "@/Utils/VirtualFileSystem/Index";
-import { DebounceFunction } from "@/Utils/Index";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 

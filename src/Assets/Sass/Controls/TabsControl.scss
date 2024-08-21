@@ -95,10 +95,10 @@
       align-items: center;
       margin-right: 5px;
       color: #898b91;
-      @size: 20px;
+      $size: 20px;
       > * {
-        width: @size;
-        height: @size;
+        width: $size;
+        height: $size;
         border: 1px solid #dcdfe6;
         margin: 0 2px;
         display: flex;

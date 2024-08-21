@@ -1,12 +1,13 @@
 import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
+import { CacheFunction } from "@/Utils/Index";
 import { ElSelectV2 } from "element-plus";
 import { toRaw } from "vue";
 import { Component } from "vue-facing-decorator";
 
 // 仅在开发模式下导入的模块
-const UtilControl = () => import("@/Utils/Designer/Controls");
+const UtilControl = CacheFunction(() => import("@/Utils/Designer/Controls"));
 
 type SelectConfig = ControlDeclare.SelectConfig;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
@@ -90,8 +91,7 @@ export default class SelectControl extends Control {
       <ElSelectV2
         class={`${css.select} ${this.$Store.get.Designer.Debug ? css.eventNone : ""}`}
         v-model={this.config.value}
-        v-el-select-copy
-        v-el-select-delete={(e) => {
+        v-el-select-selectAndDelete={(e) => {
           if (this.config.clearable) this.config.value = "";
         }}
         placeholder={this.config.placeholder || " "}

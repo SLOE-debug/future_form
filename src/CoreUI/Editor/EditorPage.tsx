@@ -79,7 +79,7 @@ export default class EditorPage extends Vue {
   RenderTabItemIcon(m: IFile) {
     let icon = null;
     if (m.isUnsaved && !m.showClose) {
-      icon = <FontAwesomeIcon icon={"circle"} class={css.unsaved} />;
+      icon = <FontAwesomeIcon icon={"circle"} class="unsaved p-[2px] text-[10px] mt-[1.5px]" />;
     }
 
     if (!icon && (m.selected || m.showClose)) {
@@ -99,17 +99,24 @@ export default class EditorPage extends Vue {
       );
     }
 
-    return <div class={css.close}>{icon}</div>;
+    return (
+      <div class="close w-[18px] [&>svg]:cursor-pointer [&>svg]:p-[2px_4px] [&>svg]:mt-[2px] [&>svg]:rounded-[2px] [&>svg]:hover:bg-[#3e3e40] [&>svg]:hover:bg-[#FFFFFF4D]">
+        {icon}
+      </div>
+    );
   }
 
   render() {
     return (
-      <div style={this.Style} class={css.editor}>
-        <div class={css.tabs}>
+      <div style={this.Style} class="editor h-screen">
+        <div class="tabs h-[35px] select-none">
           {this.$Store.get.VirtualFileSystem.OpenFiles.map((m) => {
             return (
               <div
-                class={[css.item, this.$Store.get.VirtualFileSystem.CurrentFile == m ? css.active : ""].join(" ")}
+                class={[
+                  "item cursor-pointer float-left text-[#e6e6e6] p-[0_10px] h-full flex items-center text-[.8rem] duration-[.15s] hover:bg-[#1e1e1e]",
+                  this.$Store.get.VirtualFileSystem.CurrentFile == m ? "active bg-[#1e1e1e]" : "",
+                ].join(" ")}
                 onClick={(e) => {
                   this.$Store.dispatch("VirtualFileSystem/SelectFile", m);
                 }}
@@ -121,13 +128,13 @@ export default class EditorPage extends Vue {
                 }}
               >
                 <SvgIcon {...{ name: `FileSuffix_${m.suffix}`, color: suffix2Color[m.suffix] }}></SvgIcon>
-                <span>{m.name}</span>
+                <span class="m-[0_8px]">{m.name}</span>
                 {this.RenderTabItemIcon(m)}
               </div>
             );
           })}
         </div>
-        <div class={css.content}>
+        <div class="content relative h-[calc(100vh-35px)]">
           {this.isDesigner && this.$Store.get.VirtualFileSystem.CurrentFile && (
             <DesignerSpace ref={"designerSpace"} key={this.$Store.get.VirtualFileSystem.CurrentFile.id}></DesignerSpace>
           )}
@@ -139,7 +146,7 @@ export default class EditorPage extends Vue {
           )}
           <div
             ref="editor"
-            class={css.editorInstance}
+            class="editorInstance w-full h-full"
             style={{ width: this.isSqlEditor ? "calc(100% - 280px)" : "100%" }}
           ></div>
         </div>

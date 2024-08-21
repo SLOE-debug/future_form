@@ -202,7 +202,7 @@ export default class DesignerSpace extends Vue {
     return (
       <div
         style={{ height: this.height }}
-        class={css.workspace}
+        class={[css.workspace, "w-full h-full overflow-auto select-none relative"].join(" ")}
         onDragover={(e) => e.preventDefault()}
         onDrop={this.Drop}
         onContextmenu={(e) => {

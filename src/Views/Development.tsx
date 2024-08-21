@@ -15,7 +15,7 @@ export default class Development extends Vue {
 
   render() {
     return (
-      <div class={css.dev}>
+      <div class="bg-[#0d0d0d] top-0 left-0 w-screen h-screen absolute">
         <Sidebar></Sidebar>
         <EditorPage></EditorPage>
         {this.$Store.get.Designer.Preview && <Preview></Preview>}

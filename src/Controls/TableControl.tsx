@@ -23,15 +23,15 @@ import { CellRendererParams, SortBy } from "element-plus/es/components/table-v2/
 import { Component } from "vue-facing-decorator";
 // import { baseProps, baseEvents } from "@/Utils/Designer/Controls";
 import { EventDeclare } from "@/Types/EventDeclare";
-import { CapitalizeFirstLetter, Guid } from "@/Utils/Index";
+import { CacheFunction, CapitalizeFirstLetter, Guid } from "@/Utils/Index";
 // import { GetFileById } from "@/Utils/VirtualFileSystem/Index";
 import { globalCache } from "@/Utils/Caches";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watch } from "vue";
 
 // 仅在开发模式下导入的模块
-const UtilControl = () => import("@/Utils/Designer/Controls");
-const UtilVFS = () => import("@/Utils/VirtualFileSystem/Index");
+const UtilControl = CacheFunction(() => import("@/Utils/Designer/Controls"));
+const UtilVFS = CacheFunction(() => import("@/Utils/VirtualFileSystem/Index"));
 
 type ColumnItem = ControlDeclare.ColumnItem;
 type TableConfig = ControlDeclare.TableConfig;
@@ -286,7 +286,9 @@ export default class TableControl extends Control {
     return (
       <ElSelectV2
         v-model={rowData[field]}
-        v-el-select-copy
+        v-el-select-selectAndDelete={(e) => {
+          if (this.config.clearable) this.config.value = "";
+        }}
         disabled={isReadOnly}
         filterable
         options={

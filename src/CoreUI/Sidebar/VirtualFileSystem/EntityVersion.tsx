@@ -56,7 +56,14 @@ export default class EntityVersion extends Vue {
 
   render() {
     return (
-      <ElDialog v-model={this.visible} appendToBody onClose={() => (this.visible = false)} title="历史版本">
+      <ElDialog
+        v-model={this.visible}
+        appendToBody
+        onClose={() => (this.visible = false)}
+        title="历史版本"
+        width={"70%"}
+        class="[&>div]:w-full"
+      >
         <ElTable data={this.versions} v-loading={!this.versions} emptyText="暂无数据" stripe highlight-current-row>
           <ElTableColumn prop="versionNumbers" label="版本号">
             {({ row }) => {
@@ -99,7 +106,7 @@ export default class EntityVersion extends Vue {
           page-sizes={[10, 20, 50]}
           onChange={() => this.GetVersions()}
           layout="sizes, prev, pager, next"
-          class={css.page}
+          class="m-[0_auto] w-min mt-[20px]"
           hide-on-single-page
         ></ElPagination>
       </ElDialog>

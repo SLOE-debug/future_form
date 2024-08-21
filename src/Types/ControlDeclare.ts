@@ -145,12 +145,20 @@ export namespace ControlDeclare {
   export type SubWindowConfig = {
     padding: string[];
     subWindowId: string;
-    // 实例化时 new 的类名
+    /**
+     * 实例化时 new 的类名
+     */
     createClassName: string;
     /**
      * 显示子窗体
      */
-    ShowSubWindow?: () => Promise<void>;
+    ShowSubWindow(): Promise<void>;
+    /**
+     * 切换子窗体
+     * @param fullPath 子窗体的完整路径，该路径为 form.ts 下的子文件的路径，例：A.form.ts/A
+     * @param className 创建子窗体时的类名
+     */
+    SwitchSubWindow(fullPath: string, className: string): Promise<void>;
   } & ControlConfig;
 
   export type ColumnItem = {

@@ -203,7 +203,12 @@ export default class ColumnsConfigurator extends Vue {
                       return <ElInput v-model={row.field}></ElInput>;
                     }}
                   </ElTableColumn>
-                  <ElTableColumn property="type" class-name={css.type} width={160} label="显示类型">
+                  <ElTableColumn
+                    property="type"
+                    class-name="type [&>div]:flex [&>div]:justify-between"
+                    width={160}
+                    label="显示类型"
+                  >
                     {({ row }) => {
                       return (
                         <>
@@ -342,7 +347,7 @@ export class ColumnOptionsConfigurator extends Vue {
     return (
       <>
         <ElDivider>数据源配置</ElDivider>
-        <div class={css.source}>
+        <div class="source mt-[20px] [&>form>div]:w-[29%]">
           <ElForm inline>
             <ElFormItem label="数据源">
               <ElSelect v-model={this.column.dataSource} filterable onChange={this.SourceChange} clearable>

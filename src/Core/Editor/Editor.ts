@@ -384,6 +384,23 @@ export default class Editor {
     this.isConfigured = true;
   }
 
+  // 进行路径智能提示的方法
+  // smartPathReg = [/from\s+['|"]/, /import\s*\(\s*['|"]/, /SwitchSubWindow\(\s*['|"]/];
+  smartPathReg = [
+    {
+      reg: /from\s+['|"]/,
+      relative: true,
+    },
+    {
+      reg: /import\s*\(\s*['|"]/,
+      relative: true,
+    },
+    {
+      reg: /SwitchSubWindow\(\s*['|"]/,
+      relative: false,
+    },
+  ];
+
   /**
    * 配置自动完成
    */
@@ -399,19 +416,13 @@ export default class Editor {
           position.column - 1
         );
 
-        let match = content.match(/from\s+['|"]/);
-        if (match && (content[position.column - 1] == "'" || content[position.column - 1] == '"')) {
-          return {
-            suggestions: this.CreateFilePathSuggestions(range),
-          };
-        }
-
-        // 尝试匹配 import
-        let importMatch = content.match(/import\s*\(\s*['|"]/);
-        if (importMatch && (content[position.column - 1] == "'" || content[position.column - 1] == '"')) {
-          return {
-            suggestions: this.CreateFilePathSuggestions(range),
-          };
+        for (const { reg, relative } of this.smartPathReg) {
+          let match = content.match(reg);
+          if (match && (content[position.column - 1] == "'" || content[position.column - 1] == '"')) {
+            return {
+              suggestions: this.CreateFilePathSuggestions(range, relative),
+            };
+          }
         }
 
         return {
@@ -459,9 +470,10 @@ export default class Editor {
   /**
    * 创建文件路径建议
    * @param range 范围
+   * @param relative 是否需要相对路径
    * @returns 建议
    */
-  CreateFilePathSuggestions(range: monaco.Range) {
+  CreateFilePathSuggestions(range: monaco.Range, relative = true) {
     let currentFile = store.state.VirtualFileSystem.CurrentFile;
 
     let suggestions = [];
@@ -473,12 +485,18 @@ export default class Editor {
         // 如果 file 的后缀是 sql
         if (file.suffix == VritualFileSystemDeclare.FileType.Sql) continue;
 
-        let insertPath = Path.GetRelativePath(currentFile.GetFullName(), file.GetFullName());
+        let insertPath = file.GetFullName();
+        // 删除后缀
+        insertPath = Path.RemoveSuffix(insertPath);
+        if (relative) insertPath = Path.GetRelativePath(currentFile.GetFullName(), file.GetFullName());
         let name = Path.RemoveSuffix(file.name);
 
         if (file.children.length) {
           for (const f of file.children) {
-            let insertPath = Path.GetRelativePath(currentFile.GetFullName(), f.GetFullName());
+            let insertPath = f.GetFullName();
+            // 删除后缀
+            insertPath = Path.RemoveSuffix(insertPath);
+            if (relative) insertPath = Path.GetRelativePath(currentFile.GetFullName(), f.GetFullName());
             let name = Path.RemoveSuffix(f.name);
             suggestions.push({
               label: name,

@@ -183,7 +183,7 @@ export default class SqlConfigurator extends Vue {
               return (
                 <ElTableV2 width={width} height={height} columns={columnConfigs} data={this.primaryFields}>
                   {{
-                    empty: () => <div class={css.empty}>No Data</div>,
+                    empty: () => <div class="p-[10px] text-center text-[#999]">No Data</div>,
                   }}
                 </ElTableV2>
               );
@@ -195,7 +195,7 @@ export default class SqlConfigurator extends Vue {
             {({ width, height }) => (
               <ElTableV2 width={width} height={height} columns={this.columnConfigs} data={this.fields}>
                 {{
-                  empty: () => <div class={css.empty}>No Data</div>,
+                  empty: () => <div class="p-[10px] text-center text-[#999]">No Data</div>,
                 }}
               </ElTableV2>
             )}
@@ -219,7 +219,7 @@ export default class SqlConfigurator extends Vue {
 
   render() {
     return (
-      <div class={css.config}>
+      <div class="config p-[10px] w-[280px] absolute right-0 h-[100%] bg-white border-l-[2px] border-black border-solid z-[999]">
         <ElForm model={this.source} rules={this.rules} ref="source" labelPosition="top">
           {this.RenderTableUpdateConfig()}
           <ElFormItem label="参数" prop="params">

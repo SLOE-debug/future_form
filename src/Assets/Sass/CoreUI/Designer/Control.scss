@@ -1,5 +1,6 @@
-@dotSize: 6px;
-@offset: calc(-@dotSize / 2);
+$dotSize: 6px;
+// $offset: calc(-$dotSize / 2);
+$offset: calc(-#{$dotSize} / 2);
 
 .control {
   position: absolute;
@@ -9,8 +10,8 @@
   .dot {
     position: absolute;
     border: 1px solid rgb(6, 123, 239);
-    width: @dotSize;
-    height: @dotSize;
+    width: $dotSize;
+    height: $dotSize;
     background-color: white;
     z-index: 9999;
     user-select: none;
@@ -28,16 +29,16 @@
     cursor: ew-resize;
   }
   .l {
-    left: @offset;
+    left: $offset;
   }
   .r {
-    right: @offset;
+    right: $offset;
   }
   .t {
-    top: @offset;
+    top: $offset;
   }
   .b {
-    bottom: @offset;
+    bottom: $offset;
   }
   .error {
     position: absolute;
