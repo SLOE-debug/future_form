@@ -188,7 +188,7 @@ export function GetFields(sql: string) {
     }
 
     // 非 AS 的字段名
-    const fieldRegex = /(\[?\w+(?:\.\w+)+\]?)(?:\s+as\s+(\w+))?/gi;
+    const fieldRegex = /(\[?\w+(?:\.\w+)?\]?)(?:\s+as\s+(\w+))?/gi;
     let fieldMatch;
 
     while ((fieldMatch = fieldRegex.exec(fieldList)) !== null) {
@@ -266,7 +266,7 @@ function DataSourceControlTypeDeclare(config: DataSourceGroupConfig) {
         GetSource(params: { `;
 
   // 通过 config.sourceName 获取引用的sql文件
-  let sqlFile = GetFileById(config.sourceName);
+  let sqlFile = GetFileById(config.dataSource);
   let params = sqlFile?.extraData?.params as { name: string; type: string }[];
 
   if (!!params) {

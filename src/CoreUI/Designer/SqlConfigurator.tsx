@@ -3,7 +3,6 @@ import { CloneStruct } from "@/Utils/Index";
 import {
   ElForm,
   ElFormItem,
-  ElInput,
   ElTable,
   ElTableColumn,
   ElSelect,
@@ -19,9 +18,6 @@ import { Component, Vue } from "vue-facing-decorator";
 @Component
 export default class SqlConfigurator extends Vue {
   declare $refs: any;
-  // get source() {
-  //   return this.$Store.get.VirtualFileSystem.CurrentFile?.extraData;
-  // }
 
   source = {
     table: "",
@@ -158,7 +154,6 @@ export default class SqlConfigurator extends Vue {
         m.$__check__$ = this.source.primaryFields.includes(m.field);
       });
     }
-    console.log(this.source.table);
   }
 
   /**

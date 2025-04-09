@@ -70,7 +70,7 @@ export namespace ControlDeclare {
    * 数据源组配置
    */
   export type DataSourceGroupConfig = {
-    sourceName: string;
+    dataSource: string;
     sourceType: "Form" | "List";
     SaveSource?(sender: any): any;
     SharedData?(control: any): any;
@@ -159,6 +159,10 @@ export namespace ControlDeclare {
      * @param className 创建子窗体时的类名
      */
     SwitchSubWindow(fullPath: string, className: string): Promise<void>;
+    /**
+     * 获取当前窗体的实例
+     */
+    GetInstance<T>(type?: new (...args: any[]) => T): T;
   } & ControlConfig;
 
   export type ColumnItem = {
@@ -190,11 +194,13 @@ export namespace ControlDeclare {
     multiple: boolean;
     highlightColumn: boolean;
     // 添加行
-    AddRow?: (object?: object) => void;
+    AddRow(object?: object): void;
     // 删除选中行
-    DeleteSelectedRow?: () => void;
+    DeleteSelectedRow(): void;
     // 选中行
-    SelectRow?: (index: number) => void;
+    SelectRow(index: number): void;
+    // 设置数据
+    SetData(data: any[]): void;
   } & ControlConfig;
 
   export enum DataStatus {

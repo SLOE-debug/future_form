@@ -35,12 +35,11 @@ export default class Home extends Vue {
     Compiler.Install(file);
     loading.close();
   }
-
   /**
    * 链接SSE
    */
   async LinkSSE() {
-    let url = process.env.VUE_APP_API_BASE_URL + "VirtualFile/SSE";
+    let url = import.meta.env.VITE_API_BASE_URL + "VirtualFile/SSE";
     let eventSource = new EventSource(url + "?id=" + Guid.NewGuid());
     eventSource.onmessage = (e) => {
       let { updateFiles, isNotifyUser } = JSON.parse(e.data);

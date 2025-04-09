@@ -7,6 +7,7 @@ import { BindEventContext, CacheFunction, RegisterEvent, sourceArgsPrefix } from
 import DataSourceGroupControl from "@/Controls/DataSourceGroupControl";
 import { JSX } from "vue/jsx-runtime";
 import { globalCache } from "@/Utils/Caches";
+import { ElMessage } from "element-plus";
 
 // 仅在开发模式下导入的模块
 const UtilDesigner = CacheFunction(() => import("@/Utils/Designer/Designer"));

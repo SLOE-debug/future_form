@@ -3,7 +3,7 @@ import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { CacheFunction } from "@/Utils/Index";
 import { ElSelectV2 } from "element-plus";
-import { toRaw } from "vue";
+import { Ref, shallowRef } from "vue";
 import { Component } from "vue-facing-decorator";
 
 // 仅在开发模式下导入的模块
@@ -17,11 +17,7 @@ export default class SelectControl extends Control {
   declare config: SelectConfig;
 
   // 定义脱离响应的options
-  declare options: any[];
-
-  async created() {
-    this.options = [];
-  }
+  options: Ref<any[]> = shallowRef([]);
 
   mounted() {
     this.config.GetSources = this.GetInnerSource;
@@ -58,8 +54,7 @@ export default class SelectControl extends Control {
    * 设置 options
    */
   SetOptions(options) {
-    this.options = options;
-    this.$forceUpdate();
+    this.options = shallowRef(options);
   }
 
   /**
@@ -89,7 +84,7 @@ export default class SelectControl extends Control {
   render() {
     return super.render(
       <ElSelectV2
-        class={`${css.select} ${this.$Store.get.Designer.Debug ? css.eventNone : ""}`}
+        class="w-full h-full [&>:first-child]:min-h-[auto] [&>:first-child]:h-full"
         v-model={this.config.value}
         v-el-select-selectAndDelete={(e) => {
           if (this.config.clearable) this.config.value = "";
@@ -100,7 +95,7 @@ export default class SelectControl extends Control {
         key={this.config.id}
         ref={this.config.id}
         popperClass={["selectPopper", this.config.display == "table" ? "tableSelectPopper" : ""].join(" ")}
-        options={this.options || []}
+        options={(this.options as any) || []}
         persistent={false}
         itemHeight={this.rows * 34}
       >

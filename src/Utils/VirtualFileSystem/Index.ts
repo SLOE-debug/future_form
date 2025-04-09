@@ -174,6 +174,7 @@ export function FlatRoot(root: IDirectory) {
         extraData: CloneStruct(m.extraData),
         fileId: m.id,
         name: m._name,
+        deleted: m.deleted,
         fullPath: dir.GetFullName(),
         specialFile: m.specialFile,
         suffix: m.suffix,

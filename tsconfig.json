@@ -1,4 +1,12 @@
 {
+  "include": [
+    "src/*",
+    "src/**/*.vue",
+    "src/**/*.tsx",
+    "src/**/*.jsx",
+    "src/**/*.ts",
+    "src/**/*.js"
+  ],
   "compilerOptions": {
     "jsx": "preserve",
     "jsxImportSource": "vue",
@@ -7,9 +15,14 @@
     "moduleResolution": "node",
     "experimentalDecorators": true,
     "baseUrl": "./src",
-    "typeRoots": ["./node_modules/@types", "./src/types"],
+    "typeRoots": [
+      "./node_modules/@types",
+      "./src/types"
+    ],
     "paths": {
-      "@/*": ["*"]
+      "@/*": [
+        "*"
+      ]
     }
   }
 }

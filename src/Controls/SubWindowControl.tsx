@@ -1,7 +1,7 @@
 import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { Component, Provide, Watch } from "vue-facing-decorator";
+import { Component, Watch } from "vue-facing-decorator";
 import FormControl from "./FormControl";
 import Compiler from "@/Core/Compile/Compiler";
 import { BaseWindow } from "@/Utils/Designer/Form";
@@ -61,25 +61,38 @@ export default class SubWindowControl extends Control {
    * @param url 窗体的 url
    */
   async CreateSubWindow(url: string) {
-    let m = await import(/* webpackIgnore: true */ url);
+    let m = await import(/* @vite-ignore */ url);
     // 将默认导出视为 BaseWindow
     let subWin = m.default as typeof BaseWindow;
     // 如果默认导出的 BaseWindow 不是我们指定的类名，则使用指定的类名
     if (m.default.name != this.config.createClassName) {
       subWin = m[this.config.createClassName] as typeof BaseWindow;
     }
+    let instance = new subWin(undefined);
+    this.instance = instance;
     // 创建并展示窗体
-    this.subWinInstanceId = await new subWin(undefined).ShowSubWindow();
+    this.subWinInstanceId = await instance.ShowSubWindow();
+  }
+
+  private instance: BaseWindow = null;
+  /**
+   * 获取当前窗体的实例
+   */
+  GetInstance<T>(type?: new (...args: any[]) => T): T {
+    return this.instance as T;
   }
 
   async created() {
     this.config.ShowSubWindow = this.ShowSubWindow.bind(this);
     this.config.SwitchSubWindow = this.SwitchSubWindow.bind(this);
+    this.config.GetInstance = this.GetInstance.bind(this);
   }
 
   unmounted() {
     this.config.ShowSubWindow = null;
     this.config.SwitchSubWindow = null;
+    this.config.GetInstance = null;
+    this.instance = null;
     // 关闭子窗体
     if (this.subWinInstanceId) {
       this.$Store.dispatch("Window/CloseWindow", this.subWinInstanceId);
@@ -216,6 +229,7 @@ export default class SubWindowControl extends Control {
       padding: [],
       ShowSubWindow: null,
       SwitchSubWindow: null,
+      GetInstance: null,
     };
   }
 }

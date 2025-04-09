@@ -17,26 +17,28 @@ export default class Folder extends Vue {
     let dirs = this.directory.directories;
     let entitys = [...dirs, ...this.directory.files];
 
-    return entitys.map((entity, i) => {
-      let dirsCount = dirs.length - 1;
-      let index = i > dirsCount ? i - dirs.length : i;
-      let isDirectory = IsDirectory(entity);
-      let prop: any = {
-        key: entity.id,
-        level: this.level,
-        index,
-        isDirectory: isDirectory,
-        onMousedown: (e: MouseEvent) => {
-          if (isDirectory) {
-            this.$Store.dispatch("VirtualFileSystem/SelectDirectory", entity);
-          } else {
-            this.$Store.dispatch("VirtualFileSystem/SelectFile", entity);
-          }
-          this.$Store.dispatch("VirtualFileSystem/ClearContextMenuPosition");
-          e.stopPropagation();
-        },
-      };
-      return <Entity {...prop}></Entity>;
-    });
+    return entitys
+      .filter((entity) => entity.deleted !== true)
+      .map((entity, i) => {
+        let dirsCount = dirs.length - 1;
+        let index = i > dirsCount ? i - dirs.length : i;
+        let isDirectory = IsDirectory(entity);
+        let prop: any = {
+          key: entity.id,
+          level: this.level,
+          index,
+          isDirectory: isDirectory,
+          onMousedown: (e: MouseEvent) => {
+            if (isDirectory) {
+              this.$Store.dispatch("VirtualFileSystem/SelectDirectory", entity);
+            } else {
+              this.$Store.dispatch("VirtualFileSystem/SelectFile", entity);
+            }
+            this.$Store.dispatch("VirtualFileSystem/ClearContextMenuPosition");
+            e.stopPropagation();
+          },
+        };
+        return <Entity {...prop}></Entity>;
+      });
   }
 }

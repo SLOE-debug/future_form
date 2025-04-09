@@ -30,7 +30,7 @@ app
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker
-    .register("./serviceWorker.js")
+    .register(import.meta.env.MODE === 'production' ? './serviceWorker.js' : '/serviceWorker.js')
     .then((registration) => {})
     .catch((registrationError) => {
       console.log("Pwa 注册失败！", registrationError);

@@ -3,8 +3,7 @@ import { Component, Inject, Prop, Provide, Vue, Watch } from "vue-facing-decorat
 import Folder from "./Folder";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import SvgIcon from "../../../Components/SvgIcon";
-import { GetParentByDirectory, GetParentByFile, IsDirectory, suffix2Color } from "@/Utils/VirtualFileSystem/Index";
-import { Guid } from "@/Utils/Index";
+import { suffix2Color } from "@/Utils/VirtualFileSystem/Index";
 import EntityVersion from "./EntityVersion";
 
 type IDirectory = VritualFileSystemDeclare.IDirectory;
@@ -51,6 +50,12 @@ export default class Entity extends Vue {
    */
   entity: IDirectory | IFile;
 
+  // 如果 parentDirectory 改变了，则重新填充 entity
+  @Watch("Parentdirectory")
+  async OnParentdirectoryChange() {
+    this.FillEntity();
+  }
+
   @Watch("entity.isRename")
   async OnIsRenamingChange() {
     if (this.entity.isRename) {
@@ -59,6 +64,11 @@ export default class Entity extends Vue {
   }
 
   created() {
+    this.FillEntity();
+  }
+
+  // 通过传入的 是否是文件夹（isDirectory） 和 文件夹或文件的层级（level） 来填充 directory 和 entity
+  FillEntity() {
     if (this.isDirectory) {
       this.directory = this.Parentdirectory.directories[this.index];
       this.entity = this.Parentdirectory.directories[this.index];
@@ -68,6 +78,9 @@ export default class Entity extends Vue {
     }
   }
 
+  /**
+   * 渲染图标
+   */
   RenderIcon() {
     if (this.isDirectory) {
       return (
@@ -205,11 +218,8 @@ export default class Entity extends Vue {
   }
 
   RenderSubDirectory() {
-    if (this.directory?.spread) {
+    if (this.directory?.spread || (this.entity as IFile).specialFile) {
       return <Folder {...{ level: this.level + 1 }} />;
-    }
-    if ((this.entity as IFile).specialFile) {
-      return <Folder {...{ level: this.level + 1 }}></Folder>;
     }
   }
 

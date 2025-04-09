@@ -21,10 +21,8 @@ import {
 import { SortOrder } from "element-plus/es/components/table-v2/src/constants";
 import { CellRendererParams, SortBy } from "element-plus/es/components/table-v2/src/types";
 import { Component } from "vue-facing-decorator";
-// import { baseProps, baseEvents } from "@/Utils/Designer/Controls";
 import { EventDeclare } from "@/Types/EventDeclare";
 import { CacheFunction, CapitalizeFirstLetter, Guid } from "@/Utils/Index";
-// import { GetFileById } from "@/Utils/VirtualFileSystem/Index";
 import { globalCache } from "@/Utils/Caches";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watch } from "vue";
@@ -178,7 +176,7 @@ export default class TableControl extends Control {
     let column = e.column as ColumnItem;
     // 渲染器方法名
     let rendererMethodName = `${CapitalizeFirstLetter(column.type)}Renderer`;
-    let content = this[rendererMethodName](e);
+    if (!this[rendererMethodName]) return;
 
     return (
       <div
@@ -193,7 +191,7 @@ export default class TableControl extends Control {
           this.events.onCellClick && this.events.onCellClick(this, { ...this.cellEventHandlerParams });
         }}
       >
-        {content}
+        {this[rendererMethodName](e)}
       </div>
     );
   }
@@ -304,7 +302,7 @@ export default class TableControl extends Control {
                 }
 
                 return { label: o[label], value: o[value] };
-              })
+              }) || []
         }
         loading={e.column.loading}
         onFocus={() => this.CallCellFocusEvent(e)}
@@ -367,8 +365,8 @@ export default class TableControl extends Control {
     return (
       <ElCheckbox
         v-model={rowData[field]}
-        trueLabel={selectValue}
-        falseLabel={unSelectValue}
+        trueValue={selectValue}
+        falseValue={unSelectValue}
         size="large"
         disabled={isReadOnly}
         v-onFocus={() => this.CallCellFocusEvent(e)}
@@ -421,6 +419,7 @@ export default class TableControl extends Control {
   }
 
   get data() {
+    if (!this.config.data) return [];
     // let { columns } = this.config;
     return this.config.data.filter((m) => {
       for (const k in this.columnFilterConfigs) {
@@ -556,9 +555,14 @@ export default class TableControl extends Control {
     this.config.SelectRow = this.SelectRow;
     this.config.DeleteSelectedRow = this.DeleteSelectedRow;
     this.config.AddRow = this.AddRow;
+    this.config.SetData = this.SetData;
   }
 
   unmounted() {
+    delete this.config.SelectRow;
+    delete this.config.DeleteSelectedRow;
+    delete this.config.AddRow;
+    delete this.config.SetData;
     this.highlightColumnStyle?.remove();
     this.highlightColumnStyleId = "";
     this.highlightColumnClass = "";
@@ -735,6 +739,10 @@ export default class TableControl extends Control {
       data: [],
       multiple: false,
       highlightColumn: false,
+      AddRow: null,
+      DeleteSelectedRow: null,
+      SelectRow: null,
+      SetData: null,
     };
   }
 }

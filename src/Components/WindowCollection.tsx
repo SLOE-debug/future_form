@@ -33,20 +33,8 @@ export default class WindowCollection extends Vue {
     this.winEventHandlers = {
       keydown: function (e: KeyboardEvent) {
         let funcName = `${e.code}Ctronl`;
-
         if (e.ctrlKey) funcName = `Ctrl${funcName}`;
-
         this[funcName]?.(e);
-        // let keys = Object.keys(this.$Store.get.Windows).sort(
-        //   (a, b) => this.$Store.get.Windows[a].focusIndex - this.$Store.get.Windows[b].focusIndex
-        // );
-        // if (!keys.length) return;
-        // let id = keys[keys.length - 1];
-        // if (e.key == "Escape") {
-        //   (this.$refs[id] as WindowControlBar).Close();
-        // } else {
-        //   (this.$refs[id + "Form"] as FormControl)?.KeyDown(e);
-        // }
       },
     };
     BindEventContext(this.winEventHandlers, this);

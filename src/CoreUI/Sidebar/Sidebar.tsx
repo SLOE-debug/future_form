@@ -154,7 +154,7 @@ export default class Sidebar extends Vue {
                   name: t.icon,
                   className: [
                     "item m-[5px_2px] cursor-pointer duration-[.15s] rounded-[4px] hover:bg-[#FFFFFF1A] !fill-[#999] [&>svg]:p-[2px]",
-                    this.activeTab == t.type ? "bg-[#FFFFFF4D] !fill-[#e6e6e6]" : "",
+                    this.activeTab == t.type ? "bg-[#FFFFFF4D] !fill-[#e6e6e6] hover:bg-[#FFFFFF4D]" : "",
                   ].join(" "),
                   onClick: () => {
                     this.activeTab = t.type;

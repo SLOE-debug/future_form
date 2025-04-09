@@ -37,6 +37,11 @@ export default abstract class Basic {
   abstract name: string;
 
   /**
+   * 删除标记
+   */
+  deleted: boolean | null = null;
+
+  /**
    * 父级
    */
   parent: Basic;
@@ -87,34 +92,32 @@ export default abstract class Basic {
    */
   async Delete() {
     try {
-      // 当前文件夹/文件集合
-      let collection: Array<IDirectory | IFile> = [];
-      // 删除下标
-      let index: number = -1;
+      // 文件夹
+      let dir: IDirectory = null;
+      // 文件
+      let file: IFile = null;
       // 是否是设计文件
       let isDesignFile: boolean = false;
-
+      // 子文件
+      let children: IFile = null;
       // 如果当前是文件夹
       if (IsDirectory(this)) {
-        let dir = this as IDirectory;
-        let parent = GetParentByDirectory(dir);
-        collection = parent.directories;
-        index = parent.directories.indexOf(dir);
+        dir = this as IDirectory;
       } else {
-        let file = this as unknown as IFile;
+        file = this as unknown as IFile;
+        // 获取父级
         let parent = GetParentByFile(file);
+        // 判断自身是否是设计文件
         isDesignFile = file.suffix == VritualFileSystemDeclare.FileType.FormDesigner;
-        if (IsDirectory(parent)) {
-          collection = (parent as IDirectory).files;
-          index = (parent as IDirectory).files.indexOf(file);
-        } else {
+        // 如果自身是特殊文件
+        if (file.specialFile) {
+          children = file.children[0];
+        } // 如果父级是特殊文件
+        else if (!IsDirectory(parent) && parent.specialFile) {
+          // 判断父级是否是设计文件
           isDesignFile = parent.suffix == VritualFileSystemDeclare.FileType.FormDesigner;
-          // 如果parent是特殊文件
-          if (parent.specialFile) {
-            let parentParent = GetParentByFile(parent) as IDirectory;
-            collection = parentParent.files;
-            index = parentParent.files.indexOf(parent);
-          }
+          file = parent as IFile;
+          children = file.children[0];
         }
       }
 
@@ -126,13 +129,30 @@ export default abstract class Basic {
           h("span", null, "确认删除嘛？"),
         ]);
       }
-
       await ElMessageBox.confirm(node, "警告", {
         confirmButtonText: "确定",
         cancelButtonText: "取消",
         type: "warning",
       });
-      collection.splice(index, 1);
+      if (dir) {
+        this.RecursiveDelete(dir);
+      }
+      if (file) file.deleted = true;
+      if (children) children.deleted = true;
     } catch {}
+  }
+
+  /**
+   * 递归删除文件夹下的所有文件
+   */
+  private RecursiveDelete(dir: IDirectory) {
+    // 删除文件
+    for (let file of dir.files) {
+      file.deleted = true;
+    }
+    // 删除文件夹
+    for (let i = 0; i < dir.directories.length; i++) {
+      this.RecursiveDelete(dir.directories[i]);
+    }
   }
 }

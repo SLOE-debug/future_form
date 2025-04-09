@@ -168,11 +168,12 @@ export default class ContextMenu extends Vue {
 
   render() {
     return (
-      <div class={css.contextmenu} style={this.style}>
-        <ul>
+      <div class="contextmenu absolute bg-[#3c3c3c] w-[240px] z-[1000] rounded-[4px]" style={this.style}>
+        <ul class="w-full h-full p-[5px]">
           {this.$Store.get.Designer.Menus.map((m) => {
             return (
               <li
+                class="h-[25px] text-white text-[14px] flex items-center justify-between p-[0_20px] hover:bg-[#094771]"
                 onMousedown={(e) => e.stopPropagation()}
                 onClick={(e) => {
                   if (e.button == 0) this.Selected(m);

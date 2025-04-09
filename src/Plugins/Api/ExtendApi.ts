@@ -5,7 +5,7 @@ import pako from "pako";
 import VirtualFileSystem from "@/Apis/VirtualFileSystem";
 import DataSource from "@/Apis/DataSource";
 import Expression from "@/Apis/Expression";
-const CryptoJS = require("crypto-js");
+import CryptoJS from "crypto-js";
 
 type ApiConfigItem = {
   url: string;
@@ -82,7 +82,7 @@ function InstallAxiosConfig(name: string, apiConfig: ApiConfigItem, AxiosConfig:
     const newConfig = {
       ...AxiosConfig,
       ...apiConfig,
-      url: process.env.VUE_APP_API_BASE_URL + RouterParamsHandler(apiConfig.url, data),
+      url: import.meta.env.VITE_API_BASE_URL + RouterParamsHandler(apiConfig.url, data),
       headers: {
         "Content-Type": "application/json;charset=utf-8",
         ...(apiConfig.headers || {}),
@@ -118,15 +118,15 @@ function InstallAxiosConfig(name: string, apiConfig: ApiConfigItem, AxiosConfig:
 }
 
 const ExtendAxios = {
-  install(app: App<Element>) {
-    let apis = require.context("@/Apis", true, /\.ts$/);
-    apis.keys().forEach((key) => {
-      let apiConfig = apis(key).default;
+  async install(app: App<Element>) {
+    let apis = import.meta.glob("@/Apis/**/*.ts");
+    for (const path in apis) {
+      let file = (await apis[path]()) as any;
+      let apiConfig = file.default;
       for (let name in apiConfig) {
         InstallAxiosConfig(name, apiConfig[name], {});
       }
-    });
-
+    }
     app.config.globalProperties.$Api = GlobalApi;
   },
 };

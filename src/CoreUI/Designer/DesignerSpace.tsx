@@ -14,6 +14,7 @@ import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import Control from "./Control";
 import { AddControlDeclareToDesignerCode } from "@/Utils/Designer/Designer";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
+import { editor } from "../Editor/EditorPage";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type Coord = UtilsDeclare.Coord;
@@ -100,6 +101,14 @@ export default class DesignerSpace extends Vue {
     return +(-20 * this.pasteCount).toFixed(4);
   }
 
+  async CtrlKeySControl(e: KeyboardEvent) {
+    editor.Save();
+  }
+
+  async CtrlShiftAltKeySControl(e: KeyboardEvent) {
+    editor.SaveAll();
+  }
+
   async CtrlKeyCControl(e: KeyboardEvent) {
     this.$Store.dispatch("Designer/SetCopyControlJson", await this.$Store.dispatch("Designer/CopyControl"));
     this.pasteCount = 1;
@@ -165,6 +174,8 @@ export default class DesignerSpace extends Vue {
 
         let funcName = e.code + "Control";
         if (e.ctrlKey) funcName = "Ctrl" + funcName;
+        if (e.shiftKey) funcName = "Shift" + funcName;
+        if (e.altKey) funcName = "Alt" + funcName;
 
         if (e.code.startsWith("Arrow")) {
           this.Arrow(e.code);

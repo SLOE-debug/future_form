@@ -63,7 +63,7 @@ export default class DateControl extends Control {
   render() {
     return super.render(
       <ElInput
-        class={css.date}
+        class="!w-full !h-full [&>div]:p-0 overflow-hidden [&>div>span]:ml-[4px]"
         v-model={this.config.value}
         placeholder={this.config.placeholder}
         disabled={this.disabled}

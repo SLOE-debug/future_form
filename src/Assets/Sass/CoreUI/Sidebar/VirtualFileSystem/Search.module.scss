@@ -1,0 +1,98 @@
+.searchSelector {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  color: #e6e6e6;
+  font-size: 0.9rem;
+  padding-left: 9px;
+}
+.searchInput {
+  :global(.el-input__wrapper) {
+    background-color: #151515 !important;
+
+    :global(.el-input__inner) {
+      height: 24px;
+      color: #e6e6e6;
+    }
+  }
+}
+
+.searchDiv {
+  height: 830px;
+  color: #e6e6e6;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+.searchFileDiv {
+  cursor: pointer;
+  margin-bottom: 5px;
+  padding-left: 15px;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #e6e6e6;
+  }
+
+  .searchFileInfo {
+    display: flex;
+    align-items: center;
+    height: 22px;
+    font-size: 0.8rem;
+
+    .iconSpan {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      font-size: 10px;
+      margin-right: 5px;
+    }
+
+    .labSpan {
+      margin-left: 5px;
+    }
+
+    .pathSpan {
+      margin-left: 8px;
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.6);
+      margin-top: 3px;
+    }
+  }
+}
+
+.searchContentDiv {
+  line-height: 22px;
+  padding-left: 30px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  display: flex;
+  margin: 5px 0px;
+
+  .highlight {
+    background-color: #5d2e10;
+  }
+
+  .contentFirstSpan {
+    overflow: hidden; /* 隐藏溢出内容 */
+    direction: rtl; /* 反向文本方向，使内容从右向左显示 */
+    text-overflow: ellipsis; /* 超出部分显示省略号 */
+    white-space: nowrap; /* 强制内容在一行显示 */
+  }
+  .contentLastSpan {
+    overflow: hidden; /* 隐藏溢出内容 */
+    text-overflow: ellipsis; /* 超出部分显示省略号 */
+    white-space: nowrap; /* 强制内容在一行显示 */
+  }
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #e6e6e6;
+  }
+}
+
+.searchActive {
+  box-shadow: 0 0 0 1px #ad9cff inset;
+  color: #e6e6e6;
+  background-color: rgba(255, 255, 255, 0.2);
+}

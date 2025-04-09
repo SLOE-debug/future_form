@@ -6,6 +6,7 @@ export namespace VritualFileSystemDeclare {
     isProtected: boolean;
     selected: boolean;
     name: string;
+    deleted: boolean;
     parent: Basic;
     Delete(): void;
     GetFullName(): string;

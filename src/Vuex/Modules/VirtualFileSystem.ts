@@ -5,13 +5,7 @@ import File from "@/Core/VirtualFileSystem/File";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import CompareFile from "@/Core/VirtualFileSystem/CompareFile";
 import { editor } from "@/CoreUI/Editor/EditorPage";
-import {
-  BackupRoot,
-  FlatRoot,
-  GetParentByDirectory,
-  GetParentByFile,
-  IsDirectory,
-} from "@/Utils/VirtualFileSystem/Index";
+import { BackupRoot, FlatRoot, GetParentByDirectory, GetParentByFile } from "@/Utils/VirtualFileSystem/Index";
 
 type IDirectory = VritualFileSystemDeclare.IDirectory;
 type IFile = VritualFileSystemDeclare.IFile;
@@ -40,6 +34,8 @@ export type VirtualFileSystemState = {
   RootVersions: any[];
   // 当前版本
   CurrentVersion: string;
+  // 关闭文件时，是否自动选择临近的文件
+  AutoSelectNearFile: boolean;
 };
 
 const state: VirtualFileSystemState = {
@@ -51,6 +47,7 @@ const state: VirtualFileSystemState = {
   OpenFiles: [],
   RootVersions: [],
   CurrentVersion: "last",
+  AutoSelectNearFile: true,
 };
 
 const actions: ActionTree<VirtualFileSystemState, any> = {
@@ -144,6 +141,10 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
     state.CurrentFile = file;
     state.OpenFiles.push(file);
   },
+  // 设置是否自动选择临近的文件
+  SetAutoSelectNearFile({ state }, value: boolean) {
+    state.AutoSelectNearFile = value;
+  },
   // 关闭文件
   async CloseFile({ state, dispatch }, file: IFile) {
     if (file.isUnsaved) state.CurrentFile.content = file.content;
@@ -153,6 +154,8 @@ const actions: ActionTree<VirtualFileSystemState, any> = {
     }
 
     state.OpenFiles.splice(state.OpenFiles.indexOf(file), 1);
+
+    if (!state.AutoSelectNearFile) return;
 
     let newFile = state.OpenFiles.length ? state.OpenFiles[state.OpenFiles.length - 1] : null;
     if (!newFile) {

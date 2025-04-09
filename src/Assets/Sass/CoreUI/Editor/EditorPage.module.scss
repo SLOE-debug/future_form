@@ -1,0 +1,23 @@
+.tabs {
+  overflow-y: hidden;
+  overflow-x: auto;
+
+  &::-webkit-scrollbar {
+    height: 2px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background-color: #151515;
+  }
+
+  $thumb-color: #ad9cff;
+
+  &::-webkit-scrollbar-thumb {
+    background-color: darken($thumb-color, 10%);
+    border-radius: 100px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: $thumb-color;
+  }
+}

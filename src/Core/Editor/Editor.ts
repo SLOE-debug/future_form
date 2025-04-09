@@ -4,6 +4,9 @@ import { Path } from "@/Utils/VirtualFileSystem/Path";
 import store from "@/Vuex/Store";
 import * as monaco from "monaco-editor";
 import * as actions from "monaco-editor/esm/vs/platform/actions/common/actions";
+import controlDeclare from "@/Types/ControlDeclare?raw";
+import eventDeclare from "@/Types/EventDeclare?raw";
+import { ElMessage } from "element-plus";
 
 type IFile = VritualFileSystemDeclare.IFile;
 type ICompareFile = VritualFileSystemDeclare.ICompareFile;
@@ -107,7 +110,7 @@ export default class Editor {
    * 加载声明文件
    */
   LoadDeclareFile(declareModule: any, namespace: string) {
-    let declare = declareModule.default;
+    let declare = declareModule;
     let namespaceRegex = new RegExp(`export namespace ${namespace} \\{`, "g");
 
     declare = declare.replace(namespaceRegex, "");
@@ -135,9 +138,9 @@ export default class Editor {
     });
 
     // 加载控件声明文件
-    this.LoadDeclareFile(require("!!raw-loader!@/Types/ControlDeclare"), "ControlDeclare");
+    this.LoadDeclareFile(controlDeclare, "ControlDeclare");
     // 加载事件声明文件
-    this.LoadDeclareFile(require("!!raw-loader!@/Types/EventDeclare"), "EventDeclare");
+    this.LoadDeclareFile(eventDeclare, "EventDeclare");
 
     // 设置TypeScript编译器配置
     monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
@@ -239,8 +242,6 @@ export default class Editor {
       if (k.id == "EditorContext") {
         let node = v._first;
         do {
-          // console.log(node.element);
-
           let shouldRemove = ids.includes(node.element?.command?.id);
           if (shouldRemove) {
             v._remove(node);
@@ -701,7 +702,7 @@ export default class Editor {
 
     this.compareEle = document.createElement("div");
     this.compareEle.style.position = "absolute";
-    this.compareEle.style.zIndex = "99999";
+    this.compareEle.style.zIndex = "998";
     this.compareEle.style.top = "0";
     this.compareEle.style.left = "0";
     this.compareEle.style.width = "100%";

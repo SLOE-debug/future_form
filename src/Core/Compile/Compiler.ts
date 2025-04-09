@@ -3,6 +3,7 @@ import { CompileDeclare } from "@/Types/CompileDeclare";
 import { CacheFunction, DeepCompareObject } from "@/Utils/Index";
 import { backupRoot } from "@/Utils/VirtualFileSystem/Index";
 import { Path } from "@/Utils/VirtualFileSystem/Path";
+import CompareFile from "../VirtualFileSystem/CompareFile";
 
 // 仅在开发模式下导入的模块
 const monacoImport = CacheFunction(() => import("monaco-editor"));
@@ -65,7 +66,10 @@ export default class Compiler {
       let file = editor.model2File.get(m);
       // 获取文件的语言
       let language = m.getLanguageId();
-      if ((language == "sql" && debug) || !file) continue;
+      if ((language == "sql" && debug) || !file || file.deleted) continue;
+
+      // 如果 file 是对比文件，则跳过
+      if (file instanceof CompareFile) continue;
 
       // 对比备份的Root
       // 如果 file 的 content 和 extraData 和备份的一样
@@ -237,11 +241,10 @@ export default class Compiler {
         let scriptIndex = this.scriptList.indexOf(script);
         this.scriptList.splice(scriptIndex, 1);
       }
-    }
-  }
+    }  }
 
   // PWA 的文件缓存URL前缀
-  static readonly PWA_CACHE_URL_PREFIX = process.env.VUE_APP_API_BASE_URL + "VirtualFile/GetPublishFile";
+  static readonly PWA_CACHE_URL_PREFIX = import.meta.env.VITE_API_BASE_URL + "VirtualFile/GetPublishFile";
 
   // cacheName
   static readonly CACHE_NAME = "api-cache-v1";
@@ -262,6 +265,7 @@ export default class Compiler {
       if (response) {
         // 获取缓存的文件
         let cacheFile = (await response.json()).data as CompiledFile;
+        if (!cacheFile) continue;
         Compiler.DeleteFile(cacheFile.fileId);
         // 删除缓存
         await cache.delete(response.url);
@@ -323,5 +327,5 @@ export default class Compiler {
 window.importAsync = async (path: string) => {
   let file = await Compiler.GetPublishFile(path, "fullPath");
   let url = Compiler.fileId2BlobUrlMap.get(file.fileId);
-  return import(/* webpackIgnore: true */ url);
+  return import(/* @vite-ignore */ url);
 };

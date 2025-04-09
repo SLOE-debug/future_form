@@ -26,6 +26,7 @@ export default class SvgIcon extends Vue {
   isUnknownFile = false;
 
   async LoadSvg() {
+    const svgModule = import.meta.glob("@/Assets/Icons/Svg/*.svg", { eager: true });
     try {
       // 先从 svgCache 中查找是否有缓存
       let cache = globalCache.svgCache.get(this.name);
@@ -34,12 +35,12 @@ export default class SvgIcon extends Vue {
         return;
       }
 
-      const response = await fetch(require(`@/Assets/Icons/Svg/${this.name}.svg`));
-      if (response.ok) {
-        let content = await response.text();
-        this.svgContent = content;
-        // 缓存 svg
-        globalCache.svgCache.set(this.name, new Promise((resolve) => resolve(content)));
+      const svgPath = Object.keys(svgModule).find((key) => key.includes(`Assets/Icons/Svg/${this.name}.svg`));
+      if (svgPath) {
+        const svgContent = await fetch(svgPath).then((res) => res.text());
+        this.svgContent = svgContent;
+        // 缓存 svg 内容
+        globalCache.svgCache.set(this.name, new Promise((resolve) => resolve(svgContent)));
       }
     } catch (error) {
       this.isUnknownFile = true;
@@ -51,11 +52,13 @@ export default class SvgIcon extends Vue {
         return;
       }
 
-      const fallbackResponse = await fetch(require(`@/Assets/Icons/Svg/${FileSuffix_unknown}.svg`));
-      let content = await fallbackResponse.text();
-      this.svgContent = content;
-      // 缓存 svg
-      globalCache.svgCache.set(FileSuffix_unknown, new Promise((resolve) => resolve(content)));
+      const svgPath = Object.keys(svgModule).find((key) => key.includes(`Assets/Icons/Svg/${this.name}.svg`));
+      if (svgPath) {
+        const svgContent = await fetch(svgPath).then((res) => res.text());
+        this.svgContent = svgContent;
+        // 缓存 svg 内容
+        globalCache.svgCache.set(this.name, new Promise((resolve) => resolve(svgContent)));
+      }
     }
   }
 
@@ -72,7 +75,10 @@ export default class SvgIcon extends Vue {
           // 如果是未知文件，且未设置颜色，则使用白色
           fill: this.isUnknownFile && !this.color ? "white" : this.color || "inherit",
         }}
-        class={[this.className, css.svgIcon].join(" ")}
+        class={[
+          this.className,
+          "flex items-center justify-center [&>svg]:w-[inherit] [&>svg]:h-[inherit] [&>svg]:fill-[inherit] [&>svg]:pointer-events-none",
+        ].join(" ")}
         v-html={this.svgContent}
         title={this.title}
       ></div>

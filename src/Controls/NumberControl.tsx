@@ -20,7 +20,7 @@ export default class NumberControl extends Control {
       <ElInputNumber
         v-model={this.config.value}
         controls-position={this.config.controlsAlign}
-        class={css.number}
+        class="w-full h-full [&>span]:!w-[20%]"
         size="small"
         disabled={this.disabled}
       ></ElInputNumber>

@@ -5,20 +5,7 @@ import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import ContextMenu from "./ContextMenu";
 import Compiler from "@/Core/Compile/Compiler";
 import { BackupRoot, FlatRoot } from "@/Utils/VirtualFileSystem/Index";
-import {
-  ElButton,
-  ElDialog,
-  ElForm,
-  ElFormItem,
-  ElInput,
-  ElRadioGroup,
-  ElRadio,
-  ElSelectV2,
-  ElPopover,
-  ElPopconfirm,
-  ElMessageBox,
-  ElCheckbox,
-} from "element-plus";
+import { ElButton, ElInput, ElSelectV2, ElPopover, ElPopconfirm, ElMessageBox, ElCheckbox } from "element-plus";
 import Directory from "@/Core/VirtualFileSystem/Directory";
 import Basic from "@/Core/VirtualFileSystem/Basic";
 import File from "@/Core/VirtualFileSystem/File";
@@ -38,13 +25,13 @@ export default class FileSidebar extends Vue {
         icon: "folder",
         active: true,
         title: "文件夹",
-        tiggerEventName: "ShowDirectory",
+        tiggerEventName: () => (this.isShowSearch = !this.isShowSearch),
       },
       {
         icon: "magnifying-glass",
         active: false,
         title: "搜索",
-        tiggerEventName: "ShowSearch",
+        tiggerEventName: () => (this.isShowSearch = !this.isShowSearch),
       },
       {
         icon: this.isRun ? "stop" : "play",
@@ -124,10 +111,14 @@ export default class FileSidebar extends Vue {
    * 通过版本号获取root
    */
   async GetRootByVersion(versionNumber: string = "last") {
+    // 清空文件夹map
+    this.dirMap.clear();
+    // 取消选择所有文件
+    await this.$Store.dispatch("VirtualFileSystem/UnSelectAll");
     let res = await this.$Api.GetRootByVersion({ versionNumber });
     let { files } = res.data;
     let root = this.Files2Root(files);
-    this.$Store.dispatch("VirtualFileSystem/SetRoot", root);
+    await this.$Store.dispatch("VirtualFileSystem/SetRoot", root);
     this.directory = this.$Store.get.VirtualFileSystem.Root;
   }
 
@@ -237,16 +228,6 @@ export default class FileSidebar extends Vue {
     this.isRun = false;
   }
 
-  isSearch = false;
-  //搜索按钮点击事件
-  async ShowSearch() {
-    this.isSearch = true;
-  }
-  //文件夹按钮点击事件
-  async ShowDirectory() {
-    this.isSearch = false;
-  }
-
   // 是否发布全部
   isPublishAll = false;
   // 是否提示用户更新
@@ -349,7 +330,10 @@ export default class FileSidebar extends Vue {
                 v-focus
                 tabindex={-1}
               />
-              <ElCheckbox v-model={this.isCreateNewVersion} label="创建新版本" tabindex={0}></ElCheckbox>
+              <ElCheckbox v-model={this.isCreateNewVersion} tabindex={0}>
+                创建新版本
+                <span class="text-red-500">（将会为项目创建一个新的版本，可在“版本”下拉框中拉取历史版本）</span>
+              </ElCheckbox>
             </>
           ),
           confirmButtonText: "保存",
@@ -362,6 +346,25 @@ export default class FileSidebar extends Vue {
       );
 
       let files = FlatRoot(this.$Store.get.VirtualFileSystem.Root);
+
+      // 是否有删除的文件
+      let hasDelete = files.some((f) => f.deleted);
+      // 如果有删除的文件且不是创建新版本，则提示
+      if (hasDelete && !this.isCreateNewVersion) {
+        await ElMessageBox(
+          {
+            title: "警告",
+            message: "有删除的文件，确定不创建新版本吗？",
+            confirmButtonText: "继续保存",
+            cancelButtonText: "取消",
+            center: true,
+            showClose: false,
+            showCancelButton: true,
+            closeOnClickModal: false,
+          },
+          this.$.appContext
+        );
+      }
 
       console.log(files);
 
@@ -377,7 +380,10 @@ export default class FileSidebar extends Vue {
     }
   }
 
+  // 是否正在运行
   isRun = false;
+  // 是否打开搜索
+  isShowSearch = true;
 
   render() {
     return (
@@ -407,103 +413,103 @@ export default class FileSidebar extends Vue {
           ))}
         </div>
 
-        <Search v-show={this.isSearch}></Search>
+        {this.isShowSearch && <Search />}
 
-        {!this.isSearch && (
-          <div class={css.versionSelector}>
-            <div>版本：</div>
-            <ElSelectV2
-              options={this.$Store.get.VirtualFileSystem.RootVersions}
-              popper-class={css.versionDropDown}
-              v-model={this.selectedRootVersion}
-            >
-              {({ item }) => {
-                return (
-                  <ElPopover
-                    placement="right"
-                    width={400}
-                    effect="dark"
-                    title="版本描述"
-                    hideAfter={0}
-                    ref={item.versionNumber}
-                    offset={-12}
-                    persistent={false}
-                  >
-                    {{
-                      reference: () => <div onClick={(e) => e.stopPropagation()}>{item.versionNumber}</div>,
-                      default: () => (
-                        <div class={css.versionDescription}>
-                          {item.versionDescription}
-                          <br />
-                          <ElPopconfirm
-                            title="此操作将会覆盖您的文件且不会保存，请谨慎操作！"
-                            width={250}
-                            hideAfter={0}
-                            {...{
-                              trigger: "hover",
-                              offset: 0,
-                              effect: "dark",
-                            }}
-                            teleported={false}
-                            persistent={false}
-                            onCancel={(e) => {
-                              this.$refs[item.versionNumber].hide();
-                            }}
-                            onConfirm={(e) => {
-                              this.$refs[item.versionNumber].hide();
-                              this.selectedRootVersion = item.versionNumber;
-                            }}
-                          >
-                            {{
-                              reference: () => (
-                                <ElButton
-                                  type="primary"
-                                  size="small"
-                                  style={{
-                                    marginTop: "10px",
-                                  }}
-                                >
-                                  拉取
-                                </ElButton>
-                              ),
-                            }}
-                          </ElPopconfirm>
-                        </div>
-                      ),
-                    }}
-                  </ElPopover>
-                );
-              }}
-            </ElSelectV2>
-          </div>
-        )}
-        {!this.isSearch && (
-          <div class={css.content}>
-            <div class={css.projectTitle}>
-              项目名称
-              <div class={css.projectTools}>
-                {this.projectTools.map((tool) => (
-                  <FontAwesomeIcon
-                    icon={tool.icon}
-                    title={tool.title}
-                    {...{
-                      onMousedown: (e: MouseEvent) => {
-                        this.ProjectToolItemClick(tool);
-                        e.stopPropagation();
-                      },
-                    }}
-                  />
-                ))}
+        {!this.isShowSearch && (
+          <>
+            <div class={css.versionSelector}>
+              <div>版本：</div>
+              <ElSelectV2
+                options={this.$Store.get.VirtualFileSystem.RootVersions}
+                popper-class={css.versionDropDown}
+                v-model={this.selectedRootVersion}
+              >
+                {({ item }) => {
+                  return (
+                    <ElPopover
+                      placement="right"
+                      width={400}
+                      effect="dark"
+                      title="版本描述"
+                      hideAfter={0}
+                      ref={item.versionNumber}
+                      offset={-12}
+                      persistent={false}
+                    >
+                      {{
+                        reference: () => <div onClick={(e) => e.stopPropagation()}>{item.versionNumber}</div>,
+                        default: () => (
+                          <div class={css.versionDescription}>
+                            {item.versionDescription}
+                            <br />
+                            <ElPopconfirm
+                              title="此操作将会覆盖您的文件且不会保存，请谨慎操作！"
+                              width={250}
+                              hideAfter={0}
+                              {...{
+                                trigger: "hover",
+                                offset: 0,
+                                effect: "dark",
+                              }}
+                              teleported={false}
+                              persistent={false}
+                              onCancel={(e) => {
+                                this.$refs[item.versionNumber].hide();
+                              }}
+                              onConfirm={(e) => {
+                                this.$refs[item.versionNumber].hide();
+                                this.selectedRootVersion = item.versionNumber;
+                              }}
+                            >
+                              {{
+                                reference: () => (
+                                  <ElButton
+                                    type="primary"
+                                    size="small"
+                                    style={{
+                                      marginTop: "10px",
+                                    }}
+                                  >
+                                    拉取
+                                  </ElButton>
+                                ),
+                              }}
+                            </ElPopconfirm>
+                          </div>
+                        ),
+                      }}
+                    </ElPopover>
+                  );
+                }}
+              </ElSelectV2>
+            </div>
+            <div class={css.content}>
+              <div class={css.projectTitle}>
+                项目名称
+                <div class={css.projectTools}>
+                  {this.projectTools.map((tool) => (
+                    <FontAwesomeIcon
+                      icon={tool.icon}
+                      title={tool.title}
+                      {...{
+                        onMousedown: (e: MouseEvent) => {
+                          this.ProjectToolItemClick(tool);
+                          e.stopPropagation();
+                        },
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div onContextmenu={this.OpenContextMenu}>
+                <Folder />
               </div>
             </div>
-            <div onContextmenu={this.OpenContextMenu}>
-              <Folder />
-            </div>
-          </div>
+            <ContextMenu
+              {...{ onClose: () => this.$Store.dispatch("VirtualFileSystem/ClearContextMenuPosition") }}
+            ></ContextMenu>
+          </>
         )}
-        <ContextMenu
-          {...{ onClose: () => this.$Store.dispatch("VirtualFileSystem/ClearContextMenuPosition") }}
-        ></ContextMenu>
       </div>
     );
   }

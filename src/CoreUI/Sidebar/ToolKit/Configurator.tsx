@@ -1,15 +1,17 @@
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { ElColorPicker, ElInput, ElInputNumber, ElOption, ElSelect, ElSwitch } from "element-plus";
+import { ElButton, ElColorPicker, ElInput, ElInputNumber, ElOption, ElSelect, ElSwitch } from "element-plus";
 import { Component, Prop, Vue } from "vue-facing-decorator";
 import OptionsConfigurator from "./OptionsConfigurator";
 import ColumnsConfigurator from "./ColumnsConfigurator";
 import { CapitalizeFirstLetter, sourceArgsPrefix } from "@/Utils/Index";
 import { AddMethodToDesignerBackground, LocateMethod } from "@/Utils/Designer/Designer";
-import { GetDesignerBackgroundFile } from "@/Utils/VirtualFileSystem/Index";
+import { GetDesignerBackgroundFile, GetFileById, IsDirectory } from "@/Utils/VirtualFileSystem/Index";
 import Control from "@/CoreUI/Designer/Control";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
+type IDirectory = VritualFileSystemDeclare.IDirectory;
 
 @Component
 export default class Configurator extends Vue {
@@ -90,37 +92,55 @@ export default class Configurator extends Vue {
         );
       case DesignerDeclare.InputType.ElSelect:
         return (
-          <ElSelect
-            style={{ width: "100%" }}
-            v-model={ref[key]}
-            filterable={true}
-            clearable={true}
-            size="small"
-            multiple={m.multiple || false}
-            placeholder={m.des}
-            disabled={
-              m.onlyDesign &&
-              this.$Store.get.VirtualFileSystem.CurrentFile.suffix != VritualFileSystemDeclare.FileType.FormDesigner
+          <>
+            <ElSelect
+              style={{ width: "100%" }}
+              v-model={ref[key]}
+              filterable={true}
+              clearable={true}
+              size="small"
+              multiple={m.multiple || false}
+              placeholder={m.des}
+              disabled={
+                m.onlyDesign &&
+                this.$Store.get.VirtualFileSystem.CurrentFile.suffix != VritualFileSystemDeclare.FileType.FormDesigner
+              }
+              key={m.config.id}
+              {...{
+                onDblclick: (e) => {
+                  if (isEvent) this.AppendOrLocateMethod(m, ref, key);
+                },
+              }}
+              onChange={(_) => {
+                this.SyncConfiguration(m, isEvent);
+                m.onChange && m.onChange(ref[key]);
+              }}
+            >
+              {isEvent
+                ? this.$Store.get.Designer.EventNames.map((n) => {
+                    return <ElOption key={n} label={n} value={n}></ElOption>;
+                  })
+                : m.options?.map((o) => {
+                    return <ElOption key={o.value.toString()} label={o.label} value={o.value}></ElOption>;
+                  })}
+            </ElSelect>
+            {
+              // 如果当前的 key 是 dataSource，则添加一个定位至数据源的按钮
+              key == "dataSource" && (
+                <ElButton
+                  circle
+                  {...{
+                    title: "定位至数据源",
+                  }}
+                  onClick={() => {
+                    this.LocateDataSourceFile(ref[key]);
+                  }}
+                >
+                  {{ icon: () => <FontAwesomeIcon icon="location-dot" /> }}
+                </ElButton>
+              )
             }
-            key={m.config.id}
-            {...{
-              onDblclick: (e) => {
-                if (isEvent) this.AppendOrLocateMethod(m, ref, key);
-              },
-            }}
-            onChange={(_) => {
-              this.SyncConfiguration(m, isEvent);
-              m.onChange && m.onChange(ref[key]);
-            }}
-          >
-            {isEvent
-              ? this.$Store.get.Designer.EventNames.map((n) => {
-                  return <ElOption key={n} label={n} value={n}></ElOption>;
-                })
-              : m.options?.map((o) => {
-                  return <ElOption key={o.value.toString()} label={o.label} value={o.value}></ElOption>;
-                })}
-          </ElSelect>
+          </>
         );
       case DesignerDeclare.InputType.ElColorPicker:
         return (
@@ -152,6 +172,26 @@ export default class Configurator extends Vue {
 
   updated() {
     this.selectedControls = this.$Store.get.Designer.SelectedControls;
+  }
+
+  /**
+   * 定位数据源文件
+   */
+  LocateDataSourceFile(fileId) {
+    let file = GetFileById(fileId);
+    if (file) {
+      // 向 window 发出一个 按键 1 事件
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "1" }));
+      this.$Store.dispatch("VirtualFileSystem/SelectFile", file);
+      // 循环 file 的 parent 改为全部展开
+      let parent = file.parent;
+      while (parent) {
+        if (IsDirectory(parent)) {
+          (parent as IDirectory).spread = true;
+        }
+        parent = parent.parent;
+      }
+    }
   }
 
   /**

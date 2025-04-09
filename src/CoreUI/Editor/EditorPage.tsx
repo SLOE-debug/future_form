@@ -6,6 +6,7 @@ import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import Editor from "@/Core/Editor/Editor";
 import DesignerSpace from "../Designer/DesignerSpace";
 import SqlConfigurator from "../Designer/SqlConfigurator";
+import { UtilsDeclare } from "@/Types/UtilsDeclare";
 
 type IFile = VritualFileSystemDeclare.IFile;
 
@@ -22,10 +23,6 @@ export default class EditorPage extends Vue {
     };
   }
 
-  get File() {
-    return this.$Store.get.VirtualFileSystem.CurrentFile;
-  }
-
   isDesigner: boolean = false;
   isSqlEditor: boolean = false;
 
@@ -38,7 +35,7 @@ export default class EditorPage extends Vue {
    * @param nv 新文件
    * @param ov 旧文件
    */
-  @Watch("File")
+  @Watch("$Store.get.VirtualFileSystem.CurrentFile")
   OnFileChange(nv: IFile, ov: IFile) {
     if (!nv) {
       this.isDesigner = false;
@@ -62,6 +59,21 @@ export default class EditorPage extends Vue {
         this.isSqlEditor = false;
         break;
     }
+    this.ScrollToCurrentFile();
+  }
+
+  // 是否是移至tabs上方
+  isMoveToTabs: boolean = false;
+
+  /**
+   * 鼠标滚轮事件
+   */
+  Wheel(e: WheelEvent) {
+    if (this.isMoveToTabs) {
+      e.stopPropagation();
+      let tabs = this.$refs.tabs as HTMLElement;
+      tabs.scrollLeft += e.deltaY;
+    }
   }
 
   created() {
@@ -70,12 +82,162 @@ export default class EditorPage extends Vue {
     editor.OnModelChange(() => {
       if (this.isSqlEditor) this.$refs.sqlConfigurator.AnalysisSql(editor.editor.getValue());
     });
+    window.addEventListener("wheel", this.Wheel);
+    window.addEventListener("click", this.Click);
   }
 
   unmouted() {
     editor.Dispose();
+    window.removeEventListener("wheel", this.Wheel);
+    window.removeEventListener("click", this.Click);
   }
 
+  // 当 $Store.get.VirtualFileSystem.CurrentFile 改变时，滚动到当前文件
+  ScrollToCurrentFile() {
+    this.$nextTick(() => {
+      // 通过当前 $Store.get.VirtualFileSystem.CurrentFile.id 设置 tabs div 的滚动位置
+      let tabs = this.$refs.tabs as HTMLElement;
+      let tabRect = tabs.getBoundingClientRect();
+      let currentTab = this.$refs[this.$Store.get.VirtualFileSystem.CurrentFile.id] as HTMLElement;
+      let currentTabRect = currentTab.getBoundingClientRect();
+      if (currentTabRect.left < tabRect.left) {
+        tabs.scrollLeft += currentTabRect.left - tabRect.left;
+      } else if (currentTabRect.right > tabRect.right) {
+        tabs.scrollLeft += currentTabRect.right - tabRect.right;
+      }
+    });
+  }
+
+  // 当 $Store.get.VirtualFileSystem.OpenFiles.length 改变时
+  @Watch("$Store.get.VirtualFileSystem.OpenFiles.length")
+  OnOpenFilesLengthChange() {
+    if (this.$Store.get.VirtualFileSystem.OpenFiles.length == 0) {
+      this.isDesigner = false;
+    }
+  }
+
+  // 是否显示右键菜单
+  isShowContextMenu: boolean = false;
+  // 右键菜单位置
+  tabsContextMenuPosition: UtilsDeclare.Coord = { x: 0, y: 0 };
+
+  /**
+   * 鼠标点击隐藏右键菜单事件
+   */
+  Click() {
+    this.isShowContextMenu = false;
+  }
+
+  /**
+   * tabs 右键事件
+   */
+  TabsContextMenu(e: MouseEvent) {
+    e.preventDefault();
+    this.isShowContextMenu = true;
+    this.tabsContextMenuPosition = { x: e.clientX, y: e.clientY };
+  }
+
+  /**
+   * 关闭文件
+   */
+  Close(file: IFile) {
+    this.$Store.dispatch("VirtualFileSystem/CloseFile", file);
+  }
+
+  /**
+   * 关闭其他文件
+   */
+  CloseOther() {
+    let currentFile = this.$Store.get.VirtualFileSystem.OpenFiles[this.currentContextMenuFileIndex];
+    let otherFiles = this.$Store.get.VirtualFileSystem.OpenFiles.filter(
+      (m, i) => m.id != this.currentContextMenuFileId
+    );
+    this.$Store.dispatch("VirtualFileSystem/SetAutoSelectNearFile", false);
+    for (const file of otherFiles) {
+      this.Close(file);
+    }
+    this.$Store.dispatch("VirtualFileSystem/SetAutoSelectNearFile", true);
+    this.$Store.dispatch("VirtualFileSystem/SelectFile", currentFile);
+  }
+
+  /**
+   * 关闭右侧文件
+   */
+  CloseRight() {
+    let currentFile = this.$Store.get.VirtualFileSystem.OpenFiles[this.currentContextMenuFileIndex];
+    let rightFiles = this.$Store.get.VirtualFileSystem.OpenFiles.filter((m, i) => i > this.currentContextMenuFileIndex);
+    this.$Store.dispatch("VirtualFileSystem/SetAutoSelectNearFile", false);
+    for (let i = rightFiles.length - 1; i >= 0; i--) {
+      this.Close(rightFiles[i]);
+    }
+    this.$Store.dispatch("VirtualFileSystem/SetAutoSelectNearFile", true);
+    this.$Store.dispatch("VirtualFileSystem/SelectFile", currentFile);
+  }
+
+  /**
+   * 关闭左侧文件
+   */
+  CloseLeft() {
+    let currentFile = this.$Store.get.VirtualFileSystem.OpenFiles[this.currentContextMenuFileIndex];
+    let leftFiles = this.$Store.get.VirtualFileSystem.OpenFiles.filter((m, i) => i < this.currentContextMenuFileIndex);
+    this.$Store.dispatch("VirtualFileSystem/SetAutoSelectNearFile", false);
+    for (const file of leftFiles) {
+      this.Close(file);
+    }
+    this.$Store.dispatch("VirtualFileSystem/SetAutoSelectNearFile", true);
+    this.$Store.dispatch("VirtualFileSystem/SelectFile", currentFile);
+  }
+
+  /**
+   * 右键菜单列表
+   */
+  tabsContextMenuList = [
+    { text: "关闭", code: "Close" },
+    { text: "关闭其他", code: "CloseOther" },
+    { text: "关闭右侧", code: "CloseRight" },
+    { text: "关闭左侧", code: "CloseLeft" },
+  ];
+
+  // 当前触发右键菜单的文件ID
+  currentContextMenuFileId: string = "";
+  // 当前触发右键菜单的文件Index
+  currentContextMenuFileIndex: number = -1;
+
+  /**
+   * 渲染右键上下文菜单
+   */
+  RenderContextMenu() {
+    return (
+      <div
+        class="absolute bg-[#3c3c3c] w-[240px] z-[1000] rounded-[4px] p-[5px]"
+        style={{ left: this.tabsContextMenuPosition.x + "px", top: this.tabsContextMenuPosition.y + "px" }}
+      >
+        {this.tabsContextMenuList.map((m) => {
+          return (
+            <div
+              class="h-[25px] text-white text-[14px] flex items-center justify-between p-[0_20px] hover:bg-[#094771]"
+              onClick={(e: MouseEvent) => {
+                // 获取事件选中的文件
+                let file = this.$Store.get.VirtualFileSystem.OpenFiles.find(
+                  (f) => f.id == this.currentContextMenuFileId
+                );
+                this[`${m.code}`] && this[`${m.code}`](file);
+                this.isShowContextMenu = false;
+              }}
+            >
+              {m.text}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  /**
+   * 渲染关闭/未保存图标
+   * @param m
+   * @returns
+   */
   RenderTabItemIcon(m: IFile) {
     let icon = null;
     if (m.isUnsaved && !m.showClose) {
@@ -88,10 +250,7 @@ export default class EditorPage extends Vue {
           icon={"xmark"}
           {...{
             onClick: async (e: MouseEvent) => {
-              this.$Store.dispatch("VirtualFileSystem/CloseFile", m);
-              if (this.$Store.get.VirtualFileSystem.OpenFiles.length == 0) {
-                this.isDesigner = false;
-              }
+              this.Close(m);
               e.stopPropagation();
             },
           }}
@@ -109,12 +268,22 @@ export default class EditorPage extends Vue {
   render() {
     return (
       <div style={this.Style} class="editor h-screen">
-        <div class="tabs h-[35px] select-none">
-          {this.$Store.get.VirtualFileSystem.OpenFiles.map((m) => {
+        <div
+          class={["h-[35px] select-none w-full flex", css.tabs].join(" ")}
+          ref="tabs"
+          onMouseenter={(e) => {
+            this.isMoveToTabs = true;
+          }}
+          onMouseleave={(e) => {
+            this.isMoveToTabs = false;
+          }}
+          onContextmenu={this.TabsContextMenu}
+        >
+          {this.$Store.get.VirtualFileSystem.OpenFiles.map((m, i) => {
             return (
               <div
                 class={[
-                  "item cursor-pointer float-left text-[#e6e6e6] p-[0_10px] h-full flex items-center text-[.8rem] duration-[.15s] hover:bg-[#1e1e1e]",
+                  "item cursor-pointer text-[#e6e6e6] p-[0_10px] h-full flex items-center text-[.8rem] duration-[.15s] hover:bg-[#1e1e1e]",
                   this.$Store.get.VirtualFileSystem.CurrentFile == m ? "active bg-[#1e1e1e]" : "",
                 ].join(" ")}
                 onClick={(e) => {
@@ -126,6 +295,11 @@ export default class EditorPage extends Vue {
                 onMouseleave={() => {
                   m.showClose = false;
                 }}
+                ref={m.id}
+                onContextmenu={(e) => {
+                  this.currentContextMenuFileId = m.id;
+                  this.currentContextMenuFileIndex = i;
+                }}
               >
                 <SvgIcon {...{ name: `FileSuffix_${m.suffix}`, color: suffix2Color[m.suffix] }}></SvgIcon>
                 <span class="m-[0_8px]">{m.name}</span>
@@ -133,6 +307,10 @@ export default class EditorPage extends Vue {
               </div>
             );
           })}
+          {
+            // 右键菜单
+            this.isShowContextMenu && this.RenderContextMenu()
+          }
         </div>
         <div class="content relative h-[calc(100vh-35px)]">
           {this.isDesigner && this.$Store.get.VirtualFileSystem.CurrentFile && (

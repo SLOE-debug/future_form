@@ -5,8 +5,9 @@ import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { CacheFunction, Guid } from "@/Utils/Index";
 import { defineAsyncComponent } from "vue";
-import { Component, Provide, Watch } from "vue-facing-decorator";
+import { Component, Watch } from "vue-facing-decorator";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { AddControlDeclareToDesignerCode } from "@/Utils/Designer/Designer";
 
 // 仅在开发模式下导入的模块
 const UtilControl = CacheFunction(() => import("@/Utils/Designer/Controls"));
@@ -49,6 +50,7 @@ export default class TabsControl extends Control {
         new Stack(this.$refs[config.name] as Control, null, null, StackAction.Create)
       );
     });
+    AddControlDeclareToDesignerCode(config);
     e.stopPropagation();
   }
 
@@ -267,6 +269,14 @@ export default class TabsControl extends Control {
 
   // 父窗体的rect
   parentRect: DOMRect;
+
+  // 当 config.padding 改变时
+  @Watch("config.padding")
+  paddingChange() {
+    this.parentFormControl.$nextTick(() => {
+      this.parentRect = this.parentFormControl.$el.getBoundingClientRect();
+    });
+  }
 
   get baseStyle() {
     let style: any = {};

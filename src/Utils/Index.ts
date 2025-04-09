@@ -136,3 +136,19 @@ export function CacheFunction<T>(func: T): T {
     return result;
   } as T;
 }
+
+/**
+ * 防抖装饰器
+ */
+export function Debounce(wait: number) {
+  return function (target: any, key: string, descriptor: PropertyDescriptor) {
+    let timer: any;
+    let method = descriptor.value;
+    descriptor.value = function (...args: any[]) {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        method.apply(this, args);
+      }, wait);
+    };
+  };
+}

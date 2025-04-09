@@ -4,7 +4,7 @@ import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { CacheFunction, Guid } from "@/Utils/Index";
 import { defineAsyncComponent } from "vue";
-import { Component, Provide } from "vue-facing-decorator";
+import { Component } from "vue-facing-decorator";
 
 // 仅在开发模式下导入的模块
 const UtilDesigner = CacheFunction(() => import("@/Utils/Designer/Designer"));
@@ -76,7 +76,8 @@ export default class GroupControl extends Control {
           <AsyncSvgIcon
             {...{
               name: "GruopMove",
-              class: css.move,
+              class:
+                "absolute top-[-10px] left-[10px] z-[2] cursor-move bg-white flex border border-solid border-[#067bef] rounded-[5px] [&>svg]:p-[2px] mt-[-1px]",
               size: 22,
               onMousedown: (e) => {
                 this.Pick(e);
@@ -87,7 +88,7 @@ export default class GroupControl extends Control {
           />
         )}
         <div
-          class={css.group}
+          class="w-full h-full relative overflow-hidden !pointer-events-auto !cursor-auto"
           onDrop={this.$Store.get.Designer.Debug && this.Drop}
           onMousedown={this.$Store.get.Designer.Debug && this.SlideStart}
           style={{

@@ -4,13 +4,12 @@ import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
 
 import { ElMessage, dayjs } from "element-plus";
-import { Component, Provide } from "vue-facing-decorator";
+import { Component } from "vue-facing-decorator";
 import TableControl from "./TableControl";
 import { defineAsyncComponent, watch } from "vue";
 import { CacheFunction, CloneStruct } from "@/Utils/Index";
 import { Guid } from "@/Utils/Index";
 import { TwoWayBinding } from "@/Utils/Designer/Form";
-import { OptionBuilder } from "vue-facing-decorator/dist/optionBuilder";
 
 // 仅在开发模式下导入的模块
 const UtilsDesigner = CacheFunction(() => import("@/Utils/Designer/Designer"));
@@ -98,7 +97,8 @@ export default class DataSourceGroupControl extends Control {
           <AsyncSvgIcon
             {...{
               name: "GruopMove",
-              class: css.move,
+              class:
+                "w-[21px] absolute top-[-10px] left-[10px] z-[2] cursor-move bg-white flex border border-solid border-[#067bef] rounded-[5px] [&>svg]:p-[2px] [&>svg]:mt-[-1px]",
               size: 22,
               onMousedown: (e) => {
                 this.Pick(e);
@@ -110,7 +110,7 @@ export default class DataSourceGroupControl extends Control {
           />
         )}
         <div
-          class={css.dataSourceGroup}
+          class="w-full h-full overflow-hidden !cursor-auto relative !pointer-events-auto"
           style={{ border: this.$Store.get.Designer.Debug ? "1px dashed #999" : "" }}
           onDrop={this.$Store.get.Designer.Debug && this.Drop}
           onMousedown={this.$Store.get.Designer.Debug && this.SlideStart}
@@ -137,7 +137,7 @@ export default class DataSourceGroupControl extends Control {
     if (this.$Store.get.Designer.Preview) {
       let { GetFileById } = await UtilVFS();
 
-      let sqlFile = GetFileById(this.config.sourceName);
+      let sqlFile = GetFileById(this.config.dataSource);
 
       res = await this.$Api.GetDataSourceGroupDataInDebug({
         sql: sqlFile.content,
@@ -146,7 +146,7 @@ export default class DataSourceGroupControl extends Control {
       });
     } else {
       res = await this.$Api.GetDataSourceGroupData({
-        id: this.config.sourceName,
+        id: this.config.dataSource,
         args: param || {},
       });
     }
@@ -429,7 +429,7 @@ export default class DataSourceGroupControl extends Control {
   private async SaveData(data: any[]) {
     let { GetFileById } = await UtilVFS();
     if (this.$Store.get.Designer.Preview) {
-      let sqlFile = GetFileById(this.config.sourceName);
+      let sqlFile = GetFileById(this.config.dataSource);
       return await this.$Api.SaveDataSourceGroupDataInDebug({
         sql: sqlFile.content,
         tableName: sqlFile.extraData.table,
@@ -439,7 +439,7 @@ export default class DataSourceGroupControl extends Control {
       });
     } else {
       return await this.$Api.SaveDataSourceGroupData({
-        id: this.config.sourceName,
+        id: this.config.dataSource,
         data,
       });
     }
@@ -467,7 +467,7 @@ export default class DataSourceGroupControl extends Control {
       height: 180,
       type: "DataSourceGroup",
       container: true,
-      sourceName: "",
+      dataSource: "",
       sourceType: "Form",
       readonly: false,
     };
@@ -481,18 +481,19 @@ export async function GetProps(config: DataSourceGroupConfig, instance: DataSour
   let sqlFiles = GetAllSqlFiles();
 
   const fieldMap: ConfiguratorItem[] = [
+    // 过滤掉 禁用 和 必填 属性
     ...baseProps.filter((p) => p.field != "disabled" && p.field != "required"),
     {
       name: "数据源",
       des: "该组绑定的数据源",
       type: DesignerDeclare.InputType.ElSelect,
-      field: "sourceName",
+      field: "dataSource",
       options: sqlFiles.map((s) => {
         return { label: s.name, value: s.id };
       }),
     },
   ];
-  if (config.sourceName) {
+  if (config.dataSource) {
     fieldMap.push({
       name: "源类型",
       des: "该组绑定的数据源类型",

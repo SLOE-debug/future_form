@@ -81,6 +81,11 @@ export default class SlideSelector extends Vue {
 
   render() {
     if (!this.boundingBox.width && !this.boundingBox.height) return;
-    return <div class={css.slideselector} style={this.style}></div>;
+    return (
+      <div
+        class="slideSelector absolute bg-[#55A9EE4D] z-[999] border-[1px] border-dashed border-[#55A9EE]"
+        style={this.style}
+      ></div>
+    );
   }
 }

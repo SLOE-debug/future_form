@@ -20,7 +20,7 @@ const routes: RouteRecordRaw[] = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(process.env.BASE_URL),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 });
 
@@ -33,12 +33,17 @@ async function loadDevelopmentStore() {
   // 是否已加载 Page/Designer/VirtualFileSystem 模块
   let loaded = store.hasModule("Page") && store.hasModule("Designer") && store.hasModule("VirtualFileSystem");
   if (!loaded) {
-    store.registerModule("Page", (await import("@/Vuex/Modules/Page")).default);
-    store.get["Page"] = (store as any)._modulesNamespaceMap["Page/"].context.getters;
-    store.registerModule("Designer", (await import("@/Vuex/Modules/Designer")).default);
-    store.get["Designer"] = (store as any)._modulesNamespaceMap["Designer/"].context.getters;
-    store.registerModule("VirtualFileSystem", (await import("@/Vuex/Modules/VirtualFileSystem")).default);
-    store.get["VirtualFileSystem"] = (store as any)._modulesNamespaceMap["VirtualFileSystem/"].context.getters;
+    const modules = [
+      { name: "Page", path: "@/Vuex/Modules/Page" },
+      { name: "Designer", path: "@/Vuex/Modules/Designer" },
+      { name: "VirtualFileSystem", path: "@/Vuex/Modules/VirtualFileSystem" },
+    ];
+
+    for (const { name, path } of modules) {
+      const module = await import(path);
+      store.registerModule(name, module.default);
+      store.get[name] = (store as any)._modulesNamespaceMap[`${name}/`].context.getters;
+    }
   }
 }
 
