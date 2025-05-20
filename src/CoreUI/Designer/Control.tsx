@@ -3,16 +3,17 @@ import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { ComponentBase, Inject, Prop, Vue, Watch } from "vue-facing-decorator";
 import FormControl from "@/Controls/FormControl";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { BindEventContext, CacheFunction, RegisterEvent, sourceArgsPrefix } from "@/Utils/Index";
+import { BindEventContext, Cache, RegisterEvent, sourceArgsPrefix } from "@/Utils/Index";
 import DataSourceGroupControl from "@/Controls/DataSourceGroupControl";
 import { JSX } from "vue/jsx-runtime";
 import { globalCache } from "@/Utils/Caches";
 import { ElMessage } from "element-plus";
+import DevelopmentModules from "@/Utils/DevelopmentModules";
 
 // 仅在开发模式下导入的模块
-const UtilDesigner = CacheFunction(() => import("@/Utils/Designer/Designer"));
-const UtilVFS = CacheFunction(() => import("@/Utils/VirtualFileSystem/Index"));
-const CoreUndoStack = CacheFunction(() => import("@/Core/Designer/UndoStack/Stack"));
+// const UtilDesigner = CacheFunction(() => import("@/Utils/Designer/Designer"));
+// const UtilVFS = CacheFunction(() => import("@/Utils/VirtualFileSystem/Index"));
+// const CoreUndoStack = CacheFunction(() => import("@/Core/Designer/UndoStack/Stack"));
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceControlConfig = ControlDeclare.DataSourceControlConfig;
@@ -79,7 +80,7 @@ export class DataSourceControl extends Vue {
 
         // 如果是预览模式，则请求 GetSourceInDebug
         if (this.$Store.get.Designer.Preview) {
-          let { GetFileById } = await UtilVFS();
+          let { GetFileById } = await DevelopmentModules.Load();
 
           methodName = "GetSourceInDebug";
           let file = GetFileById(this.config.dataSource);
@@ -180,8 +181,8 @@ export default class Control extends DataSourceControl {
    * 向堆栈中添加当前变更
    */
   async AddStack(nv, ov) {
-    let { FindControlsByKeyValue, CreateControlName, UpdateControlDeclareToDesignerCode } = await UtilDesigner();
-    let { Stack } = await CoreUndoStack();
+    let { FindControlsByKeyValue, CreateControlName, UpdateControlDeclareToDesignerCode } = await DevelopmentModules.Load();
+    let { Stack } = await DevelopmentModules.Load();
 
     // 如果当前控件的名称与其他控件的名称冲突，则不执行
     if (
@@ -436,7 +437,7 @@ export default class Control extends DataSourceControl {
 
     if (e.button != 0 || !this.$Store.get.Designer.Debug) return;
 
-    let { Stack, StackAction } = await CoreUndoStack();
+    let { Stack, StackAction } = await DevelopmentModules.Load();
 
     if (
       this.adjustType == ControlDeclare.AdjustType.Move &&
@@ -538,7 +539,7 @@ export default class Control extends DataSourceControl {
       } as any,
     }
   ) {
-    let { AddControlDeclareToDesignerCode } = await UtilDesigner();
+    let { AddControlDeclareToDesignerCode } = await DevelopmentModules.Load();
 
     let {
       globalLeft,
@@ -615,8 +616,8 @@ export default class Control extends DataSourceControl {
   }
 
   async Delete(pushStack = true) {
-    let { RemoveControlDeclareToDesignerCode } = await UtilDesigner();
-    let { Stack, StackAction } = await CoreUndoStack();
+    let { RemoveControlDeclareToDesignerCode } = await DevelopmentModules.Load();
+    let { Stack, StackAction } = await DevelopmentModules.Load();
 
     // 如果当前窗体是 Form，则不允许删除
     if (this.config.type == "Form") {

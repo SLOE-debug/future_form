@@ -22,14 +22,11 @@ import { SortOrder } from "element-plus/es/components/table-v2/src/constants";
 import { CellRendererParams, SortBy } from "element-plus/es/components/table-v2/src/types";
 import { Component } from "vue-facing-decorator";
 import { EventDeclare } from "@/Types/EventDeclare";
-import { CacheFunction, CapitalizeFirstLetter, Guid } from "@/Utils/Index";
+import { CapitalizeFirstLetter, Guid } from "@/Utils/Index";
 import { globalCache } from "@/Utils/Caches";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watch } from "vue";
-
-// 仅在开发模式下导入的模块
-const UtilControl = CacheFunction(() => import("@/Utils/Designer/Controls"));
-const UtilVFS = CacheFunction(() => import("@/Utils/VirtualFileSystem/Index"));
+import DevelopmentModules from "@/Utils/DevelopmentModules";
 
 type ColumnItem = ControlDeclare.ColumnItem;
 type TableConfig = ControlDeclare.TableConfig;
@@ -331,7 +328,7 @@ export default class TableControl extends Control {
 
           // 如果是预览模式，则请求GetSourceInDebug
           if (this.$Store.get.Designer.Preview) {
-            let { GetFileById } = await UtilVFS();
+            let { GetFileById } = await DevelopmentModules.Load();
 
             mehtodName = "GetSourceInDebug";
             let file = GetFileById(dataSource);
@@ -778,7 +775,7 @@ export async function GetProps() {
 }
 
 export async function GetEvents() {
-  let { baseEvents } = await UtilControl();
+  let { baseEvents } = await DevelopmentModules.Load();
 
   const eventMap: ConfiguratorItem[] = [
     ...baseEvents,

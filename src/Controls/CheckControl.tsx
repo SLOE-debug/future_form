@@ -1,12 +1,10 @@
 import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { CacheFunction } from "@/Utils/Index";
+import DevelopmentModules from "@/Utils/DevelopmentModules";
+import { Cache } from "@/Utils/Index";
 import { ElCheckbox } from "element-plus";
 import { Component } from "vue-facing-decorator";
-
-// 仅在开发模式下导入的模块
-const UtilControl = CacheFunction(() => import("@/Utils/Designer/Controls"));
 
 type CheckConfig = ControlDeclare.CheckConfig;
 
@@ -45,7 +43,7 @@ export default class CheckControl extends Control {
 }
 
 export async function GetProps(config: CheckConfig) {
-  let { baseProps } = await UtilControl();
+  let { baseProps } = await DevelopmentModules.Load();
 
   let selectValue = (config.selectValue || true).toString();
   let unSelectValue = (config.unSelectValue || true).toString();
@@ -76,7 +74,7 @@ export async function GetProps(config: CheckConfig) {
 }
 
 export async function GetEvents() {
-  let { baseEvents } = await UtilControl();
+  let { baseEvents } = await DevelopmentModules.Load();
 
   const eventMap: ConfiguratorItem[] = [...baseEvents];
   return eventMap;

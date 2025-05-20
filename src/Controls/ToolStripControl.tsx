@@ -2,14 +2,12 @@ import SvgIcon from "@/Components/SvgIcon";
 import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { CacheFunction } from "@/Utils/Index";
+import DevelopmentModules from "@/Utils/DevelopmentModules";
+import { Cache } from "@/Utils/Index";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElSelectV2 } from "element-plus";
 import { Component } from "vue-facing-decorator";
 import { JSX } from "vue/jsx-runtime";
-
-// 仅在开发模式下导入的模块
-const UtilControl = CacheFunction(() => import("@/Utils/Designer/Controls"));
 
 type ToolStripConfig = ControlDeclare.ToolStripConfig;
 type ToolStripItem = ControlDeclare.ToolStripItem;
@@ -649,7 +647,7 @@ function GetSelectProps(item: ToolStripItem) {
 }
 
 export async function GetProps(config: ToolStripConfig, instance: ToolStripControl) {
-  let { baseProps } = await UtilControl();
+  let { baseProps } = await DevelopmentModules.Load();
 
   let base = baseProps.filter((item) => item.field != "width" && item.field != "height");
   const fieldMap: ConfiguratorItem[] = [
@@ -723,7 +721,7 @@ export async function GetProps(config: ToolStripConfig, instance: ToolStripContr
 }
 
 export async function GetEvents(config: ToolStripConfig, instance: ToolStripControl) {
-  let { baseEvents } = await UtilControl();
+  let { baseEvents } = await DevelopmentModules.Load();
 
   const eventMap: ConfiguratorItem[] = [...baseEvents];
 

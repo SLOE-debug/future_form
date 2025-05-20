@@ -7,15 +7,10 @@ import { ElMessage, dayjs } from "element-plus";
 import { Component } from "vue-facing-decorator";
 import TableControl from "./TableControl";
 import { defineAsyncComponent, watch } from "vue";
-import { CacheFunction, CloneStruct } from "@/Utils/Index";
+import { CloneStruct } from "@/Utils/Index";
 import { Guid } from "@/Utils/Index";
 import { TwoWayBinding } from "@/Utils/Designer/Form";
-
-// 仅在开发模式下导入的模块
-const UtilsDesigner = CacheFunction(() => import("@/Utils/Designer/Designer"));
-const UtilControl = CacheFunction(() => import("@/Utils/Designer/Controls"));
-const UtilVFS = CacheFunction(() => import("@/Utils/VirtualFileSystem/Index"));
-const CoreUndoStack = CacheFunction(() => import("@/Core/Designer/UndoStack/Stack"));
+import DevelopmentModules from "@/Utils/DevelopmentModules";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceGroupConfig = ControlDeclare.DataSourceGroupConfig;
@@ -32,8 +27,9 @@ export default class DataSourceGroupControl extends Control {
   declare config: DataSourceGroupConfig;
 
   async Drop(e: DragEvent) {
-    let { CreateControlByDragEvent, CreateControlName, AddControlDeclareToDesignerCode } = await UtilsDesigner();
-    let { Stack, StackAction } = await CoreUndoStack();
+    let { CreateControlByDragEvent, CreateControlName, AddControlDeclareToDesignerCode } =
+      await DevelopmentModules.Load();
+    let { Stack, StackAction } = await DevelopmentModules.Load();
 
     let config = CreateControlByDragEvent.call(this, e) as ControlConfig;
 
@@ -135,7 +131,7 @@ export default class DataSourceGroupControl extends Control {
   async GetSource(param: any) {
     let res: { data: any };
     if (this.$Store.get.Designer.Preview) {
-      let { GetFileById } = await UtilVFS();
+      let { GetFileById } = await DevelopmentModules.Load();
 
       let sqlFile = GetFileById(this.config.dataSource);
 
@@ -427,7 +423,7 @@ export default class DataSourceGroupControl extends Control {
    * 保存数据
    */
   private async SaveData(data: any[]) {
-    let { GetFileById } = await UtilVFS();
+    let { GetFileById } = await DevelopmentModules.Load();
     if (this.$Store.get.Designer.Preview) {
       let sqlFile = GetFileById(this.config.dataSource);
       return await this.$Api.SaveDataSourceGroupDataInDebug({
@@ -475,8 +471,8 @@ export default class DataSourceGroupControl extends Control {
 }
 
 export async function GetProps(config: DataSourceGroupConfig, instance: DataSourceGroupControl) {
-  let { GetAllSqlFiles } = await UtilVFS();
-  let { baseProps } = await UtilControl();
+  let { GetAllSqlFiles } = await DevelopmentModules.Load();
+  let { baseProps } = await DevelopmentModules.Load();
 
   let sqlFiles = GetAllSqlFiles();
 
@@ -509,7 +505,7 @@ export async function GetProps(config: DataSourceGroupConfig, instance: DataSour
 }
 
 export async function GetEvents() {
-  let { baseEvents } = await UtilControl();
+  let { baseEvents } = await DevelopmentModules.Load();
   const eventMap: ConfiguratorItem[] = [...baseEvents];
   return eventMap;
 }

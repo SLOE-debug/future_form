@@ -1,13 +1,10 @@
 import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { CacheFunction } from "@/Utils/Index";
+import DevelopmentModules from "@/Utils/DevelopmentModules";
 import { ElSelectV2 } from "element-plus";
 import { Ref, shallowRef } from "vue";
 import { Component } from "vue-facing-decorator";
-
-// 仅在开发模式下导入的模块
-const UtilControl = CacheFunction(() => import("@/Utils/Designer/Controls"));
 
 type SelectConfig = ControlDeclare.SelectConfig;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
@@ -163,7 +160,7 @@ export default class SelectControl extends Control {
 }
 
 export async function GetProps(config: SelectConfig) {
-  let { baseProps, AddDataSourceProps } = await UtilControl();
+  let { baseProps, AddDataSourceProps } = await DevelopmentModules.Load();
 
   config.columns = config.columns || [];
 
@@ -211,7 +208,7 @@ export async function GetProps(config: SelectConfig) {
 }
 
 export async function GetEvents() {
-  let { baseEvents } = await UtilControl();
+  let { baseEvents } = await DevelopmentModules.Load();
 
   const eventMap: ConfiguratorItem[] = [...baseEvents];
   return eventMap;

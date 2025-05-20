@@ -1,13 +1,10 @@
 import { GlobalApi } from "@/Plugins/Api/ExtendApi";
 import { CompileDeclare } from "@/Types/CompileDeclare";
-import { CacheFunction, DeepCompareObject } from "@/Utils/Index";
+import { Cache, DeepCompareObject } from "@/Utils/Index";
 import { backupRoot } from "@/Utils/VirtualFileSystem/Index";
 import { Path } from "@/Utils/VirtualFileSystem/Path";
 import CompareFile from "../VirtualFileSystem/CompareFile";
-
-// 仅在开发模式下导入的模块
-const monacoImport = CacheFunction(() => import("monaco-editor"));
-const editorImport = CacheFunction(() => import("@/CoreUI/Editor/EditorPage"));
+import DevelopmentModules from "@/Utils/DevelopmentModules";
 
 type CompiledFile = CompileDeclare.CompiledFile;
 
@@ -51,8 +48,8 @@ export default class Compiler {
    * @returns 编译后的文件
    */
   static async Compile(debug: boolean = true, publishAll: boolean = false) {
-    let monaco = await monacoImport();
-    let { editor } = await editorImport();
+    let { monaco } = await DevelopmentModules.Load();
+    let { editor } = await DevelopmentModules.Load();
 
     let models = monaco.editor.getModels();
     let worker = await monaco.languages.typescript.getTypeScriptWorker();
@@ -241,7 +238,8 @@ export default class Compiler {
         let scriptIndex = this.scriptList.indexOf(script);
         this.scriptList.splice(scriptIndex, 1);
       }
-    }  }
+    }
+  }
 
   // PWA 的文件缓存URL前缀
   static readonly PWA_CACHE_URL_PREFIX = import.meta.env.VITE_API_BASE_URL + "VirtualFile/GetPublishFile";

@@ -1,11 +1,9 @@
 import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { CacheFunction } from "@/Utils/Index";
+import DevelopmentModules from "@/Utils/DevelopmentModules";
+import { Cache } from "@/Utils/Index";
 import { Component } from "vue-facing-decorator";
-
-// 仅在开发模式下导入的模块
-const UtilControl = CacheFunction(() => import("@/Utils/Designer/Controls"));
 
 type LabelConfig = ControlDeclare.LabelConfig;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
@@ -49,7 +47,7 @@ export default class LabelControl extends Control {
 }
 
 export async function GetProps() {
-  let { baseProps } = await UtilControl();
+  let { baseProps } = await DevelopmentModules.Load();
 
   const fieldMap: ConfiguratorItem[] = [
     ...baseProps.filter(
@@ -87,7 +85,7 @@ export async function GetProps() {
 }
 
 export async function GetEvents() {
-  let { baseEvents } = await UtilControl();
+  let { baseEvents } = await DevelopmentModules.Load();
 
   const eventMap: ConfiguratorItem[] = [...baseEvents];
   return eventMap;

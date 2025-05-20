@@ -2,14 +2,10 @@ import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
-import { CacheFunction, Guid } from "@/Utils/Index";
+import DevelopmentModules from "@/Utils/DevelopmentModules";
+import { Guid } from "@/Utils/Index";
 import { defineAsyncComponent } from "vue";
 import { Component } from "vue-facing-decorator";
-
-// 仅在开发模式下导入的模块
-const UtilDesigner = CacheFunction(() => import("@/Utils/Designer/Designer"));
-const UtilControl = CacheFunction(() => import("@/Utils/Designer/Controls"));
-const CoreUndoStack = CacheFunction(() => import("@/Core/Designer/UndoStack/Stack"));
 
 type GroupConfig = ControlDeclare.GroupConfig;
 type ControlConfig = ControlDeclare.ControlConfig;
@@ -24,8 +20,8 @@ export default class GroupControl extends Control {
   declare config: GroupConfig;
 
   async Drop(e: DragEvent) {
-    let { CreateControlByDragEvent, CreateControlName } = await UtilDesigner();
-    let { Stack, StackAction } = await CoreUndoStack();
+    let { CreateControlByDragEvent, CreateControlName } = await DevelopmentModules.Load();
+    let { Stack, StackAction } = await DevelopmentModules.Load();
 
     let config = CreateControlByDragEvent.call(this, e) as ControlConfig;
 
@@ -124,7 +120,7 @@ export default class GroupControl extends Control {
 }
 
 export async function GetProps() {
-  let { baseProps } = await UtilControl();
+  let { baseProps } = await DevelopmentModules.Load();
 
   const fieldMap: ConfiguratorItem[] = [
     ...baseProps.filter(

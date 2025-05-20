@@ -1,12 +1,9 @@
 import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { CacheFunction } from "@/Utils/Index";
-import { ElInput, dayjs } from "element-plus";
+import DevelopmentModules from "@/Utils/DevelopmentModules";
+import { ElInput, ElMessage, dayjs } from "element-plus";
 import { Component } from "vue-facing-decorator";
-
-// 仅在开发模式下导入的模块
-const UtilControl = CacheFunction(() => import("@/Utils/Designer/Controls"));
 
 type DateConfig = ControlDeclare.DateConfig;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
@@ -91,7 +88,7 @@ export default class DateControl extends Control {
 }
 
 export async function GetProps() {
-  let { baseProps } = await UtilControl();
+  let { baseProps } = await DevelopmentModules.Load();
 
   const fieldMap: ConfiguratorItem[] = [
     ...baseProps,
@@ -124,7 +121,7 @@ export async function GetProps() {
 }
 
 export async function GetEvents() {
-  let { baseEvents } = await UtilControl();
+  let { baseEvents } = await DevelopmentModules.Load();
 
   const eventMap: ConfiguratorItem[] = [...baseEvents];
   return eventMap;

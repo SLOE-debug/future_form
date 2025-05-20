@@ -10,14 +10,7 @@ import store from "@/Vuex/Store";
 import { BaseWindow } from "@/Utils/Designer/Form";
 import SubWindowControl from "./SubWindowControl";
 import { editor } from "@/CoreUI/Editor/EditorPage";
-import { CacheFunction } from "@/Utils/Index";
-
-// 仅在开发模式下导入的模块
-const UtilControl = CacheFunction(() => import("@/Utils/Designer/Controls"));
-const UtilDesigner = CacheFunction(() => import("@/Utils/Designer/Designer"));
-const UtilVFS = CacheFunction(() => import("@/Utils/VirtualFileSystem/Index"));
-const UtilVFSPath = CacheFunction(() => import("@/Utils/VirtualFileSystem/Path"));
-const AsyncTs = CacheFunction(() => import("typescript"));
+import DevelopmentModules from "@/Utils/DevelopmentModules";
 
 type FormConfig = ControlDeclare.FormConfig;
 
@@ -183,11 +176,11 @@ export default class FormControl extends Control {
 }
 
 export async function GetProps(config: FormConfig) {
-  let { baseProps } = await UtilControl();
-  let { FindControlsByType } = await UtilDesigner();
-  let { GetAllFormFiles, GetFileById, GetParentByFile } = await UtilVFS();
-  let { Path } = await UtilVFSPath();
-  let ts = await AsyncTs();
+  let { baseProps } = await DevelopmentModules.Load();
+  let { FindControlsByType } = await DevelopmentModules.Load();
+  let { GetAllFormFiles, GetFileById, GetParentByFile } = await DevelopmentModules.Load();
+  let { Path } = await DevelopmentModules.Load();
+  let { ts } = await DevelopmentModules.Load();
 
   let windows = GetAllFormFiles();
 
@@ -358,7 +351,7 @@ export async function GetProps(config: FormConfig) {
 }
 
 export async function GetEvents() {
-  let { baseEvents } = await UtilControl();
+  let { baseEvents } = await DevelopmentModules.Load();
 
   const eventMap: ConfiguratorItem[] = [
     ...baseEvents,

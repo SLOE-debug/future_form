@@ -1,12 +1,9 @@
 import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { CacheFunction } from "@/Utils/Index";
+import DevelopmentModules from "@/Utils/DevelopmentModules";
 import { ElInput } from "element-plus";
 import { Component } from "vue-facing-decorator";
-
-// 仅在开发模式下导入的模块
-const UtilControl = CacheFunction(() => import("@/Utils/Designer/Controls"));
 
 type InputConfig = ControlDeclare.InputConfig;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
@@ -61,7 +58,7 @@ export default class InputControl extends Control {
 }
 
 export async function GetProps(config: InputConfig) {
-  let { baseProps } = await UtilControl();
+  let { baseProps } = await DevelopmentModules.Load();
 
   const fieldMap: ConfiguratorItem[] = [
     ...baseProps,
@@ -106,7 +103,7 @@ export async function GetProps(config: InputConfig) {
 }
 
 export async function GetEvents() {
-  let { baseEvents } = await UtilControl();
+  let { baseEvents } = await DevelopmentModules.Load();
 
   const eventMap: ConfiguratorItem[] = [...baseEvents];
   return eventMap;
