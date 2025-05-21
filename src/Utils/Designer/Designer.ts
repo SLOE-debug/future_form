@@ -6,6 +6,8 @@ import * as ts from "typescript";
 // import { editor } from "@/CoreUI/Editor/EditorPage";
 import { GetDesignerBackgroundFile, GetFileById } from "../VirtualFileSystem/Index";
 import type Editor from "@/Core/Editor/Editor";
+import type Control from "@/CoreUI/Designer/Control";
+import { GetAllRefs } from "@/Vuex/Modules/Designer";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceGroupConfig = ControlDeclare.DataSourceGroupConfig;
@@ -516,4 +518,39 @@ export async function LocateMethod(name: string) {
       editor.editor.revealPositionInCenter(pos);
     }, 0);
   }
+}
+
+/**
+ * 获取当前 fromConfig 的所有Vue Control实例
+ */
+export function GetFormAllControls(): Record<string, Control> {
+  const result: Record<string, Control> = {};
+  const formDesigner = store.get.Designer.$FormDesigner;
+
+  if (!formDesigner) return {};
+
+  // 使用栈来跟踪我们需要处理的组件
+  const stack: any[] = [formDesigner];
+
+  while (stack.length > 0) {
+    const current = stack.pop();
+
+    if (!current) continue;
+
+    if (current.$refs && typeof current.$refs === "object") {
+      for (const refKey in current.$refs) {
+        const ref = current.$refs[refKey];
+
+        if (!ref) continue;
+
+        if (typeof ref === "object" && ref.$options?.name.indexOf("Control") >= 0 && ref.config?.name) {
+          result[ref.config.name] = ref;
+        }
+
+        stack.push(ref);
+      }
+    }
+  }
+
+  return result;
 }

@@ -34,9 +34,6 @@ export class Stack {
     this._nv = nv;
     this._ov = ov;
     this.action = action;
-
-    // let actionStr = Object.keys(StackAction).find((key) => StackAction[key] == action);
-    // console.log("新的堆栈", actionStr);
   }
 
   Efficient() {
@@ -57,15 +54,16 @@ export class Stack {
     this._instance.disableStack = true;
     switch (this.action) {
       case StackAction.Delete:
-        (this._instance.$parent as Control).config.$children.push(this._ov);
+        // 当行为为删除时，instance 为删除时传入的父级
+        this._instance.config.$children.push(this._ov);
         break;
       case StackAction.Create:
         this._instance.Delete(false);
         break;
       case StackAction.SwitchContainer:
-        await this._instance.SwitchContainer(this._ov.fromContainer);
-        // 如果_ov拥有“最近一次的”标记，则不还原位置
-        if ("last" in this._ov) break;
+        await this._instance.containerManager.SwitchContainer(this._ov.fromContainer);
+        // // 如果_ov拥有“最近一次的”标记，则不还原位置
+        // if ("last" in this._ov) break;
         this._instance.config.top = this._ov.top;
         this._instance.config.left = this._ov.left;
         break;

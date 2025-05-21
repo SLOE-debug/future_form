@@ -287,9 +287,9 @@ export default class Control extends Vue {
       configWatch();
     });
 
-    this.$nextTick(() => {
-      !this.selected && this.$Store.dispatch("Designer/SelectControl", [this]);
-    });
+    // this.$nextTick(() => {
+    //   !this.selected && this.$Store.dispatch("Designer/SelectControl", [this]);
+    // });
   }
 
   // 延迟添加到堆栈的 Timeout
@@ -332,7 +332,7 @@ export default class Control extends Vue {
     clearTimeout(this.pushStackTimeout);
     // 延迟 150ms 执行
     this.pushStackTimeout = setTimeout(() => {
-      logDiff(nv, this.originalConfig);
+      // logDiff(nv, this.originalConfig);
       this.$Store.dispatch("Designer/AddStack", new Stack(this, nv, this.originalConfig));
       // 还原初始值
       this.originalConfig = null;
@@ -354,7 +354,7 @@ export default class Control extends Vue {
       ElMessage({ message: `名称属性具有唯一性！\r\n与其他控件的名称冲突：${nv.name}！名称已被还原！`, type: "error" });
       // 还原名称
       this.config.name = ov.name;
-      nextTick(() => {
+      this.$nextTick(() => {
         // 恢复堆栈
         this.disableStack = false;
       });
@@ -379,6 +379,7 @@ export default class Control extends Vue {
   unmounted() {
     this.eventManager.removeAll();
     this.eventManager = null;
+    this.containerManager = null;
     this.isUnmounted = true;
   }
 
@@ -412,35 +413,37 @@ export default class Control extends Vue {
   }
 
   async Delete(pushStack = true) {
-    let { RemoveControlDeclareToDesignerCode } = await DevelopmentModules.Load();
-    let { Stack, StackAction } = await DevelopmentModules.Load();
-
+    const { Stack, StackAction, RemoveControlDeclareToDesignerCode } = await DevelopmentModules.Load();
     // 如果当前窗体是 Form，则不允许删除
     if (this.config.type == "Form") {
       ElMessage({ message: "不允许删除窗体！", type: "error" });
       return;
     }
-
-    let par = this.$parent as Control;
-    let i = par.config.$children.findIndex((c) => c.id == this.config.id);
-    if (pushStack)
+    // 获取父控件
+    const parentControl = this.$parent as Control;
+    // 获取当前控件在父控件的子控件数组中的索引
+    const index = parentControl.config.$children.findIndex((c) => c.id == this.config.id);
+    // 如果 pushStack 为 true，则将当前控件添加到堆栈
+    if (pushStack) {
       this.$Store.dispatch(
         "Designer/AddStack",
-        new Stack(this, null, CloneControlConfig(this.config, true), StackAction.Delete)
+        new Stack(parentControl, null, deepClone(this.config, ["instance"]), StackAction.Delete)
       );
-
+    }
+    // 移除控件的声明
     RemoveControlDeclareToDesignerCode(this.config.name);
-
+    // 渲染控件配置器
     this.$Store.dispatch("Designer/RenderControlConfigurator");
-
-    return { children: par.config.$children, i, del: par.config.$children.splice(i, 1)[0] };
+    // 删除控件
+    let removedControl = parentControl.config.$children.splice(index, 1)[0];
+    return { children: parentControl.config.$children, index, del: removedControl };
   }
 
   Clone(parent: ControlConfig = null) {
     if (this.$Store.get.Designer.SelectedControls.find((c) => c.config.name == this.config.fromContainer) && !parent)
       return;
 
-    let conf = CloneControlConfig(this.config, true);
+    let conf = deepClone(this.config, []);
     conf.$children = conf.$children?.map((c) => (this.$refs[c.name] as Control).Clone(conf));
     return conf;
   }

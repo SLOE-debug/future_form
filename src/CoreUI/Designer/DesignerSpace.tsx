@@ -56,11 +56,12 @@ export default class DesignerSpace extends Vue {
           "Designer/AddStack",
           new Stack(
             this.GetContainerByContainerName(c.fromContainer)[c.name] as Control,
-            null,
+            c,
             null,
             StackAction.Create
           )
         );
+        this.$Store.dispatch("Designer/SelectControlByConfig", [c]);
       });
     }
   }

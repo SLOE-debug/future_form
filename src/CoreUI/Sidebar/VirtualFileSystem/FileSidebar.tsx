@@ -91,10 +91,10 @@ export default class FileSidebar extends Vue {
     this.$Store.dispatch("VirtualFileSystem/SetRoot", root);
 
     // 打开第一个 fromDesigner 文件
-    // let file = root.files.find((f) => f.suffix == VritualFileSystemDeclare.FileType.FormDesigner);
-    // if (file) {
-    //   this.$Store.dispatch("VirtualFileSystem/SelectFile", file);
-    // }
+    let file = root.files.find((f) => f.suffix == VritualFileSystemDeclare.FileType.FormDesigner);
+    if (file) {
+      this.$Store.dispatch("VirtualFileSystem/SelectFile", file);
+    }
 
     this.directory = this.$Store.get.VirtualFileSystem.Root;
 

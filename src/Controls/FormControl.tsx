@@ -80,9 +80,6 @@ export default class FormControl extends Control {
   declare createEventPromise: Promise<any>;
   async created() {
     this.dataSourceControls = [];
-    this.$Store.get.Designer.Debug &&
-      !this.$Store.get.Designer.Preview &&
-      (await this.$Store.dispatch("Designer/SetFormDesigner", this));
 
     if (!this.$Store.get.Designer.Debug || this.$Store.get.Designer.Preview) {
       let { instance, config } = this.$Store.get.Window.Windows[this.instanceId];
@@ -91,7 +88,7 @@ export default class FormControl extends Control {
 
       this.instance = instance;
     }
-    if (this.events.onCreated) {
+    if (this.events?.onCreated) {
       this.createEventPromise = this.events.onCreated();
       await this.createEventPromise;
     }
@@ -99,7 +96,10 @@ export default class FormControl extends Control {
     this.NotifyControlLoaded();
   }
 
-  mounted() {
+  async mounted() {
+    this.$Store.get.Designer.Debug &&
+      !this.$Store.get.Designer.Preview &&
+      (await this.$Store.dispatch("Designer/SetFormDesigner", this));
     this.eventManager.add(window, "mouseup", this.HandleMouseUp, this);
     this.$nextTick(() => {
       this.events.onMounted && this.events.onMounted();

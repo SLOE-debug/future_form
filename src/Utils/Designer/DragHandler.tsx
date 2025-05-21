@@ -87,6 +87,7 @@ export default class DragHandler {
     }
 
     this.startCoord = { x: e.clientX, y: e.clientY };
+    this.SyncStateToSelectedControls();
   }
 
   Adjust(e: MouseEvent) {
@@ -124,38 +125,36 @@ export default class DragHandler {
 
     this.config.width += w ? x : 0;
     this.config.height += h ? y : 0;
-    if (this.getBigShot()) {
-      this.applyToSelectedControls((c) => {
-        c.config.width = c.config.width + (c.config.width + x >= this.MIN_SIZE ? x : 0);
-        c.config.height = c.config.height + (c.config.height + y >= this.MIN_SIZE ? y : 0);
-
-        if (l && w) c.config.left = c.config.left + -x;
-        if (t && h) c.config.top = c.config.top - y;
-      });
-    }
   }
 
   // 处理移动
   HandleMove(x: number, y: number): void {
     this.config.top += y;
     this.config.left += x;
-
-    if (this.getBigShot()) {
-      this.applyToSelectedControls((c) => {
-        c.config.top += y;
-        c.config.left += x;
-      });
-    }
   }
 
   /**
-   * 将操作应用到所有选中的其他控件
-   * @param callback 处理每个选中控件的回调函数
+   * 将当前拖拽处理器的状态同步到目标拖拽处理器
+   * @param targetDragHandler 目标拖拽处理器
    */
-  private applyToSelectedControls(callback: (control: any) => void): void {
-    for (const c of this.store.get.Designer.SelectedControls) {
-      if (c.config.id !== this.config.id && c.config.fromContainer === this.config.fromContainer) {
-        callback(c);
+  SyncStateTo(targetDragHandler: DragHandler): void {
+    if (!targetDragHandler) return;
+
+    // 同步拖拽状态
+    targetDragHandler.adjustType = this.adjustType;
+    targetDragHandler.startCoord = this.startCoord ? { ...this.startCoord } : null;
+    targetDragHandler.offset = [...this.offset];
+  }
+
+  /**
+   * 同步状态到所有选中的控件
+   */
+  SyncStateToSelectedControls(): void {
+    if (!this.getBigShot()) return;
+
+    for (const control of this.store.get.Designer.SelectedControls) {
+      if (control.config.id !== this.config.id && control.config.fromContainer === this.config.fromContainer) {
+        this.SyncStateTo(control.dragHandler);
       }
     }
   }
@@ -192,7 +191,7 @@ export default class DragHandler {
   }
 
   /**
-   * 取消拖拽
+   * 取消拖拽或调整
    */
   Cancel() {
     this.startCoord = null;

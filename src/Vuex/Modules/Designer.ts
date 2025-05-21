@@ -122,8 +122,9 @@ const actions: ActionTree<DesignerState, any> = {
   SetDesignerSpace({ state }, designerSpace: DesignerSpace) {
     state.$DesignerSpace = designerSpace;
   },
-  SetFormDesigner({ state }, formDesigner) {
+  SetFormDesigner({ state, dispatch }, formDesigner) {
     state.$FormDesigner = formDesigner;
+    dispatch("SelectControl", [formDesigner]);
   },
   async RenderControlConfigurator({ state }) {
     let props: ConfiguratorItem[] = [];

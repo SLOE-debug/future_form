@@ -1,6 +1,8 @@
 import { ControlDeclare, DesignerDeclare, UtilsDeclare } from "@/Types";
 import DevelopmentModules from "../DevelopmentModules";
-import Control, { CloneControlConfig } from "@/CoreUI/Designer/Control";
+import Control, { CloneControlConfig, deepClone } from "@/CoreUI/Designer/Control";
+import { GetAllRefs } from "@/Vuex/Modules/Designer";
+import { GetFormAllControls } from "./Designer";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type TabsConfig = ControlDeclare.TabsConfig;
@@ -109,8 +111,10 @@ export default class ContainerManager {
         const childScreenLeft = screenPos.x + scrollOffset.x;
         const childScreenTop = screenPos.y + scrollOffset.y;
 
-        // 如果子控件是容器，则将其添加到结果中
-        if (childConfig.container) {
+        // 如果子控件是容器
+        // 且该控件未选中
+        // 则将其添加到结果中
+        if (childConfig.container && GetFormAllControls()[childConfig.name].selected === false) {
           allContainers.push({
             globalLeft,
             globalTop,
@@ -136,10 +140,14 @@ export default class ContainerManager {
    * 切换容器
    */
   async SwitchContainer(newContainerName) {
-    let allContainer = this.GetAllContainer(this.$Store.get.Designer.FormConfig);
+    let allContainers = this.GetAllContainer(this.$Store.get.Designer.FormConfig);
+    const containerMap = allContainers.reduce((map, containerInfo) => {
+      map[containerInfo.container.name] = containerInfo;
+      return map;
+    }, {} as Record<string, ContainerInfo>);
 
-    let oldContainer = allContainer.find((c) => c.container.name == this.config.fromContainer);
-    let newContainer = allContainer.find((c) => c.container.name == newContainerName);
+    let oldContainer = containerMap[this.config.fromContainer];
+    let newContainer = containerMap[newContainerName];
 
     this.OutContainer(oldContainer);
     await this.JoinContainer(newContainer);
@@ -178,6 +186,7 @@ export default class ContainerManager {
     if (targetContainer.value) {
       this.config.fromTabId = targetContainer.value;
     }
+
     this.config.fromContainer = targetContainer.name;
 
     targetContainer.$children.push(this.config);
@@ -191,6 +200,7 @@ export default class ContainerManager {
   async HandleContainerOnMouseUp(e: MouseEvent) {
     const { control, $Store } = this;
 
+    // 如果当前控件没有选中/调整类型不是移动/控件类型是工具条 则不处理
     if (
       control.dragHandler.adjustType !== ControlDeclare.AdjustType.Move ||
       !control.selected ||
@@ -215,34 +225,25 @@ export default class ContainerManager {
 
     const { Stack, StackAction } = await DevelopmentModules.Load();
 
-    for (const c of $Store.get.Designer.SelectedContainerControls) {
-      let oldContainer = containerMap[c?.config?.fromContainer] || undefined;
-      // 寻找鼠标位置所在的容器
-      let newContainer = this.FindContainerAtPosition(x, y, containers, c.config.name);
+    let oldContainer = containerMap[control?.config?.fromContainer] || undefined;
+    // 寻找鼠标位置所在的容器
+    let newContainer = this.FindContainerAtPosition(x, y, containers, control.config.name);
 
-      if (newContainer !== oldContainer) {
-        // 禁用 c 的堆栈
-        c.disableStack = true;
+    if (newContainer !== oldContainer) {
+      // 禁用 c 的堆栈
+      control.disableStack = true;
 
-        let oldConfig = control.watchOldValue;
-        // 如果 oldConfig 为空，意味着最近已经添加过一次堆栈了，watchOldValue 已经被清空，则需要克隆当前的配置
-        if (!oldConfig) {
-          oldConfig = CloneControlConfig(c.config);
-          // 为 oldConfig 添加 "最近一次的" 标记
-          oldConfig.$last = true;
-        }
+      let originalConfig = deepClone(control.config);
+      this.OutContainer(oldContainer);
+      await this.JoinContainer(newContainer);
 
-        this.OutContainer(oldContainer);
-        await this.JoinContainer(newContainer);
+      // 添加到堆栈
+      $Store.dispatch(
+        "Designer/AddStack",
+        new Stack(control, deepClone(control.config), originalConfig, StackAction.SwitchContainer)
+      );
 
-        // 添加到堆栈
-        $Store.dispatch(
-          "Designer/AddStack",
-          new Stack(c, CloneControlConfig(c.config), oldConfig, StackAction.SwitchContainer)
-        );
-
-        control.watchOldValue = null;
-      }
+      control.disableStack = false;
     }
   }
 
