@@ -7,8 +7,8 @@ import { ElMessage, dayjs } from "element-plus";
 import { Component } from "vue-facing-decorator";
 import TableControl from "./TableControl";
 import { defineAsyncComponent, watch } from "vue";
-import { CloneStruct } from "@/Utils/Index";
-import { Guid } from "@/Utils/Index";
+import { CloneStruct } from "@/Utils";
+import { Guid } from "@/Utils";
 import { TwoWayBinding } from "@/Utils/Designer/Form";
 import DevelopmentModules from "@/Utils/DevelopmentModules";
 

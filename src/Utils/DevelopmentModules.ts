@@ -1,4 +1,4 @@
-import { Cache } from "./Index";
+import { Cache } from ".";
 
 export default class DevelopmentModules {
   @Cache

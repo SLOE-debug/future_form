@@ -2,18 +2,14 @@ import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import vueJsx from "@vitejs/plugin-vue-jsx";
 import { resolve } from "path";
-import { createRequire } from "module";
 import AutoImport from "unplugin-auto-import/vite";
 import Components from "unplugin-vue-components/vite";
 import { ElementPlusResolver } from "unplugin-vue-components/resolvers";
 import viteCompression from "vite-plugin-compression";
 import { viteStaticCopy } from "vite-plugin-static-copy";
-import monacoEditorPlugin from "vite-plugin-monaco-editor";
+import monacoEditorPlugin from "vite-plugin-monaco-editor-esm";
 import autoImportSassPlugin from "./src/Plugins/AutoImportSassPlugin";
 import * as path from "path";
-
-// 用于读取 package.json 内容
-const require = createRequire(import.meta.url);
 
 export default defineConfig({
   // 基本公共路径

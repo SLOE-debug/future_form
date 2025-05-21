@@ -2,7 +2,7 @@ import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import DevelopmentModules from "@/Utils/DevelopmentModules";
-import { Cache } from "@/Utils/Index";
+import { Cache } from "@/Utils";
 import { Component } from "vue-facing-decorator";
 
 type LabelConfig = ControlDeclare.LabelConfig;

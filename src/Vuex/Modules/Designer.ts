@@ -1,14 +1,14 @@
 import FormControl from "@/Controls/FormControl";
-import Control from "@/CoreUI/Designer/Control";
+import type Control from "@/CoreUI/Designer/Control";
 import DesignerSpace from "@/CoreUI/Designer/DesignerSpace";
 import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { FillControlNameCache } from "@/Utils/Designer/Designer";
 import { Module, ActionTree, GetterTree } from "vuex";
-import { GetProps as GetBaseProps } from "@/CoreUI/Designer/Control";
 import * as ts from "typescript";
 import { GetDesignerBackgroundFile } from "@/Utils/VirtualFileSystem/Index";
+import { GetBaseControlProps } from "@/Utils/Designer/Controls";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 
@@ -134,7 +134,7 @@ const actions: ActionTree<DesignerState, any> = {
       let { GetProps, GetEvents } = await import(`@/Controls/${type}Control.tsx`);
 
       if (GetProps) {
-        props = [...GetBaseProps(control.config, control), ...(await GetProps(control.config, control))];
+        props = [...GetBaseControlProps(control.config, control), ...(await GetProps(control.config, control))];
       }
 
       events = GetEvents ? await GetEvents(control.config, control) : [];

@@ -2,11 +2,10 @@ import SvgIcon from "@/Components/SvgIcon";
 import { suffix2Color } from "@/Utils/VirtualFileSystem/Index";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { Component, Vue, Watch } from "vue-facing-decorator";
-import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
+import { VritualFileSystemDeclare, UtilsDeclare } from "@/Types";
 import Editor from "@/Core/Editor/Editor";
 import DesignerSpace from "../Designer/DesignerSpace";
 import SqlConfigurator from "../Designer/SqlConfigurator";
-import { UtilsDeclare } from "@/Types/UtilsDeclare";
 
 type IFile = VritualFileSystemDeclare.IFile;
 

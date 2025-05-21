@@ -1,5 +1,5 @@
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
-import { BindEventContext, RegisterEvent } from "@/Utils/Index";
+import { BindEventContext, RegisterEvent } from "@/Utils";
 import { Component, Emit, Prop, Vue, Watch } from "vue-facing-decorator";
 
 type Coord = UtilsDeclare.Coord;

@@ -1,6 +1,6 @@
 import WindowCollection from "@/Components/WindowCollection";
 import Compiler from "@/Core/Compile/Compiler";
-import { Guid } from "@/Utils/Index";
+import { Guid } from "@/Utils";
 import { ElNotification } from "element-plus";
 import { Component, Vue } from "vue-facing-decorator";
 

@@ -141,13 +141,24 @@ export function CacheFunction<T>(func: T): T {
  * 函数结果缓存装饰器
  */
 export function Cache(target: any, key: string, descriptor: PropertyDescriptor) {
-  const cacheKey = Guid.NewGuid();
+  let cacheKey = null;
   let method = descriptor.value;
   descriptor.value = function (...args: any[]) {
+    if (!cacheKey) {
+      cacheKey = Guid.NewGuid();
+    }
+
     let result = functionResultCache.get(cacheKey);
-    console.log("Cache", cacheKey, "result", result);
+    // console.log("Cache", cacheKey, "result", result);
     if (result) return result;
     result = method.apply(this, args);
+    // 如果 result 是一个 Promise 对象，则在 Promise 完成后缓存结果
+    if (result && typeof result.then === "function") {
+      return result.then((res: any) => {
+        functionResultCache.set(cacheKey, res);
+        return res;
+      });
+    }
     functionResultCache.set(cacheKey, result);
     return result;
   };

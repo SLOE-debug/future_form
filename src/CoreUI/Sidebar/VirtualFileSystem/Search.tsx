@@ -1,5 +1,5 @@
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
-import { Debounce } from "@/Utils/Index";
+import { Debounce } from "@/Utils";
 import { IsDirectory } from "@/Utils/VirtualFileSystem/Index";
 import { Component, Vue } from "vue-facing-decorator";
 

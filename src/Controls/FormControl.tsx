@@ -11,6 +11,7 @@ import { BaseWindow } from "@/Utils/Designer/Form";
 import SubWindowControl from "./SubWindowControl";
 import { editor } from "@/CoreUI/Editor/EditorPage";
 import DevelopmentModules from "@/Utils/DevelopmentModules";
+import { EventManager } from "@/Utils";
 
 type FormConfig = ControlDeclare.FormConfig;
 
@@ -55,8 +56,7 @@ export default class FormControl extends Control {
     }
   }
 
-  async Cancel(e: MouseEvent) {
-    await super.Cancel(e);
+  async HandleMouseUp(e: MouseEvent) {
     this.slideStartCoord = null;
   }
 
@@ -76,7 +76,6 @@ export default class FormControl extends Control {
   }
 
   declare instance: BaseWindow;
-
   declare dataSourceControls: DataSourceGroupControl[];
   declare createEventPromise: Promise<any>;
   async created() {
@@ -101,6 +100,7 @@ export default class FormControl extends Control {
   }
 
   mounted() {
+    this.eventManager.add(window, "mouseup", this.HandleMouseUp, this);
     this.$nextTick(() => {
       this.events.onMounted && this.events.onMounted();
     });

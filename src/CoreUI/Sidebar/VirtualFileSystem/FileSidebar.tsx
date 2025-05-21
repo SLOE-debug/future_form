@@ -5,7 +5,16 @@ import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import ContextMenu from "./ContextMenu";
 import Compiler from "@/Core/Compile/Compiler";
 import { BackupRoot, FlatRoot } from "@/Utils/VirtualFileSystem/Index";
-import { ElButton, ElInput, ElSelectV2, ElPopover, ElPopconfirm, ElMessageBox, ElCheckbox } from "element-plus";
+import {
+  ElButton,
+  ElInput,
+  ElSelectV2,
+  ElPopover,
+  ElPopconfirm,
+  ElMessageBox,
+  ElCheckbox,
+  ElMessage,
+} from "element-plus";
 import Directory from "@/Core/VirtualFileSystem/Directory";
 import Basic from "@/Core/VirtualFileSystem/Basic";
 import File from "@/Core/VirtualFileSystem/File";
@@ -78,6 +87,7 @@ export default class FileSidebar extends Vue {
     let res = await this.$Api.GetRootByVersion();
     let { files, versionNumbers } = res.data;
     let root = this.Files2Root(files);
+
     this.$Store.dispatch("VirtualFileSystem/SetRoot", root);
 
     // 打开第一个 fromDesigner 文件
@@ -383,7 +393,7 @@ export default class FileSidebar extends Vue {
   // 是否正在运行
   isRun = false;
   // 是否打开搜索
-  isShowSearch = true;
+  isShowSearch = false;
 
   render() {
     return (

@@ -1,6 +1,6 @@
 import WindowCollection from "@/Components/WindowCollection";
 import Compiler from "@/Core/Compile/Compiler";
-import { BindEventContext, RegisterEvent } from "@/Utils/Index";
+import { BindEventContext, RegisterEvent } from "@/Utils";
 import { Component, Vue } from "vue-facing-decorator";
 
 @Component

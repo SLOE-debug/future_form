@@ -3,7 +3,7 @@ import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import DevelopmentModules from "@/Utils/DevelopmentModules";
-import { Guid } from "@/Utils/Index";
+import { Guid } from "@/Utils";
 import { defineAsyncComponent } from "vue";
 import { Component } from "vue-facing-decorator";
 
@@ -60,9 +60,12 @@ export default class GroupControl extends Control {
     }
   }
 
-  async Cancel(e: MouseEvent) {
-    await super.Cancel(e);
+  async HandleMouseUp(e: MouseEvent) {
     this.slideStartCoord = null;
+  }
+
+  mounted(): void {
+    this.eventManager.add(window, "mouseup", this.HandleMouseUp, this);
   }
 
   render() {
@@ -75,10 +78,6 @@ export default class GroupControl extends Control {
               class:
                 "absolute top-[-10px] left-[10px] z-[2] cursor-move bg-white flex border border-solid border-[#067bef] rounded-[5px] [&>svg]:p-[2px] mt-[-1px]",
               size: 22,
-              onMousedown: (e) => {
-                this.Pick(e);
-                this.BeginAdjust(e);
-              },
               "data-type": "Move",
             }}
           />

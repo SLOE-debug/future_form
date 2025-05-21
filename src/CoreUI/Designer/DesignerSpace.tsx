@@ -1,7 +1,7 @@
 import FormControl from "@/Controls/FormControl";
 import { Component, Prop, Vue } from "vue-facing-decorator";
 import { ControlDeclare } from "@/Types/ControlDeclare";
-import { BindEventContext, RegisterEvent } from "@/Utils/Index";
+import { BindEventContext, RegisterEvent } from "@/Utils";
 import ContextMenu from "@/CoreUI/Designer/Components/ContextMenu";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import {
@@ -11,7 +11,7 @@ import {
   FindControlsByType,
 } from "@/Utils/Designer/Designer";
 import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
-import Control from "./Control";
+import type Control from "./Control";
 import { AddControlDeclareToDesignerCode } from "@/Utils/Designer/Designer";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { editor } from "../Editor/EditorPage";

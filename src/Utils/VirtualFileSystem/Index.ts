@@ -1,6 +1,6 @@
-import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
+import { VritualFileSystemDeclare } from "@/Types";
 import store from "@/Vuex/Store";
-import { CloneStruct } from "../Index";
+import { CloneStruct } from "..";
 
 type IFile = VritualFileSystemDeclare.IFile;
 type IDirectory = VritualFileSystemDeclare.IDirectory;

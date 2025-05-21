@@ -5,7 +5,7 @@ import Compiler from "@/Core/Compile/Compiler";
 import { WatchStopHandle, reactive, watch } from "vue";
 import DataSourceGroupControl from "@/Controls/DataSourceGroupControl";
 import { GlobalApi } from "@/Plugins/Api/ExtendApi";
-import { GetOrCreateLocalStorageObject } from "../Index";
+import { GetOrCreateLocalStorageObject } from "..";
 
 type GlobalVariate = ControlDeclare.GlobalVariate;
 type ToolStripItem = ControlDeclare.ToolStripItem;

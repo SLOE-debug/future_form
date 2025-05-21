@@ -22,7 +22,7 @@ import { SortOrder } from "element-plus/es/components/table-v2/src/constants";
 import { CellRendererParams, SortBy } from "element-plus/es/components/table-v2/src/types";
 import { Component } from "vue-facing-decorator";
 import { EventDeclare } from "@/Types/EventDeclare";
-import { CapitalizeFirstLetter, Guid } from "@/Utils/Index";
+import { CapitalizeFirstLetter, Guid } from "@/Utils";
 import { globalCache } from "@/Utils/Caches";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watch } from "vue";

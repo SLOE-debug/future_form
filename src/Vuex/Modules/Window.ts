@@ -1,7 +1,7 @@
 import { WindowDeclare } from "@/Types/WindowDeclare";
-import { CloneStruct, Guid } from "@/Utils/Index";
+import { CloneStruct, Guid } from "@/Utils";
 import { Module, ActionTree, GetterTree } from "vuex";
-import SubWindowControl from "@/Controls/SubWindowControl";
+import type SubWindowControl from "@/Controls/SubWindowControl";
 
 type DesktopWindowInstances = WindowDeclare.DesktopWindowInstances;
 

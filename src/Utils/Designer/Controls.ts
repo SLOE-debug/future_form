@@ -1,9 +1,10 @@
-import { ControlDeclare } from "@/Types/ControlDeclare";
-import { DesignerDeclare } from "@/Types/DesignerDeclare";
+import { ControlDeclare, DesignerDeclare } from "@/Types";
 import store from "@/Vuex/Store";
 import { GetFields } from "./Designer";
 import { GetAllSqlFiles } from "../VirtualFileSystem/Index";
-import { sourceArgsPrefix } from "../Index";
+import { sourceArgsPrefix } from "..";
+import type Control from "@/CoreUI/Designer/Control";
+import type FormControl from "@/Controls/FormControl";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceControlConfig = ControlDeclare.DataSourceControlConfig;
@@ -265,4 +266,87 @@ export function AddDataSourceProps(fieldMap: ConfiguratorItem[], config: Control
     ]);
   }
   fieldMap.splice(4, 0, ...map);
+}
+
+/**
+ * 获取当前 control 父窗体控件
+ */
+export function GetParentFormControl(control: Control): FormControl {
+  let current = control;
+
+  while (current) {  
+    if (current.$options?.name === "AsyncComponentWrapper") {
+      current = current.$parent as any;
+      continue;
+    }
+    if (!("config" in current)) return null;
+    if (current?.config?.type === "Form") return current as any;
+  
+    current = current.$parent as any;
+  }
+
+  return null;
+}
+
+/**
+ * 获取当前 control 父数据源控件
+ */
+export function GetParentDataSourceGroupControl(control: Control): any {
+  let current = control;
+
+  while (current) {
+    if (current.$options?.name === "AsyncComponentWrapper") {
+      current = current.$parent as any;
+      continue;
+    }
+    if (!("config" in current)) return null;
+    if (current?.config?.type === "Form") return null;
+    if (current?.config?.type === "DataSourceGroup") return current;
+    current = current.$parent as any;
+  }
+
+  return null;
+}
+
+/**
+ * 获取控件基础属性配置项
+ * @param config 控件配置
+ * @param control 控件实例
+ * @returns 控件基础配置项数组
+ */
+export function GetBaseControlProps(config: ControlConfig, control: Control): ConfiguratorItem[] {
+  const fieldMap: ConfiguratorItem[] = [];
+  if (control.parentDataSourceControl && control.parentDataSourceControl.config.sourceType == "Form") {
+    fieldMap.push({
+      name: "字段名",
+      des: "控件的绑定字段名称",
+      type: DesignerDeclare.InputType.ElInput,
+      field: "sourceField",
+    });
+  }
+  return fieldMap;
+}
+
+/**
+ * 获取控件默认配置
+ * @returns 控件默认配置
+ */
+export function GetDefaultConfig(): ControlConfig {
+  return {
+    top: 0,
+    left: 0,
+    width: 20,
+    height: 20,
+    type: "*",
+    transparent: 1,
+    round: 0,
+    border: 0,
+    visible: true,
+    readonly: false,
+    limit: true,
+    disabled: false,
+    required: false,
+    errorMessage: "",
+    $children: [],
+  };
 }

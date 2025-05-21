@@ -3,7 +3,7 @@ import FileSidebar from "./VirtualFileSystem/FileSidebar";
 import ControlLibray from "./ToolKit/ControlLibrary";
 import SvgIcon from "@/Components/SvgIcon";
 import Configurator from "./ToolKit/Configurator";
-import { BindEventContext, RegisterEvent } from "@/Utils/Index";
+import { BindEventContext, RegisterEvent } from "@/Utils";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 
 type IDirectory = VritualFileSystemDeclare.IDirectory;
@@ -11,7 +11,9 @@ type IFile = VritualFileSystemDeclare.IFile;
 
 @Component
 export default class Sidebar extends Vue {
-  declare $refs: any;
+  declare $refs: {
+    fileSidebar: InstanceType<typeof FileSidebar>;
+  };
 
   startAdjustX: number = 0;
   BeginAdjust(e: MouseEvent) {

@@ -1,12 +1,12 @@
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
-import { ElButton, ElColorPicker, ElInput, ElInputNumber, ElOption, ElSelect, ElSwitch } from "element-plus";
+import { ElButton, ElColorPicker, ElInput, ElInputNumber, ElMessage, ElOption, ElSelect, ElSwitch } from "element-plus";
 import { Component, Prop, Vue } from "vue-facing-decorator";
 import OptionsConfigurator from "./OptionsConfigurator";
 import ColumnsConfigurator from "./ColumnsConfigurator";
-import { CapitalizeFirstLetter, sourceArgsPrefix } from "@/Utils/Index";
+import { CapitalizeFirstLetter, sourceArgsPrefix } from "@/Utils";
 import { AddMethodToDesignerBackground, LocateMethod } from "@/Utils/Designer/Designer";
 import { GetDesignerBackgroundFile, GetFileById, IsDirectory } from "@/Utils/VirtualFileSystem/Index";
-import Control from "@/CoreUI/Designer/Control";
+import type Control from "@/CoreUI/Designer/Control";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 

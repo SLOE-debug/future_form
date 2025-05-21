@@ -1,6 +1,6 @@
 import { GlobalApi } from "@/Plugins/Api/ExtendApi";
 import { CompileDeclare } from "@/Types/CompileDeclare";
-import { Cache, DeepCompareObject } from "@/Utils/Index";
+import { Cache, DeepCompareObject } from "@/Utils";
 import { backupRoot } from "@/Utils/VirtualFileSystem/Index";
 import { Path } from "@/Utils/VirtualFileSystem/Path";
 import CompareFile from "../VirtualFileSystem/CompareFile";

@@ -1,5 +1,5 @@
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
-import { Guid } from "@/Utils/Index";
+import { Guid } from "@/Utils";
 import { GetParentByDirectory, GetParentByFile, IsDirectory } from "@/Utils/VirtualFileSystem/Index";
 import store from "@/Vuex/Store";
 import { h } from "vue";

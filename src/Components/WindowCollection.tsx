@@ -1,6 +1,6 @@
 import FormControl from "@/Controls/FormControl";
 import WindowControlBar from "@/CoreUI/Designer/WindowControlBar";
-import { BindEventContext, RegisterEvent } from "@/Utils/Index";
+import { BindEventContext, RegisterEvent } from "@/Utils";
 import { Component, Vue } from "vue-facing-decorator";
 
 @Component

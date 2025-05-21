@@ -1,14 +1,22 @@
-import Control from "@/CoreUI/Designer/Control";
-import { ControlAlias } from "./Controls";
-import { ControlDeclare } from "@/Types/ControlDeclare";
-import { Guid } from "../Index";
+import { ControlAlias, GetDefaultConfig } from "./Controls";
+import { ControlDeclare } from "@/Types";
+import { Guid } from "..";
 import store from "@/Vuex/Store";
 import * as ts from "typescript";
-import { editor } from "@/CoreUI/Editor/EditorPage";
+// import { editor } from "@/CoreUI/Editor/EditorPage";
 import { GetDesignerBackgroundFile, GetFileById } from "../VirtualFileSystem/Index";
+import type Editor from "@/Core/Editor/Editor";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceGroupConfig = ControlDeclare.DataSourceGroupConfig;
+
+let editor: Editor | null = null;
+async function getEditor() {
+  if (!editor) {
+    editor = await import("@/CoreUI/Editor/EditorPage").then((m) => m.editor);
+  }
+  return editor;
+}
 
 /**
  * 创建控件通过拖拽事件
@@ -40,7 +48,7 @@ export function CreateControlByType(type: string) {
   let control = this.$.appContext.components[type] as any;
   let config = {
     id: Guid.NewGuid(),
-    ...Control.GetDefaultConfig(),
+    ...GetDefaultConfig(),
     ...control.GetDefaultConfig(),
   };
   return config;
@@ -76,6 +84,42 @@ export function FindControlsByKeyValue(
       }
     }
   }
+}
+
+/**
+ * 检查是否已存在指定名称的控件配置
+ * @param config 要检查的控件配置
+ * @returns 是否存在同名控件
+ */
+export function IsControlNameExists(config: ControlConfig): boolean {
+  if (!config || !config.name) return false;
+
+  const formConfig = store.get.Designer.FormConfig;
+  if (!formConfig) return false;
+
+  // 先检查根级别是否匹配（排除自身）
+  if (formConfig.name === config.name && formConfig.id !== config.id) {
+    return true;
+  }
+
+  // 使用队列进行广度优先搜索
+  const queue: ControlConfig[] = [...(formConfig.$children || [])];
+
+  while (queue.length > 0) {
+    const control = queue.shift();
+
+    // 检查是否同名但不是自身
+    if (control.name === config.name && control.id !== config.id) {
+      return true;
+    }
+
+    // 将子控件添加到队列中继续搜索
+    if (control.$children && control.$children.length > 0) {
+      queue.push(...control.$children);
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -282,7 +326,7 @@ function DataSourceControlTypeDeclare(config: DataSourceGroupConfig) {
 /**
  * 处理控件声明的通用函数
  */
-function transformPageClass(transformer: (members: ts.ClassElement[]) => ts.ClassElement[]) {
+async function transformPageClass(transformer: (members: ts.ClassElement[]) => ts.ClassElement[]) {
   let pageCode = store.get.VirtualFileSystem.CurrentFile.content;
   let sourceFile = ts.createSourceFile("page.ts", pageCode, ts.ScriptTarget.ESNext, true);
 
@@ -313,6 +357,7 @@ function transformPageClass(transformer: (members: ts.ClassElement[]) => ts.Clas
   const printedResult = printer.printFile(transformedSourceFile as ts.SourceFile);
   store.get.VirtualFileSystem.CurrentFile.content = printedResult;
 
+  const editor = await getEditor();
   editor.RefreshModel(store.get.VirtualFileSystem.CurrentFile);
 }
 
@@ -389,7 +434,7 @@ function IsClassInheritFromPage(node: ts.Node): boolean {
  * @param name 方法名
  * @param params 参数
  */
-export function AddMethodToDesignerBackground(name: string, params: { name: string; type: string }[]) {
+export async function AddMethodToDesignerBackground(name: string, params: { name: string; type: string }[]) {
   let backgroundCode = GetDesignerBackgroundFile().content;
   let sourceFile = ts.createSourceFile("background.ts", backgroundCode, ts.ScriptTarget.ESNext, true);
   const visitor =
@@ -438,6 +483,7 @@ export function AddMethodToDesignerBackground(name: string, params: { name: stri
   const printer = ts.createPrinter();
   const newCode = printer.printFile(result.transformed[0] as ts.SourceFile);
   GetDesignerBackgroundFile().content = newCode;
+  const editor = await getEditor();
   editor.RefreshModel(GetDesignerBackgroundFile());
   LocateMethod(name);
 }
@@ -461,7 +507,8 @@ export async function LocateMethod(name: string) {
 
   if (methodNode) {
     await store.dispatch("VirtualFileSystem/SelectFile", backgroundFile);
-    setTimeout(() => {
+    setTimeout(async () => {
+      const editor = await getEditor();
       let pos = editor.editor.getModel().getPositionAt(methodNode.getStart());
 
       editor.editor.focus();

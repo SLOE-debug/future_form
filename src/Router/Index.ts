@@ -1,5 +1,7 @@
 import Home from "@/Views/Home";
+import { RootState } from "@/Vuex/Store";
 import { RouteRecordRaw, createRouter, createWebHistory } from "vue-router";
+import { Module } from "vuex";
 
 const routes: RouteRecordRaw[] = [
   {
@@ -34,14 +36,14 @@ async function loadDevelopmentStore() {
   let loaded = store.hasModule("Page") && store.hasModule("Designer") && store.hasModule("VirtualFileSystem");
   if (!loaded) {
     const modules = [
-      { name: "Page", path: "@/Vuex/Modules/Page" },
-      { name: "Designer", path: "@/Vuex/Modules/Designer" },
-      { name: "VirtualFileSystem", path: "@/Vuex/Modules/VirtualFileSystem" },
+      { name: "Page", importModule: import("@/Vuex/Modules/Page") },
+      { name: "Designer", importModule: import("@/Vuex/Modules/Designer") },
+      { name: "VirtualFileSystem", importModule: import("@/Vuex/Modules/VirtualFileSystem") },
     ];
 
-    for (const { name, path } of modules) {
-      const module = await import(path);
-      store.registerModule(name, module.default);
+    for (const { name, importModule } of modules) {
+      const module = await importModule;
+      store.registerModule(name, module.default as Module<unknown, RootState>);
       store.get[name] = (store as any)._modulesNamespaceMap[`${name}/`].context.getters;
     }
   }

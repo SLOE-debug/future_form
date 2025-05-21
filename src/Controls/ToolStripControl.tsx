@@ -3,7 +3,7 @@ import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import DevelopmentModules from "@/Utils/DevelopmentModules";
-import { Cache } from "@/Utils/Index";
+import { Cache } from "@/Utils";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElSelectV2 } from "element-plus";
 import { Component } from "vue-facing-decorator";

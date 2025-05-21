@@ -3,7 +3,7 @@ import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
-import { Cache, Guid } from "@/Utils/Index";
+import { Cache, Guid } from "@/Utils";
 import { defineAsyncComponent } from "vue";
 import { Component, Watch } from "vue-facing-decorator";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -106,7 +106,7 @@ export default class TabsControl extends Control {
   }
 
   async Cancel(e: MouseEvent) {
-    await super.Cancel(e);
+    // await super.Cancel(e);
     this.slideStartCoord = null;
   }
 
@@ -127,6 +127,7 @@ export default class TabsControl extends Control {
   mounted() {
     this.ShouldAddScrollbar();
     if (this.$Store.get.Designer.Debug) this.config.scrollTop = {};
+    this.eventManager.add(window, "mouseup", this.Cancel, this);
   }
 
   /**
@@ -190,10 +191,6 @@ export default class TabsControl extends Control {
               style: {
                 fontSize: "14px",
                 cursor: "move",
-              },
-              onMousedown: (e: MouseEvent) => {
-                this.Pick(e);
-                this.BeginAdjust(e);
               },
               "data-type": "Move",
             }}

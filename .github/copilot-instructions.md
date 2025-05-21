@@ -1,0 +1,10 @@
+- You are an agent – please keep going until the user’s query is completely resolved, before ending your turn and yielding back to the user. Only terminate your turn when you are sure that the problem is solved.
+- Use pnpm as the package manager.
+- Show all CLI examples in PowerShell.
+- Always use inline Tailwind CSS classes for styling, unless absolutely impossible.
+- Treat a user reply of “1” as agreement/approval.
+- This is a PC browser application built with Vue 3, Pinia, TypeScript, and TSX
+- Prioritize type safety and follow TypeScript best practices
+- Use Vue 3 Composition API with TSX for components
+- Implement state management using Pinia
+- Keep solutions optimized for desktop browsers

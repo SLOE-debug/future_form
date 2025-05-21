@@ -1,7 +1,7 @@
 import SvgIcon from "@/Components/SvgIcon";
 import { WindowDeclare } from "@/Types/WindowDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
-import { BindEventContext, RegisterEvent } from "@/Utils/Index";
+import { BindEventContext, RegisterEvent } from "@/Utils";
 import { Component, Prop, Vue, Watch } from "vue-facing-decorator";
 import { JSX } from "vue/jsx-runtime";
 

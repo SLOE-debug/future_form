@@ -2,7 +2,7 @@ import { ControlDeclare } from "@/Types/ControlDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { GetFields } from "@/Utils/Designer/Designer";
-import { CapitalizeFirstLetter } from "@/Utils/Index";
+import { CapitalizeFirstLetter } from "@/Utils";
 import { GetAllSqlFiles, GetFileById } from "@/Utils/VirtualFileSystem/Index";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
