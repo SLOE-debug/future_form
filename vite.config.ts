@@ -9,7 +9,15 @@ import viteCompression from "vite-plugin-compression";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import monacoEditorPlugin from "vite-plugin-monaco-editor-esm";
 import autoImportSassPlugin from "./src/Plugins/AutoImportSassPlugin";
-import * as path from "path";
+
+const compressionPlugin = viteCompression({
+  verbose: true,
+  algorithm: "gzip",
+  ext: ".gz",
+  threshold: 10240, // 10kb以上文件进行压缩
+  deleteOriginFile: false,
+});
+compressionPlugin.apply = "build";
 
 export default defineConfig({
   // 基本公共路径
@@ -25,6 +33,7 @@ export default defineConfig({
     open: false,
     strictPort: false,
     cors: true,
+    hmr: true,
   },
 
   // 构建选项
@@ -53,12 +62,18 @@ export default defineConfig({
     autoImportSassPlugin(),
     vue(),
     vueJsx({
+      include: [/\.tsx?$/, /\.jsx?$/, /\.vue$/],
+      exclude: [/node_modules/],
       babelPlugins: [
-        ["@babel/plugin-transform-typescript", { isTSX: true, allowDeclareFields: true }],
+        [
+          "@babel/plugin-transform-typescript",
+          { isTSX: true, allowDeclareFields: true },
+          "ts-transform", // —— 唯一名字，避开重复检测
+        ],
+        // 再处理装饰器和 class properties
         ["@babel/plugin-proposal-decorators", { legacy: true }],
         ["@babel/plugin-proposal-class-properties", { loose: false }],
       ],
-      include: [/\.tsx?$/, /\.jsx?$/, /\.vue$/],
       transformOn: true,
       mergeProps: true,
     }),
@@ -69,18 +84,12 @@ export default defineConfig({
       resolvers: [ElementPlusResolver()],
     }),
     monacoEditorPlugin({}),
-    viteCompression({
-      verbose: true,
-      algorithm: "gzip",
-      ext: ".gz",
-      threshold: 10240, // 10kb以上文件进行压缩
-      deleteOriginFile: false,
-    }),
+    compressionPlugin,
     viteStaticCopy({
       targets: [
         {
-          src: path.resolve(__dirname, "src/Plugins/Pwa/serviceWorker.js"), // 源文件路径
-          dest: "", // 目标路径，相对于构建输出目录
+          src: "src/Plugins/Pwa/serviceWorker.js",
+          dest: "",
         },
       ],
     }),
