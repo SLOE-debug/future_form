@@ -6,6 +6,7 @@ import DevelopmentModules from "@/Utils/DevelopmentModules";
 import { Guid } from "@/Utils";
 import { defineAsyncComponent } from "vue";
 import { Component } from "vue-facing-decorator";
+import { DropAddControl } from "@/Utils/Designer";
 
 type GroupConfig = ControlDeclare.GroupConfig;
 type ControlConfig = ControlDeclare.ControlConfig;
@@ -19,25 +20,8 @@ const AsyncSvgIcon = defineAsyncComponent(() => import("@/Components/SvgIcon"));
 export default class GroupControl extends Control {
   declare config: GroupConfig;
 
-  async Drop(e: DragEvent) {
-    let { CreateControlByDragEvent, CreateControlName } = await DevelopmentModules.Load();
-    let { Stack, StackAction } = await DevelopmentModules.Load();
-
-    let config = CreateControlByDragEvent.call(this, e) as ControlConfig;
-
-    config.id = Guid.NewGuid();
-    CreateControlName(config);
-    config.top -= config.height / 2;
-    config.left -= config.width / 2;
-    config.fromContainer = this.config.name;
-
-    this.config.$children.push(config);
-    this.$nextTick(() => {
-      this.$Store.dispatch(
-        "Designer/AddStack",
-        new Stack(this.$refs[config.name] as Control, null, null, StackAction.Create)
-      );
-    });
+  Drop(e: DragEvent) {
+    DropAddControl(e, this);
     e.stopPropagation();
   }
 

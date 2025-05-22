@@ -1,7 +1,7 @@
-import { Cache } from ".";
+import { MemoizeResult } from ".";
 
 export default class DevelopmentModules {
-  @Cache
+  @MemoizeResult
   static async Load() {
     let [UtilDesigner, UtilVFS, CoreUndoStack, UtilControl, CorePath, ts, monaco, EditorPage] = await Promise.all([
       import("@/Utils/Designer/Designer"),

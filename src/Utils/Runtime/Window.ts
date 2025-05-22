@@ -1,59 +1,15 @@
 import FormControl from "@/Controls/FormControl";
-import store from "@/Vuex/Store";
-import { ControlDeclare } from "@/Types/ControlDeclare";
 import Compiler from "@/Core/Compile/Compiler";
-import { WatchStopHandle, reactive, watch } from "vue";
-import DataSourceGroupControl from "@/Controls/DataSourceGroupControl";
 import { GlobalApi } from "@/Plugins/Api/ExtendApi";
-import { GetOrCreateLocalStorageObject } from "..";
+import { ControlDeclare } from "@/Types";
+import store from "@/Vuex/Store";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { WatchStopHandle, watch } from "vue";
+import { GetOrCreateFromStorage } from "../BasicUtils";
+import { globalVariate } from "./Data";
 
-type GlobalVariate = ControlDeclare.GlobalVariate;
-type ToolStripItem = ControlDeclare.ToolStripItem;
 type ToolStripConfig = ControlDeclare.ToolStripConfig;
-
-export const globalVariate: GlobalVariate = reactive({ ref_no: "" });
-
-// 如果有 historySelectRefNo 的历史案号，则赋值给全局变量
-let historySelectRefNos = GetOrCreateLocalStorageObject("historySelectRefNo", []);
-if (historySelectRefNos.length) {
-  globalVariate.ref_no = historySelectRefNos[0].ref_no;
-}
-
-/**
- * 数据双向绑定
- * @param obj1 对象1
- * @param prop1 属性1
- * @param obj2 对象2
- * @param prop2 属性2
- */
-export function TwoWayBinding(obj1, prop1, obj2, prop2) {
-  const stopWatch1 = watch(
-    () => obj1[prop1],
-    (value) => {
-      obj2[prop2] = value;
-    }
-  );
-  const stopWatch2 = watch(
-    () => obj2[prop2],
-    (value, oldValue) => {
-      PropertyChange.call(this, obj2, prop2, value, oldValue);
-      obj1[prop1] = value;
-    }
-  );
-
-  return () => {
-    stopWatch1();
-    stopWatch2();
-  };
-}
-
-/**
- * 属性值修改时，触发事件
- */
-export function PropertyChange(m, p, nv, ov) {
-  const ctor = this.$options.__vfdConstructor;
-  if (ctor === DataSourceGroupControl) (this as DataSourceGroupControl).UpdateDiffData(m, p, nv, ov);
-}
+type ToolStripItem = ControlDeclare.ToolStripItem;
 
 /**
  * 不需要释放的键
@@ -196,6 +152,7 @@ export class BaseWindow {
   async ShowDialog() {
     return await this.Show(true);
   }
+
   /**
    * 显示子窗体
    */
@@ -356,7 +313,7 @@ export class BaseWindow {
         item.loading = false;
       }
     } else {
-      let history = GetOrCreateLocalStorageObject(this.$historySelectRefNoKey, []);
+      let history = GetOrCreateFromStorage(this.$historySelectRefNoKey, []);
       item.options = history.map((h) => ({
         label: h.ref_no,
         value: h.ref_no,
@@ -374,7 +331,7 @@ export class BaseWindow {
     let m = item.options.find((o) => o.value == e)?.m;
 
     // 获取历史选择的案号
-    let history = GetOrCreateLocalStorageObject(this.$historySelectRefNoKey, []);
+    let history = GetOrCreateFromStorage(this.$historySelectRefNoKey, []);
     // 如果历史数据中没有当前案号，则添加
     if (!history.find((h) => h.ref_no == e)) {
       history.push(m);
@@ -437,59 +394,66 @@ export class BaseWindow {
    * @param form 窗体实例
    */
   BindWindowEventAndControl(config: ControlDeclare.FormConfig, form: FormControl) {
-    // 绑定窗体的事件
-    let eventNames = Object.keys(config).filter((k) => k.slice(0, 2) == "on");
-    for (let i = 0; i < eventNames.length; i++) {
-      let name = eventNames[i];
-      let controlEvent = config[name].toString();
-      if (controlEvent && this[controlEvent]) {
-        form.events[name] = this[controlEvent].bind(this);
-      }
-    }
-    // 绑定窗体的控件
-    form.$nextTick(() => {
-      this.BindControlInstance(config, this, form);
+    // 一次性立即绑定事件，无需等待下一个渲染周期
+    this.bindEvents(config, form.events, this);
+
+    // 将控件绑定任务放入微任务队列，不阻塞主线程，但仍在当前渲染周期内完成
+    queueMicrotask(() => {
+      this.bindControlsRecursively(config, this, form);
     });
   }
+
   /**
-   * 绑定控件实例
+   * 绑定事件处理程序
+   * @param config 控件配置
+   * @param eventTarget 事件目标对象
+   * @param context 上下文(this)
+   */
+  private bindEvents(config: Record<string, any>, eventTarget: Record<string, Function>, context: any) {
+    // 使用 Map 缓存事件名称，提高性能
+    const eventPrefix = "on";
+
+    // 使用 entries 单次迭代，避免重复的 Object.keys() 调用
+    Object.entries(config).forEach(([key, value]) => {
+      if (key.startsWith(eventPrefix) && typeof value === "string") {
+        const handlerName = value.toString();
+        if (typeof context[handlerName] === "function") {
+          eventTarget[key] = context[handlerName].bind(context);
+        }
+      }
+    });
+  }
+
+  /**
+   * 递归绑定控件实例
    * @param config 控件配置
    * @param instance 控件实例
    * @param container 控件容器
    */
-  private BindControlInstance(config: ControlDeclare.ControlConfig, instance, container) {
-    // 如果有子控件，则优先选用子控件
-    let children = config.items || config.$children;
-    let isItems = !!config.items;
+  private bindControlsRecursively(config: ControlDeclare.ControlConfig, instance: any, container: any) {
+    const children = config.items || config.$children || [];
+    const isItems = !!config.items;
 
-    for (let i = 0; i < children.length; i++) {
-      let c = children[i];
-      instance[c.name] = c;
-      // 为了验证方便，将控件的引用挂载到窗体实例上
-      instance.$refs[c.name] = container.$refs[c.name];
+    // 使用批量处理，减少循环次数
+    children.forEach((child) => {
+      // 绑定控件引用
+      instance[child.name] = child;
 
-      // 获取当前控件配置的所有事件，例如：onLoad、onClick等
-      let eventNames = Object.keys(c).filter((k) => k.slice(0, 2) == "on");
-      // 遍历事件，绑定事件
-      for (let i = 0; i < eventNames.length; i++) {
-        // 事件名称，例如：onLoad、onClick等
-        let name = eventNames[i];
-        // 事件处理函数，例如：btn_1_onClickEvent 等
-        let controlEvent = c[name].toString();
-        // 如果controlEvent存在，且instance中存在该函数，且container中存在该控件的引用，则绑定事件
-        if (controlEvent && instance[controlEvent] && Object.prototype.hasOwnProperty.call(container.$refs, c.name)) {
-          let events = container.$refs[c.name].events;
-          // 如果是items，则使用item对象的events，否则使用控件的events，例如：FormControl.events
-          if (!events && isItems) events = c.events;
+      // 获取控件的 DOM 引用
+      const controlRef = container.$refs[child.name];
+      if (controlRef) {
+        instance.$refs[child.name] = controlRef;
 
-          events[name] = instance[controlEvent].bind(instance);
+        // 绑定事件
+        const eventTarget = isItems ? child.events || {} : controlRef.events || {};
+        this.bindEvents(child, eventTarget, instance);
+
+        // 递归绑定子控件
+        if ((child.$children?.length || child.items?.length) && controlRef) {
+          this.bindControlsRecursively(child, instance, controlRef);
         }
       }
-
-      if ((c.$children?.length || c.items?.length) && Object.prototype.hasOwnProperty.call(container.$refs, c.name)) {
-        this.BindControlInstance(c, instance, container.$refs[c.name]);
-      }
-    }
+    });
   }
 
   // watch列表
@@ -508,17 +472,23 @@ export class BaseWindow {
    * 释放资源
    */
   Dispose(refresh: boolean = false) {
-    // 释放watch
-    while (this.$watchList.length) {
-      this.$watchList.shift()();
-    }
-    let members = Object.keys(this);
-    for (const k of members) {
-      // 如果是刷新，则不释放以下资源
-      if (refresh && noDisposeMembers.includes(k)) {
-        continue;
-      }
-      this[k] = null;
+    // 清除所有监听器
+    this.$watchList.forEach((unwatch) => unwatch());
+    this.$watchList = [];
+
+    // 如果是刷新模式，只清除非保留成员
+    if (refresh) {
+      // 只清除需要释放的成员
+      Object.keys(this)
+        .filter((key) => !noDisposeMembers.includes(key))
+        .forEach((key) => {
+          this[key] = null;
+        });
+    } else {
+      // 完全释放所有成员
+      Object.keys(this).forEach((key) => {
+        this[key] = null;
+      });
     }
   }
 }

@@ -117,18 +117,18 @@ function InstallAxiosConfig(name: string, apiConfig: ApiConfigItem, AxiosConfig:
   };
 }
 
-const ExtendAxios = {
-  async install(app: App<Element>) {
-    let apis = import.meta.glob("@/Apis/**/*.ts");
-    for (const path in apis) {
-      let file = (await apis[path]()) as any;
-      let apiConfig = file.default;
-      for (let name in apiConfig) {
-        InstallAxiosConfig(name, apiConfig[name], {});
-      }
+/**
+ * 初始化所有 API 配置，并将 GlobalApi 挂载到 app.config.globalProperties.$Api
+ * @param app Vue app 实例
+ */
+export async function registerApis(app: App<Element>) {
+  let apis = import.meta.glob("@/Apis/**/*.ts");
+  for (const path in apis) {
+    let file = (await apis[path]()) as any;
+    let apiConfig = file.default;
+    for (let name in apiConfig) {
+      InstallAxiosConfig(name, apiConfig[name], {});
     }
-    app.config.globalProperties.$Api = GlobalApi;
-  },
-};
-
-export default ExtendAxios;
+  }
+  app.config.globalProperties.$Api = GlobalApi;
+}

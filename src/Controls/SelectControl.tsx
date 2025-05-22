@@ -1,4 +1,5 @@
 import Control from "@/CoreUI/Designer/Control";
+import DataSourceControl from "@/CoreUI/Designer/DataSourceControl";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import DevelopmentModules from "@/Utils/DevelopmentModules";
@@ -10,7 +11,7 @@ type SelectConfig = ControlDeclare.SelectConfig;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 
 @Component
-export default class SelectControl extends Control {
+export default class SelectControl extends DataSourceControl {
   declare config: SelectConfig;
 
   // 定义脱离响应的options

@@ -1,6 +1,6 @@
 import FormControl from "@/Controls/FormControl";
 import WindowControlBar from "@/CoreUI/Designer/WindowControlBar";
-import { BindEventContext, RegisterEvent } from "@/Utils";
+import { EventManager } from "@/Utils";
 import { Component, Vue } from "vue-facing-decorator";
 
 @Component
@@ -28,22 +28,24 @@ export default class WindowCollection extends Vue {
     instance.Close();
   }
 
-  declare winEventHandlers;
+  eventManger: EventManager = new EventManager();
+
   mounted() {
-    this.winEventHandlers = {
-      keydown: function (e: KeyboardEvent) {
+    this.eventManger.add(
+      window,
+      "keydown",
+      (e: KeyboardEvent) => {
         let funcName = `${e.code}Ctronl`;
         if (e.ctrlKey) funcName = `Ctrl${funcName}`;
         this[funcName]?.(e);
       },
-    };
-    BindEventContext(this.winEventHandlers, this);
-    RegisterEvent.call(window, this.winEventHandlers);
+      this
+    );
   }
 
   unmounted() {
-    RegisterEvent.call(window, this.winEventHandlers, true);
-    this.winEventHandlers = null;
+    this.eventManger?.removeAll();
+    this.eventManger = null;
   }
 
   /**

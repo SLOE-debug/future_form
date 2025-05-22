@@ -3,11 +3,11 @@ import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
-import { Cache, Guid } from "@/Utils";
+import { MemoizeResult, Guid } from "@/Utils";
 import { defineAsyncComponent } from "vue";
 import { Component, Watch } from "vue-facing-decorator";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { AddControlDeclareToDesignerCode } from "@/Utils/Designer/Designer";
+import { AddControlDeclareToDesignerCode, DropAddControl } from "@/Utils/Designer/Designer";
 import DevelopmentModules from "@/Utils/DevelopmentModules";
 
 type ControlConfig = ControlDeclare.ControlConfig;
@@ -28,26 +28,8 @@ export default class TabsControl extends Control {
     this.$Store.get.Designer.Debug && this.$Store.dispatch("Designer/RenderControlConfigurator");
   }
 
-  async Drop(e: DragEvent) {
-    let { CreateControlByDragEvent, CreateControlName } = await DevelopmentModules.Load();
-
-    let config = CreateControlByDragEvent.call(this, e) as ControlConfig;
-
-    config.id = Guid.NewGuid();
-    CreateControlName(config);
-    config.top -= config.height / 2;
-    config.left -= config.width / 2;
-    config.fromContainer = this.config.name;
-    config.fromTabId = this.config.value;
-
-    this.config.$children.push(config);
-    this.$nextTick(() => {
-      this.$Store.dispatch(
-        "Designer/AddStack",
-        new Stack(this.$refs[config.name] as Control, null, null, StackAction.Create)
-      );
-    });
-    AddControlDeclareToDesignerCode(config);
+  Drop(e: DragEvent) {
+    DropAddControl(e, this);
     e.stopPropagation();
   }
 
@@ -124,10 +106,14 @@ export default class TabsControl extends Control {
   headHeight = 40;
   headHide = false;
 
+  setupDesignerMode(): void {
+    super.setupDesignerMode();
+    this.eventManager.add(window, "mouseup", this.Cancel, this);
+  }
+
   mounted() {
     this.ShouldAddScrollbar();
     if (this.$Store.get.Designer.Debug) this.config.scrollTop = {};
-    this.eventManager.add(window, "mouseup", this.Cancel, this);
   }
 
   /**
@@ -368,26 +354,26 @@ export default class TabsControl extends Control {
               {this.RenderTabHead()}
             </div>
           </div>
-          {this.$Store.get.Designer.Debug && this.RenderDebugTools()}
+          {this.isDesignerMode && this.RenderDebugTools()}
         </div>
         <div class={css.container}>
           {this.config.tabs
-            .filter((t) => (this.$Store.get.Designer.Debug ? true : t.visible != false))
+            .filter((t) => (this.isDesignerMode ? true : t.visible != false))
             .map((t) => {
               return (
                 <div
                   class={css.pane}
-                  onDrop={this.$Store.get.Designer.Debug && this.Drop}
-                  onMousedown={this.$Store.get.Designer.Debug && this.SlideStart}
+                  onDrop={this.isDesignerMode && this.Drop}
+                  onMousedown={this.isDesignerMode && this.SlideStart}
                   style={{
                     display: this.config.value == t.id ? "block" : "none",
                   }}
                   onScroll={(e) => {
-                    if (this.$Store.get.Designer.Debug)
+                    if (this.isDesignerMode)
                       this.config.scrollTop[this.config.value] = (e.target as HTMLDivElement).scrollTop;
                   }}
                 >
-                  {this.$Store.get.Designer.Debug && (
+                  {this.isDesignerMode && (
                     <AsyncSlideSelector
                       {...{
                         start: this.slideStartCoord,

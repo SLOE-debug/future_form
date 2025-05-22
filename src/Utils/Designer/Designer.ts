@@ -3,15 +3,43 @@ import { ControlDeclare } from "@/Types";
 import { Guid } from "..";
 import store from "@/Vuex/Store";
 import * as ts from "typescript";
-// import { editor } from "@/CoreUI/Editor/EditorPage";
 import { GetDesignerBackgroundFile, GetFileById } from "../VirtualFileSystem/Index";
 import type Editor from "@/Core/Editor/Editor";
 import type Control from "@/CoreUI/Designer/Control";
-import { GetAllRefs } from "@/Vuex/Modules/Designer";
+import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
+import { nextTick } from "vue";
+import utilsContent from "@/Utils/Runtime/Utils.ts?raw";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceGroupConfig = ControlDeclare.DataSourceGroupConfig;
 
+/**
+ * 处理文件内容 - 删除分割线之前的代码，使其能够作为 monaco editor 的代码
+ * @param content 文件内容
+ * @returns 处理后的内容
+ */
+function ProcessFileContent(content: string) {
+  // 处理内容 - 使用分割线标记需要在monaco中删除的代码
+  const separator = "/// 以上为 monaco editor 时需删除的代码";
+
+  if (content.includes(separator)) {
+    const parts = content.split(separator);
+    if (parts.length > 1) {
+      return parts[1].trim();
+    }
+  }
+  return content;
+}
+
+// 代码编辑器中的 第三方/扩展库清单
+export const ExtensionLibraries: Record<string, string> = {
+  "Runtime/Utils": ProcessFileContent(utilsContent),
+};
+
+/**
+ * 获取设计器代码编辑器实例
+ * @returns 编辑器实例
+ */
 let editor: Editor | null = null;
 async function getEditor() {
   if (!editor) {
@@ -25,35 +53,74 @@ async function getEditor() {
  * @param e 拖拽事件
  * @returns 控件配置
  */
-export function CreateControlByDragEvent(e: DragEvent): ControlConfig {
+export function CreateControlByDragEvent(e: DragEvent, vueInstance): ControlConfig {
   let rect = (e.target as HTMLElement).getBoundingClientRect();
   let x = e.clientX - rect.x;
   let y = e.clientY - rect.y;
-
   let type = e.dataTransfer.getData("type");
-
   if (!type) return;
-  this.$Store.dispatch("Designer/ClearSelected");
+  store.dispatch("Designer/ClearSelected");
+  let controlComponent = vueInstance?.$.appContext.components[type] as any;
+  let config = {
+    ...GetDefaultConfig(),
+    ...controlComponent.GetDefaultConfig(),
+    id: Guid.NewGuid(),
+    top: y,
+    left: x,
+  } as ControlConfig;
 
-  let config = CreateControlByType.call(this, type);
-  config.top = y;
-  config.left = x;
   return config;
 }
 
+// 处理拖拽添加控件事件
+export function DropAddControl(e: DragEvent, vueInstance, paste?: boolean, pasteOffset?: number) {
+  let config = CreateControlByDragEvent(e, vueInstance);
+  AddControlToDesigner(config, vueInstance, paste, pasteOffset);
+  AddControlDeclareToDesignerCode(config);
+}
+
 /**
- * 创建控件通过类型
- * @param type 类型
- * @returns 控件配置
+ * 添加控件到设计器
+ * @param config 控件配置
+ * @param paste 是否为粘贴操作
+ * @param pasteOffset 粘贴时的偏移量
  */
-export function CreateControlByType(type: string) {
-  let control = this.$.appContext.components[type] as any;
-  let config = {
-    id: Guid.NewGuid(),
-    ...GetDefaultConfig(),
-    ...control.GetDefaultConfig(),
-  };
-  return config;
+export function AddControlToDesigner(config: ControlConfig, vueInstance, paste?: boolean, pasteOffset?: number) {
+  config.name = GenerateUniqueControlName(config.type);
+  config.id = Guid.NewGuid();
+  config.top -= paste ? pasteOffset : config.height / 2;
+  config.left -= paste ? pasteOffset : config.width / 2;
+
+  // 处理控件的容器关系
+  if (vueInstance.config.container) {
+    config.fromContainer = vueInstance.config.name;
+    // 对于 Tabs 控件特殊处理，设置 fromTabId
+    if (vueInstance.config.type === "Tabs") {
+      config.fromTabId = vueInstance.config.name;
+    }
+  }
+
+  // 确定将控件添加到哪个容器中
+  if (paste) {
+    // 粘贴操作：尝试找到原容器，如不存在则添加到根表单
+    const containerConfig = config.fromContainer && GetControlConfigByName(config.fromContainer);
+    if (containerConfig) {
+      containerConfig.$children.push(config);
+    } else {
+      // 清理无效的容器引用
+      delete config.fromContainer;
+      delete config.fromTabId;
+      store.get.Designer.FormConfig.$children.push(config);
+    }
+  } else {
+    // 普通添加：直接添加到当前容器
+    vueInstance.config.$children.push(config);
+  }
+
+  nextTick(() => {
+    store.dispatch("Designer/AddStack", new Stack(GetFormAllControls()[config.name], config, null, StackAction.Create));
+    store.dispatch("Designer/SelectControlByConfig", [config]);
+  });
 }
 
 /**
@@ -89,30 +156,28 @@ export function FindControlsByKeyValue(
 }
 
 /**
- * 检查是否已存在指定名称的控件配置
- * @param config 要检查的控件配置
- * @returns 是否存在同名控件
+ * 通过名称查找控件配置
+ * @param name 控件名称
+ * @returns 找到的控件配置或undefined
  */
-export function IsControlNameExists(config: ControlConfig): boolean {
-  if (!config || !config.name) return false;
-
-  const formConfig = store.get.Designer.FormConfig;
-  if (!formConfig) return false;
-
-  // 先检查根级别是否匹配（排除自身）
-  if (formConfig.name === config.name && formConfig.id !== config.id) {
-    return true;
+export function GetControlConfigByName(name: string): ControlConfig | undefined {
+  if (!name || !store.get.Designer.FormConfig) {
+    return undefined;
   }
 
-  // 使用队列进行广度优先搜索
-  const queue: ControlConfig[] = [...(formConfig.$children || [])];
+  // 检查根级配置是否匹配
+  if (store.get.Designer.FormConfig.name === name) {
+    return store.get.Designer.FormConfig;
+  }
+
+  // 使用队列进行广度优先搜索所有子控件
+  const queue: ControlConfig[] = [...(store.get.Designer.FormConfig.$children || [])];
 
   while (queue.length > 0) {
     const control = queue.shift();
 
-    // 检查是否同名但不是自身
-    if (control.name === config.name && control.id !== config.id) {
-      return true;
+    if (control.name === name) {
+      return control;
     }
 
     // 将子控件添加到队列中继续搜索
@@ -121,7 +186,16 @@ export function IsControlNameExists(config: ControlConfig): boolean {
     }
   }
 
-  return false;
+  return undefined;
+}
+
+/**
+ * 检查是否已存在指定名称的控件配置
+ * @param config 要检查的控件配置
+ * @returns 是否存在同名控件
+ */
+export function IsControlNameExists(config: ControlConfig): boolean {
+  return !!GetControlConfigByName(config.name);
 }
 
 /**
@@ -152,41 +226,38 @@ export function FindControlsByType(config: ControlConfig, type = undefined): Con
 let cacheControlName = {};
 
 /**
- * 自增量命名
- * @param prefix 前缀
- * @param config 控件配置
+ * 根据控件类型生成唯一的控件名称
+ * @param type 控件类型
+ * @returns 生成的唯一控件名称
  */
-function IncreaseName(prefix: string, config: ControlConfig) {
-  let prevName = cacheControlName[prefix];
-
-  if (!prevName) prevName = `${prefix}_0`;
-  let match = prevName.match(/\d+/g) as any[];
-  let n = parseInt(match[0]);
-  prevName = `${prefix}_${n + 1}`;
-  config.name = prevName;
-  cacheControlName[prefix] = config.name;
-}
-
-/**
- * 创建控件名称
- * @param config 控件配置
- */
-export function CreateControlName(config: ControlConfig) {
-  config.id = Guid.NewGuid();
-  if (FindControlsByKeyValue(store.get.Designer.FormConfig, "name", config.name)) {
-    let name = config.name;
-    delete config.name;
-    let prefix = name.replace(/_\d+/g, "");
-    if (!/_\d+/.test(name) && !Object.prototype.hasOwnProperty.call(ControlAlias, prefix)) {
-      IncreaseName(prefix, config);
-    }
+export function GenerateUniqueControlName(type: string): string {
+  // 首先从ControlAlias中获取控件前缀
+  const prefix = ControlAlias[type];
+  if (!prefix) {
+    console.warn(`未找到类型 ${type} 的控件别名，使用默认名称`);
+    return `control_${Math.floor(Math.random() * 10000)}`;
   }
-  if (!config.name) IncreaseName(ControlAlias[config.type], config);
 
-  config.$children?.forEach((c) => {
-    CreateControlName(c);
-    c.fromContainer = config.name;
-  });
+  // 获取缓存中的前缀对应的名称
+  let prevName = cacheControlName[prefix];
+  if (!prevName) prevName = `${prefix}_0`;
+
+  // 解析数字部分并生成新的名称
+  const match = prevName.match(/\d+/g) as any[];
+  const n = parseInt(match[0]);
+  const newName = `${prefix}_${n + 1}`;
+
+  // 检查新生成的名称是否已存在
+  const tempConfig = { name: newName } as ControlConfig;
+  if (IsControlNameExists(tempConfig)) {
+    // 递归调用直到找到不存在的名称
+    cacheControlName[prefix] = newName; // 先更新缓存，以便下次递归找到更大的数字
+    return GenerateUniqueControlName(type);
+  }
+
+  // 更新缓存并返回新名称
+  cacheControlName[prefix] = newName;
+  return newName;
 }
 
 /**

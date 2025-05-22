@@ -8,39 +8,30 @@ export type EventTarget = Window | Document | HTMLElement;
  */
 export class EventManager {
   private handlers: Map<string, { target: EventTarget; event: string; handler: EventHandler }[]> = new Map();
-  private id: string;
-
-  /**
-   * 创建一个事件管理器实例
-   * @param id 可选的唯一标识符
-   */
-  constructor(id?: string) {
-    this.id = id || Math.random().toString(36).substring(2, 9);
-  }
 
   /**
    * 添加事件监听
    * @param target 事件目标 (window, document 或 DOM元素)
    * @param event 事件名称
-   * @param handler 事件处理函数 
+   * @param handler 事件处理函数
    * @param context 事件处理函数的上下文(this)
    */
   add<T>(target: EventTarget, event: string, handler: EventHandler, context?: T): void {
     // 绑定处理函数的上下文
     const boundHandler = context ? handler.bind(context) : handler;
-    
+
     // 添加事件监听
     target.addEventListener(event, boundHandler);
-    
+
     // 存储处理函数信息以便后续移除
     if (!this.handlers.has(event)) {
       this.handlers.set(event, []);
     }
-    
+
     this.handlers.get(event)!.push({
       target,
       event,
-      handler: boundHandler
+      handler: boundHandler,
     });
   }
 
@@ -85,12 +76,4 @@ export class EventManager {
   removeAll(): void {
     this.remove();
   }
-}
-
-/**
- * 创建一个事件管理器
- * @returns 事件管理器实例
- */
-export function createEventManager(id?: string): EventManager {
-  return new EventManager(id);
 }

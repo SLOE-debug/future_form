@@ -1,10 +1,11 @@
 import { GlobalApi } from "@/Plugins/Api/ExtendApi";
 import { CompileDeclare } from "@/Types/CompileDeclare";
-import { Cache, DeepCompareObject } from "@/Utils";
+import { MemoizeResult, DeepEquals } from "@/Utils";
 import { backupRoot } from "@/Utils/VirtualFileSystem/Index";
 import { Path } from "@/Utils/VirtualFileSystem/Path";
 import CompareFile from "../VirtualFileSystem/CompareFile";
 import DevelopmentModules from "@/Utils/DevelopmentModules";
+import { ExtensionLibraries } from "@/Utils/Designer";
 
 type CompiledFile = CompileDeclare.CompiledFile;
 
@@ -75,11 +76,7 @@ export default class Compiler {
       // 则不编译
       if (!debug && !publishAll) {
         let backupFile = backupRoot.find((f) => f.fullPath == file.GetFullName());
-        if (
-          backupFile &&
-          backupFile.content == file.content &&
-          DeepCompareObject(backupFile.extraData, file.extraData)
-        ) {
+        if (backupFile && backupFile.content == file.content && DeepEquals(backupFile.extraData, file.extraData)) {
           continue;
         }
       }
@@ -112,7 +109,7 @@ export default class Compiler {
           }
         }
 
-        this.ObfuscateAndGenerateRefMap(code, compiledFile, m.uri.path, debug);
+        await this.ObfuscateAndGenerateRefMap(code, compiledFile, m.uri.path, debug);
       } else {
         compiledFile.content = m.getValue();
       }
@@ -129,8 +126,13 @@ export default class Compiler {
    * @param file 编译文件
    * @param path 文件路径
    */
-  private static ObfuscateAndGenerateRefMap(code: string, file: CompiledFile, path: string, debug: boolean = true) {
-    const JavaScriptObfuscator = require("javascript-obfuscator");
+  private static async ObfuscateAndGenerateRefMap(
+    code: string,
+    file: CompiledFile,
+    path: string,
+    debug: boolean = true
+  ) {
+    const JavaScriptObfuscator = await import("javascript-obfuscator").then((m: any) => m.default || m);
     // 匹配源代码中的 import 行, 使用 gm 格式的正则
     const importReg = /import\s+.*\s+from\s+.*/gm;
     const match = code.match(importReg);
@@ -167,6 +169,14 @@ export default class Compiler {
    */
   static Install(file: CompiledFile, InstalledFiles: CompiledFile[] = []) {
     for (const ref of file.refs) {
+      let isThirdParty = !!ExtensionLibraries[ref.refPath];
+      // 如果是第三方库，则不需要安装，并且需要删除 content 中的 import
+      if (isThirdParty) {
+        let importReg = new RegExp(`import\\s+.*\\s+from\\s+['|"]${ref.refPath}['|"]`, "g");
+        file.content = file.content.replace(importReg, "");
+        continue;
+      }
+
       if (!this.import2BlobUrlMap.has(ref.absPath)) {
         let refFile = this.CompiledFiles.find((f) => f.fullPath == ref.absPath);
         if (refFile) {

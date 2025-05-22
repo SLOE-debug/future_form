@@ -1,22 +1,9 @@
-import { UtilsDeclare } from "@/Types/UtilsDeclare";
-import { BaseWindow } from "./Designer/Form";
-
-type EventHandlers = UtilsDeclare.EventHandlers;
+import { BaseWindow } from "./Runtime";
+import { GetCaseNumberSearchToolbar } from "./Runtime/Utils";
 
 // 窗体基类
 window.BaseWindow = BaseWindow;
-
-export function RegisterEvent(this: any, eventHandlers: EventHandlers, unmount: boolean = false) {
-  for (const type in eventHandlers) {
-    this[unmount ? "removeEventListener" : "addEventListener"](type, eventHandlers[type]);
-  }
-}
-
-export function BindEventContext(eventHandlers: EventHandlers, context: any) {
-  for (const type in eventHandlers) {
-    eventHandlers[type] = eventHandlers[type].bind(context);
-  }
-}
+(window as any).GetCaseNumberSearchToolbar = GetCaseNumberSearchToolbar;
 
 /**
  * 首字母大写
@@ -65,82 +52,74 @@ export function CloneStruct<T>(obj: T): T {
 /**
  * 对象之间深度对比是否相等
  */
-export function DeepCompareObject(obj1: any, obj2: any): boolean {
+export function DeepEquals(obj1: any, obj2: any): boolean {
+  // 快速相等检查
   if (obj1 === obj2) return true;
+
+  // null 检查
   if (obj1 == null || obj2 == null) return false;
+
+  // 类型检查
   if (typeof obj1 !== "object" || typeof obj2 !== "object") return false;
 
+  // 数组比较
   if (Array.isArray(obj1) && Array.isArray(obj2)) {
-    if (obj1.length !== obj2.length) return false;
-    for (let i = 0; i < obj1.length; i++) {
-      if (!DeepCompareObject(obj1[i], obj2[i])) return false;
-    }
-    return true;
+    return obj1.length === obj2.length && obj1.every((item, index) => DeepEquals(item, obj2[index]));
   }
 
-  const keys1 = Object.keys(obj1).filter((k) => {
-    // 过滤 Function
-    return typeof obj1[k] !== "function";
-  });
-  const keys2 = Object.keys(obj2).filter((k) => {
-    // 过滤 Function
-    return typeof obj2[k] !== "function";
-  });
+  // 获取非函数属性键
+  const keys1 = Object.keys(obj1 as object).filter((k) => typeof (obj1 as any)[k] !== "function");
+  const keys2 = Object.keys(obj2 as object).filter((k) => typeof (obj2 as any)[k] !== "function");
+
+  // 键数量比较
   if (keys1.length !== keys2.length) return false;
 
-  for (const key of keys1) {
-    if (!keys2.includes(key)) return false;
-
-    if (!DeepCompareObject(obj1[key], obj2[key])) return false;
-  }
-
-  return true;
+  // 递归比较所有键值
+  return keys1.every((key) => keys2.includes(key) && DeepEquals((obj1 as any)[key], (obj2 as any)[key]));
 }
 
 /**
  * 获取或者创建 localStorage 中的对象
  */
-export function GetOrCreateLocalStorageObject<T>(key: string, defaultValue: T): T {
-  let value = localStorage.getItem(key);
-  if (!value) {
-    value = JSON.stringify(defaultValue);
-    localStorage.setItem(key, value);
+export function GetOrCreateFromStorage<T>(key: string, defaultValue: T): T {
+  try {
+    const value = localStorage.getItem(key);
+    if (!value) {
+      const serializedValue = JSON.stringify(defaultValue);
+      localStorage.setItem(key, serializedValue);
+      return defaultValue;
+    }
+    return JSON.parse(value) as T;
+  } catch (error) {
+    console.error(`Error accessing localStorage for key "${key}":`, error);
+    return defaultValue; // 在出错时返回默认值而不是失败
   }
-  return JSON.parse(value);
 }
 
 /**
  * 数据源参数前缀
  */
-export const sourceArgsPrefix = "@";
+export const dataSourceParamPrefix = "@";
 
 /**
  * 函数结果缓存
  */
-const functionResultCache: Map<string, any> = new Map();
+const MemoizedResultCache: Map<string, any> = new Map();
 
 /**
- * 函数结果缓存
+ * 缓存方法结果装饰器 - 使用函数名和参数作为缓存键
+ * 对相同参数的重复调用将返回缓存的结果而不重新执行函数
+ * @example
+ * // 使用方式:
+ * class Example {
+ *   @MemoizeResult()
+ *   expensiveCalculation(a: number, b: number): number {
+ *     console.log('Computing...');
+ *     return a + b;
+ *   }
+ * }
  */
-export function CacheFunction<T>(func: T): T {
-  let id = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === "x" ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-  return function (...args: any[]) {
-    let result = functionResultCache.get(id);
-    if (result) return result;
-    result = (func as Function).apply(this, args);
-    functionResultCache.set(id, result);
-    return result;
-  } as T;
-}
-
-/**
- * 函数结果缓存装饰器
- */
-export function Cache(target: any, key: string, descriptor: PropertyDescriptor) {
+export function MemoizeResult(target: any, key: string, descriptor: PropertyDescriptor) {
   let cacheKey = null;
   let method = descriptor.value;
   descriptor.value = function (...args: any[]) {
@@ -148,18 +127,17 @@ export function Cache(target: any, key: string, descriptor: PropertyDescriptor) 
       cacheKey = Guid.NewGuid();
     }
 
-    let result = functionResultCache.get(cacheKey);
-    // console.log("Cache", cacheKey, "result", result);
+    let result = MemoizedResultCache.get(cacheKey);
     if (result) return result;
     result = method.apply(this, args);
     // 如果 result 是一个 Promise 对象，则在 Promise 完成后缓存结果
     if (result && typeof result.then === "function") {
       return result.then((res: any) => {
-        functionResultCache.set(cacheKey, res);
+        MemoizedResultCache.set(cacheKey, res);
         return res;
       });
     }
-    functionResultCache.set(cacheKey, result);
+    MemoizedResultCache.set(cacheKey, result);
     return result;
   };
 }

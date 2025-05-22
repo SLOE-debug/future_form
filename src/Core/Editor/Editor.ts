@@ -4,9 +4,11 @@ import { Path } from "@/Utils/VirtualFileSystem/Path";
 import store from "@/Vuex/Store";
 import * as monaco from "monaco-editor";
 import * as actions from "monaco-editor/esm/vs/platform/actions/common/actions";
-import controlDeclare from "@/Types/ControlDeclare?raw";
-import eventDeclare from "@/Types/EventDeclare?raw";
+import controlDeclareContent from "@/Types/ControlDeclare?raw";
+import eventDeclareContent from "@/Types/EventDeclare?raw";
+import utilsContent from "@/Utils/Runtime/Utils.ts?raw";
 import { ElMessage } from "element-plus";
+import { ExtensionLibraries } from "@/Utils/Designer";
 
 type IFile = VritualFileSystemDeclare.IFile;
 type ICompareFile = VritualFileSystemDeclare.ICompareFile;
@@ -138,9 +140,10 @@ export default class Editor {
     });
 
     // 加载控件声明文件
-    this.LoadDeclareFile(controlDeclare, "ControlDeclare");
+    this.LoadDeclareFile(controlDeclareContent, "ControlDeclare");
     // 加载事件声明文件
-    this.LoadDeclareFile(eventDeclare, "EventDeclare");
+    this.LoadDeclareFile(eventDeclareContent, "EventDeclare");
+    this.LoadUtilsLibraries();
 
     // 设置TypeScript编译器配置
     monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
@@ -148,6 +151,16 @@ export default class Editor {
     monaco.languages.registerDefinitionProvider("typescript", {
       provideDefinition: this.CustomTypeScriptProvider.bind(this),
     });
+  }
+
+  /**
+   * 加载第三方/扩展库文件
+   */
+  private LoadUtilsLibraries() {
+    // 添加第三方/扩展库文件
+    for (const [key, value] of Object.entries(ExtensionLibraries)) {
+      monaco.languages.typescript.typescriptDefaults.addExtraLib(value, key + ".ts");
+    }
   }
 
   /**
@@ -521,6 +534,18 @@ export default class Editor {
       }
 
       dirs.push(...dir.directories);
+    }
+
+    // 添加扩展库的路径
+    for (const [path, value] of Object.entries(ExtensionLibraries)) {
+      suggestions.push({
+        label: path,
+        kind: monaco.languages.CompletionItemKind.File,
+        insertText: path,
+        detail: `第三方/扩展库：${path}`,
+        sortText: "0",
+        range,
+      });
     }
 
     return suggestions;

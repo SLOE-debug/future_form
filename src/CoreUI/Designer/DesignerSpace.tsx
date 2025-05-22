@@ -1,18 +1,10 @@
 import FormControl from "@/Controls/FormControl";
 import { Component, Prop, Vue } from "vue-facing-decorator";
 import { ControlDeclare } from "@/Types/ControlDeclare";
-import { BindEventContext, RegisterEvent } from "@/Utils";
+import { EventManager } from "@/Utils";
 import ContextMenu from "@/CoreUI/Designer/Components/ContextMenu";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
-import {
-  CreateControlByDragEvent,
-  CreateControlName,
-  FindControlsByKeyValue,
-  FindControlsByType,
-} from "@/Utils/Designer/Designer";
-import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
-import type Control from "./Control";
-import { AddControlDeclareToDesignerCode } from "@/Utils/Designer/Designer";
+import { AddControlToDesigner, DropAddControl, FindControlsByType } from "@/Utils/Designer/Designer";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { editor } from "../Editor/EditorPage";
 
@@ -27,59 +19,18 @@ export default class DesignerSpace extends Vue {
   @Prop
   height: string;
 
-  declare $refs: any;
+  get config() {
+    return this.$Store.get.Designer.FormConfig;
+  }
 
   Drop(e: DragEvent) {
-    let config = CreateControlByDragEvent.call(this, e) as ControlConfig;
-    this.AddControl(false, config);
-    AddControlDeclareToDesignerCode(config);
+    DropAddControl(e, this);
   }
 
   AddControl(paste: boolean, ...configs: ControlConfig[]) {
     for (const c of configs) {
-      CreateControlName(c);
-
-      c.top -= paste ? this.pasteOffset : c.height / 2;
-      c.left -= paste ? this.pasteOffset : c.width / 2;
-
-      let containerConfig =
-        c.fromContainer && FindControlsByKeyValue(this.$Store.get.Designer.FormConfig, "name", c.fromContainer);
-      if (containerConfig) {
-        containerConfig.$children.push(c);
-      } else {
-        delete c.fromContainer;
-        delete c.fromTabId;
-        this.$Store.get.Designer.FormConfig.$children.push(c);
-      }
-      this.$nextTick(() => {
-        this.$Store.dispatch(
-          "Designer/AddStack",
-          new Stack(
-            this.GetContainerByContainerName(c.fromContainer)[c.name] as Control,
-            c,
-            null,
-            StackAction.Create
-          )
-        );
-        this.$Store.dispatch("Designer/SelectControlByConfig", [c]);
-      });
+      AddControlToDesigner(c, this, paste, this.pasteOffset);
     }
-  }
-
-  /**
-   * 通过空间配置的 fromContainer 属性获取容器
-   */
-  GetContainerByContainerName(name: string) {
-    if (!name) return this.$refs["form"].$refs;
-
-    // 获取表单下的refs列表
-    let refs = Object.keys(this.$refs["form"].$refs).map((k) => this.$refs["form"].$refs[k]);
-
-    do {
-      let ref = refs.shift();
-      if (ref.config.name == name) return ref.$refs;
-      if (ref.$refs) refs.push(...Object.keys(ref.$refs).map((k) => ref.$refs[k]));
-    } while (refs.length);
   }
 
   async DeleteControl(e: KeyboardEvent): Promise<ControlConfig[]> {
@@ -163,30 +114,27 @@ export default class DesignerSpace extends Vue {
     });
   }
 
+  // 键盘按下处理
+  HandleKeydown(e: KeyboardEvent) {
+    if (
+      (e.target as HTMLElement).nodeName == "INPUT" || // 输入框
+      (e.target as HTMLElement).nodeName == "TEXTAREA" || // 文本框
+      this.$Store.get.VirtualFileSystem.CurrentFile?.suffix != VritualFileSystemDeclare.FileType.FormDesigner
+    )
+      return;
+
+    let funcName = e.code + "Control";
+    if (e.ctrlKey) funcName = "Ctrl" + funcName;
+    if (e.shiftKey) funcName = "Shift" + funcName;
+    if (e.altKey) funcName = "Alt" + funcName;
+
+    if (e.code.startsWith("Arrow")) {
+      this.Arrow(e.code);
+      e.preventDefault();
+    } else this[funcName]?.(e);
+  }
+
   created() {
-    this.winEventHandlers = {
-      keydown: function (e: KeyboardEvent) {
-        if (
-          (e.target as HTMLElement).nodeName == "INPUT" || // 输入框
-          (e.target as HTMLElement).nodeName == "TEXTAREA" || // 文本框
-          this.$Store.get.VirtualFileSystem.CurrentFile?.suffix != VritualFileSystemDeclare.FileType.FormDesigner
-        )
-          return;
-
-        let funcName = e.code + "Control";
-        if (e.ctrlKey) funcName = "Ctrl" + funcName;
-        if (e.shiftKey) funcName = "Shift" + funcName;
-        if (e.altKey) funcName = "Alt" + funcName;
-
-        if (e.code.startsWith("Arrow")) {
-          this.Arrow(e.code);
-          e.preventDefault();
-        } else this[funcName]?.(e);
-      },
-      mousedown: function () {
-        this.menu = false;
-      },
-    };
     if (!this.$Store.get.VirtualFileSystem.CurrentFile.extraData) {
       this.$Store.get.VirtualFileSystem.CurrentFile.extraData = FormControl.GetDefaultConfig();
     }
@@ -194,16 +142,24 @@ export default class DesignerSpace extends Vue {
     this.$Store.dispatch("Designer/SetFormConfig", this.$Store.get.VirtualFileSystem.CurrentFile.extraData);
   }
 
-  declare winEventHandlers;
+  eventManager: EventManager = new EventManager();
   async mounted() {
-    BindEventContext(this.winEventHandlers, this);
-    RegisterEvent.call(window, this.winEventHandlers);
+    this.eventManager.addBatch(
+      window,
+      {
+        keydown: this.HandleKeydown,
+        mousedown: (e: MouseEvent) => {
+          this.menu = false;
+        },
+      },
+      this
+    );
     await this.$Store.dispatch("Designer/SetDesignerSpace", this);
   }
 
   async unmounted() {
-    RegisterEvent.call(window, this.winEventHandlers, true);
-    this.winEventHandlers = null;
+    this.eventManager?.removeAll();
+    this.eventManager = null;
     await this.$Store.dispatch("Designer/SetDesignerSpace", null);
     this.$Store.dispatch("Designer/ClearStack");
   }

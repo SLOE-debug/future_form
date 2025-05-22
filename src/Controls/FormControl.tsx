@@ -7,7 +7,7 @@ import { defineAsyncComponent } from "vue";
 import { Component, Prop } from "vue-facing-decorator";
 import DataSourceGroupControl from "./DataSourceGroupControl";
 import store from "@/Vuex/Store";
-import { BaseWindow } from "@/Utils/Designer/Form";
+import { BaseWindow } from "@/Utils/Runtime";
 import SubWindowControl from "./SubWindowControl";
 import { editor } from "@/CoreUI/Editor/EditorPage";
 import DevelopmentModules from "@/Utils/DevelopmentModules";
@@ -75,41 +75,44 @@ export default class FormControl extends Control {
     }
   }
 
-  declare instance: BaseWindow;
-  declare dataSourceControls: DataSourceGroupControl[];
-  declare createEventPromise: Promise<any>;
-  async created() {
-    this.dataSourceControls = [];
-
-    if (!this.$Store.get.Designer.Debug || this.$Store.get.Designer.Preview) {
-      let { instance, config } = this.$Store.get.Window.Windows[this.instanceId];
-      instance.BindWindowEventAndControl(config, this);
+  // 设置窗体运行时
+  setupRuntime() {
+    let { instance, config } = this.$Store.get.Window.Windows[this.instanceId];
+    if (instance) {
       instance.$Window = this;
-
+      instance.BindWindowEventAndControl(config, this);
       this.instance = instance;
     }
+  }
+
+  declare instance: BaseWindow;
+  declare dataSourceControls: DataSourceGroupControl[];
+  async created() {
+    this.dataSourceControls = [];
+    // 如果是生产或预览模式，则设置窗体运行时
+    if (this.isProductionOrPreview) this.setupRuntime();
+    // 触发运行时代码中的窗体 `created` 事件
     if (this.events?.onCreated) {
-      this.createEventPromise = this.events.onCreated();
-      await this.createEventPromise;
+      await this.events.onCreated?.();
     }
 
     this.NotifyControlLoaded();
   }
 
-  async mounted() {
-    this.$Store.get.Designer.Debug &&
-      !this.$Store.get.Designer.Preview &&
-      (await this.$Store.dispatch("Designer/SetFormDesigner", this));
+  setupDesignerMode(): void {
+    super.setupDesignerMode();
+    this.$Store.dispatch("Designer/SetFormDesigner", this);
     this.eventManager.add(window, "mouseup", this.HandleMouseUp, this);
+  }
+
+  async mounted() {
     this.$nextTick(() => {
-      this.events.onMounted && this.events.onMounted();
+      this.events.onMounted?.();
     });
   }
 
   beforeUnmount() {
-    this.$Store.get.Designer.Debug &&
-      !this.$Store.get.Designer.Preview &&
-      this.$Store.dispatch("Designer/SetFormDesigner", null);
+    this.isDesignerMode && this.$Store.dispatch("Designer/SetFormDesigner", null);
   }
 
   async unmounted() {

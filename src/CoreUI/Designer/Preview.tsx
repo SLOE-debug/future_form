@@ -1,36 +1,32 @@
 import WindowCollection from "@/Components/WindowCollection";
 import Compiler from "@/Core/Compile/Compiler";
-import { BindEventContext, RegisterEvent } from "@/Utils";
+import { EventManager } from "@/Utils";
+import { ElMessage } from "element-plus";
 import { Component, Vue } from "vue-facing-decorator";
 
 @Component
 export default class Preview extends Vue {
-  declare winEventHandlers;
+  // 键盘按下处理器
+  async HandleKeydown(e: KeyboardEvent) {
+    const { nodeName } = e.target as HTMLElement;
+    if (nodeName == "INPUT" || nodeName == "TEXTAREA") return;
 
+    if (e.ctrlKey && e.altKey && e.key.toLowerCase() === "x") {
+      await this.$Store.dispatch("Window/CloseAllWindows");
+      this.$Store.dispatch("Designer/SetPreview", false);
+    }
+    e.preventDefault();
+  }
+
+  eventManager: EventManager = new EventManager();
   created() {
-    this.winEventHandlers = {
-      keydown: async function (e) {
-        if (
-          (e.target as HTMLElement).nodeName == "INPUT" || // 输入框
-          (e.target as HTMLElement).nodeName == "TEXTAREA" // 文本框
-        )
-          return;
-
-        if (e.ctrlKey && e.altKey && e.key.toLowerCase() === "x") {
-          await this.$Store.dispatch("Window/CloseAllWindows");
-          this.$Store.dispatch("Designer/SetPreview", false);
-        }
-        e.preventDefault();
-      },
-    };
+    this.eventManager.add(window, "keydown", this.HandleKeydown, this);
     ElMessage({ message: "已进入预览模式，按Ctrl+Alt+X退出", type: "success", duration: 5000 });
-    BindEventContext(this.winEventHandlers, this);
-    RegisterEvent.call(window, this.winEventHandlers);
   }
 
   unmounted() {
-    RegisterEvent.call(window, this.winEventHandlers, true);
-    this.winEventHandlers = null;
+    this.eventManager?.removeAll();
+    this.eventManager = null;
     Compiler.Dispose();
   }
 

@@ -3,7 +3,7 @@ import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import DevelopmentModules from "@/Utils/DevelopmentModules";
-import { Cache } from "@/Utils";
+import { MemoizeResult } from "@/Utils";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElSelectV2 } from "element-plus";
 import { Component } from "vue-facing-decorator";
@@ -508,15 +508,14 @@ function GetButtonProps(item: ToolStripItem) {
       field: { ref: item, key: "icon" },
       des: "工具条控件的按钮图标",
       type: DesignerDeclare.InputType.ElSelect,
-      options: require
-        .context("@/Assets/Icons/Svg", true, /\.svg$/)
-        .keys()
-        .map((key) => {
-          return {
-            label: key.replace(/\.\/|\.svg/g, ""),
-            value: "file:" + key.replace(/\.\/|\.svg/g, ""),
-          };
-        }),
+      options: Object.keys(import.meta.glob("@/Assets/Icons/Svg/**/*.svg", { eager: true })).map((key) => {
+        // Extract the filename from the path
+        const filename = key.match(/\/([^/]+)\.svg$/)?.[1] || "";
+        return {
+          label: filename,
+          value: "file:" + filename,
+        };
+      }),
     },
     // 自定义图标
     {

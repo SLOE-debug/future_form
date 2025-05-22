@@ -1,4 +1,4 @@
-import { BaseWindow } from "./Utils/Designer/Form";
+import { BaseWindow } from "./Utils/Runtime";
 
 export {};
 

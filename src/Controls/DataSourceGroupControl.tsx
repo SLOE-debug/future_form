@@ -2,15 +2,14 @@ import Control from "@/CoreUI/Designer/Control";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
-
 import { ElMessage, dayjs } from "element-plus";
 import { Component } from "vue-facing-decorator";
 import TableControl from "./TableControl";
 import { defineAsyncComponent, watch } from "vue";
 import { CloneStruct } from "@/Utils";
-import { Guid } from "@/Utils";
-import { TwoWayBinding } from "@/Utils/Designer/Form";
 import DevelopmentModules from "@/Utils/DevelopmentModules";
+import { DropAddControl } from "@/Utils/Designer";
+import { TwoWayBinding } from "@/Utils/Runtime";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceGroupConfig = ControlDeclare.DataSourceGroupConfig;
@@ -26,27 +25,8 @@ const AsyncSvgIcon = defineAsyncComponent(() => import("@/Components/SvgIcon"));
 export default class DataSourceGroupControl extends Control {
   declare config: DataSourceGroupConfig;
 
-  async Drop(e: DragEvent) {
-    let { CreateControlByDragEvent, CreateControlName, AddControlDeclareToDesignerCode } =
-      await DevelopmentModules.Load();
-    let { Stack, StackAction } = await DevelopmentModules.Load();
-
-    let config = CreateControlByDragEvent.call(this, e) as ControlConfig;
-
-    config.id = Guid.NewGuid();
-    CreateControlName(config);
-    config.top -= config.height / 2;
-    config.left -= config.width / 2;
-    config.fromContainer = this.config.name;
-
-    this.config.$children.push(config);
-    this.$nextTick(() => {
-      this.$Store.dispatch(
-        "Designer/AddStack",
-        new Stack(this.$refs[config.name] as Control, null, null, StackAction.Create)
-      );
-    });
-    AddControlDeclareToDesignerCode(config);
+  Drop(e: DragEvent) {
+    DropAddControl(e, this);
     e.stopPropagation();
   }
 
@@ -70,7 +50,6 @@ export default class DataSourceGroupControl extends Control {
   }
 
   async Cancel(e: MouseEvent) {
-    await super.Cancel(e);
     this.slideStartCoord = null;
   }
 
@@ -78,6 +57,11 @@ export default class DataSourceGroupControl extends Control {
     this.twoWayBindingList = [];
     this.diffData = new Map();
     this.parentFormControl.dataSourceControls.push(this);
+  }
+
+  setupDesignerMode(): void {
+    super.setupDesignerMode();
+    this.eventManager.add(window, "mouseup", this.Cancel);
   }
 
   mounted() {
@@ -96,10 +80,10 @@ export default class DataSourceGroupControl extends Control {
               class:
                 "w-[21px] absolute top-[-10px] left-[10px] z-[2] cursor-move bg-white flex border border-solid border-[#067bef] rounded-[5px] [&>svg]:p-[2px] [&>svg]:mt-[-1px]",
               size: 22,
-              onMousedown: (e) => {
-                this.Pick(e);
-                this.BeginAdjust(e);
-              },
+              // onMousedown: (e) => {
+              //   this.Pick(e);
+              //   // this.BeginAdjust(e);
+              // },
               "data-type": "Move",
               "data-control": true,
             }}

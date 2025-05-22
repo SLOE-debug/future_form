@@ -1,6 +1,6 @@
 import { ControlDeclare, DesignerDeclare, UtilsDeclare } from "@/Types";
 import DevelopmentModules from "../DevelopmentModules";
-import Control, { CloneControlConfig, deepClone } from "@/CoreUI/Designer/Control";
+import Control, {  DeepClone } from "@/CoreUI/Designer/Control";
 import { GetAllRefs } from "@/Vuex/Modules/Designer";
 import { GetFormAllControls } from "./Designer";
 
@@ -112,9 +112,12 @@ export default class ContainerManager {
         const childScreenTop = screenPos.y + scrollOffset.y;
 
         // 如果子控件是容器
-        // 且该控件未选中
+        // 且该控件的 dargHandler.adjustType 不是 Move
         // 则将其添加到结果中
-        if (childConfig.container && GetFormAllControls()[childConfig.name].selected === false) {
+        if (
+          childConfig.container &&
+          GetFormAllControls()[childConfig.name].dragHandler.adjustType !== ControlDeclare.AdjustType.Move
+        ) {
           allContainers.push({
             globalLeft,
             globalTop,
@@ -188,9 +191,7 @@ export default class ContainerManager {
     }
 
     this.config.fromContainer = targetContainer.name;
-
     targetContainer.$children.push(this.config);
-
     AddControlDeclareToDesignerCode(this.config);
   }
 
@@ -233,14 +234,14 @@ export default class ContainerManager {
       // 禁用 c 的堆栈
       control.disableStack = true;
 
-      let originalConfig = deepClone(control.config);
+      let originalConfig = DeepClone(control.config);
       this.OutContainer(oldContainer);
       await this.JoinContainer(newContainer);
 
       // 添加到堆栈
       $Store.dispatch(
         "Designer/AddStack",
-        new Stack(control, deepClone(control.config), originalConfig, StackAction.SwitchContainer)
+        new Stack(control, DeepClone(control.config), originalConfig, StackAction.SwitchContainer)
       );
 
       control.disableStack = false;

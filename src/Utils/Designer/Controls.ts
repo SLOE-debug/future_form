@@ -2,7 +2,7 @@ import { ControlDeclare, DesignerDeclare } from "@/Types";
 import store from "@/Vuex/Store";
 import { GetFields } from "./Designer";
 import { GetAllSqlFiles } from "../VirtualFileSystem/Index";
-import { sourceArgsPrefix } from "..";
+import { dataSourceParamPrefix } from "..";
 import type Control from "@/CoreUI/Designer/Control";
 import type FormControl from "@/Controls/FormControl";
 
@@ -234,7 +234,7 @@ export function AddDataSourceProps(fieldMap: ConfiguratorItem[], config: Control
         name: m.name,
         des: "该数据源的参数",
         type: DesignerDeclare.InputType.ElSelect,
-        field: sourceArgsPrefix + m.name,
+        field: dataSourceParamPrefix + m.name,
         options: GetFlatConfig().map((c) => {
           return { label: c.name, value: c.name };
         }),

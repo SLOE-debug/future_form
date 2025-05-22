@@ -3,7 +3,7 @@ import FileSidebar from "./VirtualFileSystem/FileSidebar";
 import ControlLibray from "./ToolKit/ControlLibrary";
 import SvgIcon from "@/Components/SvgIcon";
 import Configurator from "./ToolKit/Configurator";
-import { BindEventContext, RegisterEvent } from "@/Utils";
+import { EventManager } from "@/Utils";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 
 type IDirectory = VritualFileSystemDeclare.IDirectory;
@@ -106,30 +106,29 @@ export default class Sidebar extends Vue {
 
   activeTab = "project";
 
-  declare winEventHandlers;
+  // 键盘按下处理器
+  HandleKeydown(e: KeyboardEvent) {
+    // 如果按下的事件来源是 input 或者 textarea，则不响应
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    let methodName = "";
+
+    if (e.ctrlKey) methodName = "Ctrl_";
+    if (e.shiftKey) methodName += "Shift_";
+    if (e.altKey) methodName += "Alt_";
+
+    let key = isNaN(parseInt(e.key)) ? e.key : "Number";
+
+    methodName += `Key_${key}`;
+    this[methodName]?.(e);
+
+    e.stopPropagation();
+    e.preventDefault();
+  }
+
+  eventManger: EventManager = new EventManager();
 
   created() {
-    this.winEventHandlers = {
-      keydown: function (e: KeyboardEvent) {
-        // 如果按下的事件来源是 input 或者 textarea，则不响应
-        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-        let methodName = "";
-
-        if (e.ctrlKey) methodName = "Ctrl_";
-        if (e.shiftKey) methodName += "Shift_";
-        if (e.altKey) methodName += "Alt_";
-
-        let key = isNaN(parseInt(e.key)) ? e.key : "Number";
-
-        methodName += `Key_${key}`;
-        this[methodName]?.(e);
-
-        e.stopPropagation();
-        e.preventDefault();
-      },
-    };
-    BindEventContext(this.winEventHandlers, this);
-    RegisterEvent.call(window, this.winEventHandlers);
+    this.eventManger.add(window, "keydown", this.HandleKeydown, this);
   }
 
   mounted() {
@@ -139,7 +138,8 @@ export default class Sidebar extends Vue {
   }
 
   unmounted() {
-    RegisterEvent.call(window, this.winEventHandlers, true);
+    this.eventManger?.removeAll();
+    this.eventManger = null;
   }
 
   render() {

@@ -4,7 +4,7 @@ import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { Component, Watch } from "vue-facing-decorator";
 import FormControl from "./FormControl";
 import Compiler from "@/Core/Compile/Compiler";
-import { BaseWindow } from "@/Utils/Designer/Form";
+import { BaseWindow } from "@/Utils/Runtime/Form";
 import DevelopmentModules from "@/Utils/DevelopmentModules";
 
 type SubWindowConfig = ControlDeclare.SubWindowConfig;

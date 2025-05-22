@@ -1,7 +1,7 @@
 import SvgIcon from "@/Components/SvgIcon";
 import { WindowDeclare } from "@/Types/WindowDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
-import { BindEventContext, RegisterEvent } from "@/Utils";
+import { EventManager } from "@/Utils";
 import { Component, Prop, Vue, Watch } from "vue-facing-decorator";
 import { JSX } from "vue/jsx-runtime";
 
@@ -186,19 +186,14 @@ export default class WindowControlBar extends Vue {
     this.isMove = false;
   }
 
+  eventManger: EventManager = new EventManager();
+
   created() {
     // 如果不需要显示窗体控制条
     if (!this.showControlBar) {
       this.headHeight = 0;
     }
 
-    this.winEventHandlers = {
-      mousemove: this.Move,
-      mouseup: this.CancelMove,
-      resize: function () {
-        this.UpdateDesktopSize();
-      },
-    };
     switch (this.startPosition) {
       case WindowDeclare.StartPosition.Default:
         this.top = this.left = 0;
@@ -221,15 +216,23 @@ export default class WindowControlBar extends Vue {
     });
   }
 
-  declare winEventHandlers;
   mounted() {
-    BindEventContext(this.winEventHandlers, this);
-    RegisterEvent.call(window, this.winEventHandlers);
+    this.eventManger.addBatch(
+      window,
+      {
+        mousemove: this.Move,
+        mouseup: this.CancelMove,
+        resize: () => {
+          this.UpdateDesktopSize();
+        },
+      },
+      this
+    );
   }
 
   unmounted() {
-    RegisterEvent.call(window, this.winEventHandlers, true);
-    this.winEventHandlers = null;
+    this.eventManger?.removeAll();
+    this.eventManger = null;
   }
 
   ShowDialogWindow(jsx: JSX.Element) {

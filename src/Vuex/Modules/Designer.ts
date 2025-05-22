@@ -124,6 +124,7 @@ const actions: ActionTree<DesignerState, any> = {
   },
   SetFormDesigner({ state, dispatch }, formDesigner) {
     state.$FormDesigner = formDesigner;
+    if (!formDesigner) return;
     dispatch("SelectControl", [formDesigner]);
   },
   async RenderControlConfigurator({ state }) {

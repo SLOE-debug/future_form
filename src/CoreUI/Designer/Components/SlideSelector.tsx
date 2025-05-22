@@ -1,6 +1,6 @@
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
-import { BindEventContext, RegisterEvent } from "@/Utils";
-import { Component, Emit, Prop, Vue, Watch } from "vue-facing-decorator";
+import { EventManager } from "@/Utils";
+import { Component, Emit, Prop, Vue } from "vue-facing-decorator";
 
 type Coord = UtilsDeclare.Coord;
 
@@ -8,16 +8,16 @@ type Coord = UtilsDeclare.Coord;
 export default class SlideSelector extends Vue {
   @Prop
   start: Coord;
-  @Watch("start")
-  startChange(nv, ov) {
-    if (nv) {
-      RegisterEvent.call(window, this.winEventHandlers);
-    } else {
-      this.$emit("slideEnd", this.boundingBox);
-      this.boundingBox = this.InitBoundingBox();
-      RegisterEvent.call(window, this.winEventHandlers, true);
-    }
-  }
+  // @Watch("start")
+  // startChange(nv, ov) {
+  //   if (nv) {
+  //     RegisterEvent.call(window, this.winEventHandlers);
+  //   } else {
+  //     this.$emit("slideEnd", this.boundingBox);
+  //     this.boundingBox = this.InitBoundingBox();
+  //     RegisterEvent.call(window, this.winEventHandlers, true);
+  //   }
+  // }
 
   @Emit("slideEnd")
   SlideEnd() {}
@@ -61,21 +61,25 @@ export default class SlideSelector extends Vue {
     };
   }
 
-  declare winEventHandlers;
+  eventManager: EventManager = new EventManager();
+
   mounted() {
     if (this.$Store.get.Designer.Debug) {
-      this.winEventHandlers = {
-        mousemove: this.Resize,
-        mouseup: this.SlideEnd,
-      };
-      BindEventContext(this.winEventHandlers, this);
+      this.eventManager.addBatch(
+        window,
+        {
+          mousemove: this.Resize,
+          mouseup: this.SlideEnd,
+        },
+        this
+      );
     }
   }
 
   unmounted() {
     if (this.$Store.get.Designer.Debug) {
-      RegisterEvent.call(window, this.winEventHandlers, true);
-      this.winEventHandlers = null;
+      this.eventManager?.removeAll();
+      this.eventManager = null;
     }
   }
 

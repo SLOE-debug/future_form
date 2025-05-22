@@ -3,7 +3,7 @@ import { ElButton, ElColorPicker, ElInput, ElInputNumber, ElMessage, ElOption, E
 import { Component, Prop, Vue } from "vue-facing-decorator";
 import OptionsConfigurator from "./OptionsConfigurator";
 import ColumnsConfigurator from "./ColumnsConfigurator";
-import { CapitalizeFirstLetter, sourceArgsPrefix } from "@/Utils";
+import { CapitalizeFirstLetter, dataSourceParamPrefix } from "@/Utils";
 import { AddMethodToDesignerBackground, LocateMethod } from "@/Utils/Designer/Designer";
 import { GetDesignerBackgroundFile, GetFileById, IsDirectory } from "@/Utils/VirtualFileSystem/Index";
 import type Control from "@/CoreUI/Designer/Control";
@@ -242,7 +242,7 @@ export default class Configurator extends Vue {
                   onMouseenter={(e) => {
                     this.des = m.des;
                   }}
-                  class={typeof m.field == "string" && m.field.startsWith(sourceArgsPrefix) ? css.args : ""}
+                  class={typeof m.field == "string" && m.field.startsWith(dataSourceParamPrefix) ? css.args : ""}
                 >
                   <div class={css.item}>
                     <div class={css.label}>{m.name}</div>

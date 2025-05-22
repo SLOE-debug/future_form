@@ -5,7 +5,7 @@ import { Api } from "./Plugins/Api/ExtendApi";
 import DataSource from "./Apis/DataSource";
 import Expression from "./Apis/Expression";
 
-declare module "@vue/runtime-core" {
+declare module "vue" {
   interface ComponentCustomProperties {
     $Store: Store<RootState>;
     $Controls: string[];

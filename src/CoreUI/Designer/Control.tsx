@@ -1,73 +1,20 @@
-import { ControlDeclare, UtilsDeclare, DesignerDeclare } from "@/Types";
-import { ComponentBase, Prop, Vue, Watch } from "vue-facing-decorator";
+import { ControlDeclare, UtilsDeclare } from "@/Types";
+import { ComponentBase, Prop, Vue } from "vue-facing-decorator";
 import type FormControl from "@/Controls/FormControl";
-import { BindEventContext, createEventManager, EventManager, RegisterEvent } from "@/Utils";
+import { EventManager } from "@/Utils";
 import { JSX } from "vue/jsx-runtime";
 import { ElMessage } from "element-plus";
 import DevelopmentModules from "@/Utils/DevelopmentModules";
 import { GetParentDataSourceGroupControl, GetParentFormControl } from "@/Utils/Designer/Controls";
 import DragHandler, { DraggableConfig } from "@/Utils/Designer/DragHandler";
 import ContainerManager from "@/Utils/Designer/ContainerManager";
-import { nextTick, onUnmounted, toRaw, watch } from "vue";
+import { onUnmounted, watch } from "vue";
 import { IsControlNameExists } from "@/Utils/Designer/Designer";
-import { logDiff } from "@/Utils/Designer";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceControlConfig = ControlDeclare.DataSourceControlConfig;
-type TabsConfig = ControlDeclare.TabsConfig;
 
 type EventHandlers = UtilsDeclare.EventHandlers;
-type Coord = UtilsDeclare.Coord;
-
-type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
-type ContainerInfo = DesignerDeclare.ContainerInfo;
-
-/**
- * 克隆控件配置
- */
-export function CloneControlConfig(config: ControlConfig, includeChildren: boolean = false): ControlConfig {
-  const clonedConfig: ControlConfig = {
-    width: 0,
-    height: 0,
-    type: "",
-  };
-
-  if (!config) return clonedConfig;
-
-  const stack: Array<{ source: any; target: any; includeChildren: boolean }> = [
-    { source: config, target: clonedConfig, includeChildren },
-  ];
-
-  while (stack.length > 0) {
-    const { source, target, includeChildren } = stack.pop()!;
-
-    for (const key in source) {
-      if (key === "instance") continue;
-      if (!includeChildren && key === "$children") continue;
-
-      const value = source[key];
-
-      if (value === null || value === undefined) {
-        target[key] = value;
-      } else if (Array.isArray(value)) {
-        target[key] = value.map((item) => {
-          if (typeof item === "object" && item !== null) {
-            const newObj = {};
-            stack.push({ source: item, target: newObj, includeChildren });
-            return newObj;
-          }
-          return item;
-        });
-      } else if (typeof value === "object") {
-        target[key] = {};
-        stack.push({ source: value, target: target[key], includeChildren });
-      } else {
-        target[key] = value;
-      }
-    }
-  }
-  return clonedConfig;
-}
 
 /**
  * 深度克隆对象，排除指定的属性
@@ -75,7 +22,7 @@ export function CloneControlConfig(config: ControlConfig, includeChildren: boole
  * @param excludeKeys 要排除的属性名数组
  * @returns 克隆后的对象
  */
-export function deepClone<T>(obj: T, excludeKeys: string[] = ["instance", "$children"]): T {
+export function DeepClone<T>(obj: T, excludeKeys: string[] = ["instance", "$children"]): T {
   // 处理基本类型、null和undefined
   if (obj === null || obj === undefined || typeof obj !== "object") {
     return obj;
@@ -83,7 +30,7 @@ export function deepClone<T>(obj: T, excludeKeys: string[] = ["instance", "$chil
 
   // 处理数组
   if (Array.isArray(obj)) {
-    return obj.map((item) => deepClone(item, excludeKeys)) as unknown as T;
+    return obj.map((item) => DeepClone(item, excludeKeys)) as unknown as T;
   }
 
   // 处理日期对象
@@ -97,7 +44,7 @@ export function deepClone<T>(obj: T, excludeKeys: string[] = ["instance", "$chil
   // 复制所有非排除的属性
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key) && !excludeKeys.includes(key)) {
-      result[key as keyof T] = deepClone(obj[key as keyof T], excludeKeys);
+      result[key as keyof T] = DeepClone(obj[key as keyof T], excludeKeys);
     }
   }
 
@@ -108,78 +55,6 @@ export function deepClone<T>(obj: T, excludeKeys: string[] = ["instance", "$chil
 export default class Control extends Vue {
   @Prop
   config: ControlConfig & DataSourceControlConfig;
-
-  // get watchConfig() {
-  //   return this.$Store.get.Designer.Debug && CloneControlConfig(this.config);
-  // }
-
-  // pushTimeOut: NodeJS.Timeout;
-  // declare watchOldValue: ControlConfig;
-  // @Watch("watchConfig")
-  // async ConfigChange(nv, ov) {
-  //   if (this.shouldSkipConfigChange(nv, ov)) return;
-
-  //   // 如果 watchOldValue 为空，则赋值为 ov 旧值，只记录当前控件首次更改时的旧值
-  //   if (!this.watchOldValue) this.watchOldValue = ov;
-
-  //   // 延迟 150ms 执行
-  //   clearTimeout(this.pushTimeOut);
-  //   this.pushTimeOut = setTimeout(() => {
-  //     this.AddStack(nv, ov);
-  //   }, 150);
-  // }
-
-  // private shouldSkipConfigChange(nv: ControlConfig, ov: ControlConfig) {
-  //   // 是否非 debug 模式 或 ov 为空
-  //   const isNotDebugOrOvIsNull = !this.$Store.get.Designer.Debug || !ov;
-
-  //   // 是否非选中状态或者禁用堆栈
-  //   const isUnSelectedOrDisableStack = !this.selected || this.disableStack;
-
-  //   // 是否与大人物的父容器控件不一致
-  //   const isNotSameParentContainer =
-  //     this.config.fromContainer !== this.$Store.get.Designer.BigShotControl?.config?.fromContainer &&
-  //     !!this.$Store.get.Designer.BigShotControl;
-
-  //   // 是否是 新旧 fromContainer 不一致，且大人物为空
-  //   const isModifyFromContainer =
-  //     this.config.fromContainer != ov.fromContainer && !this.$Store.get.Designer.BigShotControl;
-
-  //   return (isNotDebugOrOvIsNull || isUnSelectedOrDisableStack || isNotSameParentContainer) && !isModifyFromContainer;
-  // }
-
-  // /**
-  //  * 向堆栈中添加当前变更
-  //  */
-  // async AddStack(nv, ov) {
-  //   let { FindControlsByKeyValue, CreateControlName, UpdateControlDeclareToDesignerCode } =
-  //     await DevelopmentModules.Load();
-  //   let { Stack } = await DevelopmentModules.Load();
-
-  //   // 如果当前控件的名称与其他控件的名称冲突，则不执行
-  //   if (
-  //     nv.name != ov.name &&
-  //     !!FindControlsByKeyValue(this.$Store.get.Designer.FormConfig, "name", nv.name, this.config.id)
-  //   ) {
-  //     this.disableStack = true;
-  //     ElMessage({ message: `名称属性具有唯一性！\r\n与其他控件的名称冲突：${nv.name}！`, type: "error" });
-  //     CreateControlName(this.config);
-
-  //     this.$nextTick(() => {
-  //       this.disableStack = false;
-  //     });
-  //   } else {
-  //     // 如果是名称/数据源变更，都需要更新设计器的代码，以便在设计器的“后台”文件中使用最新的代码声明，前者是为了变量的引用统一，后者是为了数据源的获取参数统一
-  //     if (nv.name != ov.name || nv.sourceName != ov.sourceName) {
-  //       UpdateControlDeclareToDesignerCode(this.watchOldValue.name, nv);
-  //     }
-
-  //     // 添加到堆栈，记录变更
-  //     await this.$Store.dispatch("Designer/AddStack", new Stack(this, nv, this.watchOldValue));
-  //   }
-
-  //   this.watchOldValue = null;
-  // }
 
   @Prop({ default: true })
   l: boolean;
@@ -199,12 +74,10 @@ export default class Control extends Vue {
   lb: boolean;
 
   get parentFormControl() {
-    const container = this.config.fromContainer;
     return GetParentFormControl(this);
   }
 
   get parentDataSourceControl() {
-    const container = this.config.fromContainer;
     return GetParentDataSourceGroupControl(this);
   }
 
@@ -219,6 +92,15 @@ export default class Control extends Vue {
   selected = false;
   // 是否禁用设计模式下的堆栈
   disableStack = false;
+
+  // 生产或预览模式
+  get isProductionOrPreview() {
+    return !this.$Store.get.Designer.Debug || this.$Store.get.Designer.Preview;
+  }
+  // 设计模式且非预览模式
+  get isDesignerMode() {
+    return this.$Store.get.Designer.Debug && !this.$Store.get.Designer.Preview;
+  }
 
   /**
    * 取消选中时触发的事件，在 Vuex 的 Designer 模块中调用
@@ -235,10 +117,10 @@ export default class Control extends Vue {
   // 空间容器关系管理类
   containerManager: ContainerManager;
   // 事件管理器
-  eventManager: EventManager;
+  eventManager: EventManager = new EventManager();
 
   // 设计器模式下控件的功能
-  setupDesignerModeFeatures() {
+  setupDesignerMode() {
     this.dragHandler = new DragHandler(this.config as DraggableConfig, this.$Store, {
       bigShot: () => this.bigShot,
       handles: {
@@ -253,7 +135,6 @@ export default class Control extends Vue {
       },
     });
     this.containerManager = new ContainerManager(this);
-    this.eventManager = createEventManager(this.config.id);
     this.eventManager.add(
       window,
       "mouseup",
@@ -273,7 +154,7 @@ export default class Control extends Vue {
 
     // 监听配置的变化
     const configWatch = watch(
-      () => deepClone(this.config),
+      () => DeepClone(this.config),
       (nv, ov) => {
         // 如果非 debug 模式 或 ov 为空
         if (!this.$Store.get.Designer.Debug || !ov) return;
@@ -363,24 +244,21 @@ export default class Control extends Vue {
     return false;
   }
 
-  declare events: EventHandlers;
+  events: EventHandlers = {};
   mounted() {
     this.config.limit = true;
-    this.events = {};
-
-    if (this.$Store.get.Designer.Debug) {
-      this.setupDesignerModeFeatures();
-    }
+    if (this.isDesignerMode) this.setupDesignerMode();
   }
 
   // 是否已卸载的标识
   isUnmounted = false;
 
   unmounted() {
-    this.eventManager.removeAll();
+    this.eventManager?.removeAll();
     this.eventManager = null;
     this.containerManager = null;
     this.isUnmounted = true;
+    this.events = {};
   }
 
   Pick(e: MouseEvent) {
@@ -427,7 +305,7 @@ export default class Control extends Vue {
     if (pushStack) {
       this.$Store.dispatch(
         "Designer/AddStack",
-        new Stack(parentControl, null, deepClone(this.config, ["instance"]), StackAction.Delete)
+        new Stack(parentControl, null, DeepClone(this.config, ["instance"]), StackAction.Delete)
       );
     }
     // 移除控件的声明
@@ -443,7 +321,7 @@ export default class Control extends Vue {
     if (this.$Store.get.Designer.SelectedControls.find((c) => c.config.name == this.config.fromContainer) && !parent)
       return;
 
-    let conf = deepClone(this.config, []);
+    let conf = DeepClone(this.config, []);
     conf.$children = conf.$children?.map((c) => (this.$refs[c.name] as Control).Clone(conf));
     return conf;
   }
