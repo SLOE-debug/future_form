@@ -1,5 +1,5 @@
 import store from "@/Vuex/Store";
-import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
+import axios, { AxiosRequestConfig } from "axios";
 import { App } from "vue";
 import pako from "pako";
 import VirtualFileSystem from "@/Apis/VirtualFileSystem";

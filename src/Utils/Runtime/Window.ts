@@ -1,4 +1,4 @@
-import FormControl from "@/Controls/FormControl";
+import type FormControl from "@/Controls/FormControl";
 import Compiler from "@/Core/Compile/Compiler";
 import { GlobalApi } from "@/Plugins/Api/ExtendApi";
 import { ControlDeclare } from "@/Types";
@@ -6,7 +6,7 @@ import store from "@/Vuex/Store";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { WatchStopHandle, watch } from "vue";
 import { GetOrCreateFromStorage } from "../BasicUtils";
-import { globalVariate } from "./Data";
+import { globalVariate } from ".";
 
 type ToolStripConfig = ControlDeclare.ToolStripConfig;
 type ToolStripItem = ControlDeclare.ToolStripItem;

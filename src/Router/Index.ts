@@ -1,4 +1,3 @@
-import Home from "@/Views/Home";
 import { RootState } from "@/Vuex/Store";
 import { RouteRecordRaw, createRouter, createWebHistory } from "vue-router";
 import { Module } from "vuex";
@@ -12,7 +11,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: "/",
     name: "Home",
-    component: Home,
+    component: () => import("@/Views/Home"),
   },
   {
     path: "/test",
@@ -33,11 +32,10 @@ async function loadDevelopmentStore() {
   let store = (await import("@/Vuex/Store")).default;
 
   // 是否已加载 Page/Designer/VirtualFileSystem 模块
-  let loaded = store.hasModule("Page") && store.hasModule("Designer") && store.hasModule("VirtualFileSystem");
+  let loaded = store.hasModule("Page") && store.hasModule("VirtualFileSystem");
   if (!loaded) {
     const modules = [
       { name: "Page", importModule: import("@/Vuex/Modules/Page") },
-      { name: "Designer", importModule: import("@/Vuex/Modules/Designer") },
       { name: "VirtualFileSystem", importModule: import("@/Vuex/Modules/VirtualFileSystem") },
     ];
 
@@ -55,10 +53,6 @@ async function loadDevelopmentStore() {
 router.beforeEach(async (to, from, next) => {
   if (to.name === "Development") {
     await loadDevelopmentStore();
-  } else {
-    // 为 Store.get 添加虚假的 Designer.Debug 属性
-    let store = (await import("@/Vuex/Store")).default;
-    store.get.Designer = { Debug: false } as any;
   }
 
   next();

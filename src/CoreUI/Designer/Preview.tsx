@@ -1,11 +1,16 @@
 import WindowCollection from "@/Components/WindowCollection";
 import Compiler from "@/Core/Compile/Compiler";
+import { useDesignerStore } from "@/Stores/designerStore";
 import { EventManager } from "@/Utils";
 import { ElMessage } from "element-plus";
 import { Component, Vue } from "vue-facing-decorator";
 
 @Component
 export default class Preview extends Vue {
+  get designerStore() {
+    return useDesignerStore();
+  }
+
   // 键盘按下处理器
   async HandleKeydown(e: KeyboardEvent) {
     const { nodeName } = e.target as HTMLElement;
@@ -13,7 +18,7 @@ export default class Preview extends Vue {
 
     if (e.ctrlKey && e.altKey && e.key.toLowerCase() === "x") {
       await this.$Store.dispatch("Window/CloseAllWindows");
-      this.$Store.dispatch("Designer/SetPreview", false);
+      this.designerStore.SetPreview(false);
     }
     e.preventDefault();
   }

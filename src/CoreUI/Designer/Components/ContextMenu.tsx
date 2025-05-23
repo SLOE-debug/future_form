@@ -1,3 +1,4 @@
+import { useDesignerStore } from "@/Stores/designerStore";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
@@ -11,15 +12,18 @@ type Coord = UtilsDeclare.Coord;
 export default class ContextMenu extends Vue {
   @Prop
   position: Coord;
+  get designerStore() {
+    return useDesignerStore();
+  }
 
   get style() {
     let { x, y } = this.position;
-    let { left: l, top: t } = this.$Store.get.Designer.$DesignerSpace?.$el?.getBoundingClientRect() || {
+    let { left: l, top: t } = this.designerStore.designerSpace?.$el?.getBoundingClientRect() || {
       left: 0,
       top: 0,
     };
 
-    t -= (this.$Store.get.Designer.$DesignerSpace?.$el as HTMLDivElement)?.scrollTop || 0;
+    t -= (this.designerStore.designerSpace?.$el as HTMLDivElement)?.scrollTop || 0;
 
     return {
       top: y - t + "px",
@@ -32,35 +36,35 @@ export default class ContextMenu extends Vue {
   }
 
   async BringFront() {
-    for (const control of this.$Store.get.Designer.SelectedControls) {
+    for (const control of this.designerStore.selectedControls) {
       let { del, children } = await control.Delete();
       children.push(del);
     }
   }
 
   async UnderFloor() {
-    for (const control of this.$Store.get.Designer.SelectedControls) {
+    for (const control of this.designerStore.selectedControls) {
       let { del, children } = await control.Delete();
       children.unshift(del);
     }
   }
 
   Copy() {
-    this.$Store.get.Designer.$DesignerSpace.CtrlKeyCControl(null);
+    this.designerStore.designerSpace.CtrlKeyCControl(null);
   }
 
   Paste() {
-    this.$Store.get.Designer.$DesignerSpace.CtrlKeyVControl(null);
+    this.designerStore.designerSpace.CtrlKeyVControl(null);
   }
 
   Delete() {
-    this.$Store.get.Designer.$DesignerSpace.DeleteControl(null);
+    this.designerStore.designerSpace.DeleteControl(null);
   }
 
   MoveUpLevel() {
     let { i, children } = this.GetCurrentControlArray(
-      this.$Store.get.Designer.FormConfig,
-      this.$Store.get.Designer.SelectedControls[0].config.id
+      this.designerStore.formConfig,
+      this.designerStore.selectedControls[0].config.id
     );
     if (i < children.length - 1) {
       [children[i], children[i + 1]] = [children[i + 1], children[i]];
@@ -69,8 +73,8 @@ export default class ContextMenu extends Vue {
 
   MoveDownLevel() {
     let { i, children } = this.GetCurrentControlArray(
-      this.$Store.get.Designer.FormConfig,
-      this.$Store.get.Designer.SelectedControls[0].config.id
+      this.designerStore.formConfig,
+      this.designerStore.selectedControls[0].config.id
     );
     if (i > 0) {
       [children[i - 1], children[i]] = [children[i], children[i - 1]];
@@ -79,8 +83,8 @@ export default class ContextMenu extends Vue {
 
   Justify(type: string) {
     let feild = type.replace("Justify", "").replace("Same", "").toLowerCase();
-    let controls = this.$Store.get.Designer.SelectedControls.filter((c) => !c.bigShot);
-    let bigShot = this.$Store.get.Designer.BigShotControl;
+    let controls = this.designerStore.selectedControls.filter((c) => !c.bigShot);
+    let bigShot = this.designerStore.bigShotControl;
     let field = "";
     switch (type) {
       case "RightJustify":
@@ -170,7 +174,7 @@ export default class ContextMenu extends Vue {
     return (
       <div class="contextmenu absolute bg-[#3c3c3c] w-[240px] z-[1000] rounded-[4px]" style={this.style}>
         <ul class="w-full h-full p-[5px]">
-          {this.$Store.get.Designer.Menus.map((m) => {
+          {this.designerStore.menus.map((m) => {
             return (
               <li
                 class="h-[25px] text-white text-[14px] flex items-center justify-between p-[0_20px] hover:bg-[#094771]"

@@ -9,6 +9,7 @@ import { GetDesignerBackgroundFile, GetFileById, IsDirectory } from "@/Utils/Vir
 import type Control from "@/CoreUI/Designer/Control";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useDesignerStore } from "@/Stores/designerStore";
 
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 type IDirectory = VritualFileSystemDeclare.IDirectory;
@@ -17,6 +18,10 @@ type IDirectory = VritualFileSystemDeclare.IDirectory;
 export default class Configurator extends Vue {
   @Prop
   left: number;
+
+  get designerStore() {
+    return useDesignerStore();
+  }
 
   SyncConfiguration(m: ConfiguratorItem, isEvent: boolean) {
     if (!isEvent) {
@@ -27,7 +32,7 @@ export default class Configurator extends Vue {
         }
       }
     }
-    this.$Store.dispatch("Designer/RenderControlConfigurator");
+    this.designerStore.RenderControlConfigurator();
   }
 
   GetConfigurator(m: ConfiguratorItem, isEvent: boolean = false) {
@@ -117,7 +122,7 @@ export default class Configurator extends Vue {
               }}
             >
               {isEvent
-                ? this.$Store.get.Designer.EventNames.map((n) => {
+                ? this.designerStore.eventNames.map((n) => {
                     return <ElOption key={n} label={n} value={n}></ElOption>;
                   })
                 : m.options?.map((o) => {
@@ -154,13 +159,13 @@ export default class Configurator extends Vue {
         );
       case DesignerDeclare.InputType.Options:
         return (
-          this.$Store.get.Designer.SelectedControls.length == 1 && (
+          this.designerStore.selectedControls.length == 1 && (
             <OptionsConfigurator {...{ options: ref[key] }}></OptionsConfigurator>
           )
         );
       case DesignerDeclare.InputType.Columns:
         return (
-          this.$Store.get.Designer.SelectedControls.length == 1 && (
+          this.designerStore.selectedControls.length == 1 && (
             <ColumnsConfigurator {...{ columns: ref[key], ...m.extra }}></ColumnsConfigurator>
           )
         );
@@ -171,7 +176,7 @@ export default class Configurator extends Vue {
   selectedControls: Control[] = [];
 
   updated() {
-    this.selectedControls = this.$Store.get.Designer.SelectedControls;
+    this.selectedControls = this.designerStore.selectedControls;
   }
 
   /**
@@ -236,7 +241,7 @@ export default class Configurator extends Vue {
       <div class={css.configurator}>
         <div class={css.container}>
           <ul style={{ marginLeft: -this.left + "%" }}>
-            {this.$Store.get.Designer.ControlProps.map((m) => {
+            {this.designerStore.controlProps.map((m) => {
               return (
                 <li
                   onMouseenter={(e) => {
@@ -253,7 +258,7 @@ export default class Configurator extends Vue {
             })}
           </ul>
           <ul>
-            {this.$Store.get.Designer.ControlEvents.map((m) => {
+            {this.designerStore.controlEvents.map((m) => {
               return (
                 <li
                   onMouseenter={(e) => {

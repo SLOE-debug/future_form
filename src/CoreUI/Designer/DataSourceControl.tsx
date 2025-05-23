@@ -45,7 +45,7 @@ export default class DataSourceControl extends Control {
 
   private async createAndCacheSourceRequest(cacheKey: string, params: SourceParams) {
     const promise = new Promise<any>(async (resolve) => {
-      const isPreview = this.$Store.get.Designer.Preview;
+      const isPreview = this.designerStore.preview;
 
       if (!isPreview) {
         // 常规模式请求

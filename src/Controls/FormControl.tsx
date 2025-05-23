@@ -39,20 +39,20 @@ export default class FormControl extends Control {
 
   slideStartCoord: Coord;
   SlideStart(e: MouseEvent) {
-    if (e.button == 0 && e.activity != false && this.$Store.get.Designer.Debug)
+    if (e.button == 0 && e.activity != false && this.designerStore.debug)
       this.slideStartCoord = { x: e.clientX, y: e.clientY };
   }
 
   SlideEnd(e) {
     if (!e || !e.width || !e.height) return;
 
-    let configs = this.$Store.get.Designer.FormConfig.$children.filter((c) => {
+    let configs = this.designerStore.formConfig.$children.filter((c) => {
       return (
         c.left < e.left + e.width && c.left + c.width > e.left && c.top < e.top + e.height && c.top + c.height > e.top
       );
     });
     if (configs.length) {
-      this.$Store.dispatch("Designer/SelectControlByConfig", configs);
+      this.designerStore.SelectControlByConfig(configs);
     }
   }
 
@@ -101,7 +101,7 @@ export default class FormControl extends Control {
 
   setupDesignerMode(): void {
     super.setupDesignerMode();
-    this.$Store.dispatch("Designer/SetFormDesigner", this);
+    this.designerStore.SetFormDesigner(this);
     this.eventManager.add(window, "mouseup", this.HandleMouseUp, this);
   }
 
@@ -112,7 +112,7 @@ export default class FormControl extends Control {
   }
 
   beforeUnmount() {
-    this.isDesignerMode && this.$Store.dispatch("Designer/SetFormDesigner", null);
+    this.isDesignerMode && this.designerStore.SetFormDesigner(null);
   }
 
   async unmounted() {
@@ -126,7 +126,7 @@ export default class FormControl extends Control {
   }
 
   KeyDown(e: KeyboardEvent) {
-    if (e.key == "Enter" && !this.$Store.get.Designer.Debug && this.config.enterBtn) {
+    if (e.key == "Enter" && !this.designerStore.debug && this.config.enterBtn) {
       let btn = this.instance.$refs[this.config.enterBtn];
       if (btn) btn.events.onClick && btn.events.onClick(this, e);
     }
@@ -142,7 +142,7 @@ export default class FormControl extends Control {
   render() {
     return super.render(
       <div class={css.form} style={{ width: "100%", height: "100%" }} onMousedown={this.SlideStart}>
-        {this.$Store.get.Designer.Debug && (
+        {this.designerStore.debug && (
           <AsyncSlideSelector
             {...{
               start: this.slideStartCoord,

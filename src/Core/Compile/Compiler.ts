@@ -1,6 +1,6 @@
 import { GlobalApi } from "@/Plugins/Api/ExtendApi";
 import { CompileDeclare } from "@/Types/CompileDeclare";
-import { MemoizeResult, DeepEquals } from "@/Utils";
+import { DeepEquals } from "@/Utils";
 import { backupRoot } from "@/Utils/VirtualFileSystem/Index";
 import { Path } from "@/Utils/VirtualFileSystem/Path";
 import CompareFile from "../VirtualFileSystem/CompareFile";
@@ -172,8 +172,8 @@ export default class Compiler {
       let isThirdParty = !!ExtensionLibraries[ref.refPath];
       // 如果是第三方库，则不需要安装，并且需要删除 content 中的 import
       if (isThirdParty) {
-        let importReg = new RegExp(`import\\s+.*\\s+from\\s+['|"]${ref.refPath}['|"]`, "g");
-        file.content = file.content.replace(importReg, "");
+        const importReg = new RegExp(`import\\s+.*\\s+from\\s+['|"]${ref.refPath}['|"];?(\r?\n|$)`, "g");
+        file.content = file.content.replace(importReg, "$1");
         continue;
       }
 

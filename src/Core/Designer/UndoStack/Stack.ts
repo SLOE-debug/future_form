@@ -1,35 +1,24 @@
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import Control from "@/CoreUI/Designer/Control";
-import store from "@/Vuex/Store";
+import { useDesignerStore } from "@/Stores/designerStore";
+import { DesignerDeclare } from "@/Types";
+
+const designerStore = useDesignerStore();
 
 type ControlConfig = ControlDeclare.ControlConfig;
-
-export enum StackAction {
-  /**
-   * 默认行为
-   */
-  Default,
-  /**
-   * 删除行为
-   */
-  Delete,
-  /**
-   * 创建行为
-   */
-  Create,
-  /**
-   * 切换容器行为
-   */
-  SwitchContainer,
-}
 
 export class Stack {
   private _instance: Control;
   private _ov: ControlConfig;
   private _nv: ControlConfig;
-  action: StackAction;
+  action: DesignerDeclare.StackAction;
 
-  constructor(instance: Control, nv: ControlConfig, ov: ControlConfig, action: StackAction = StackAction.Default) {
+  constructor(
+    instance: Control,
+    nv: ControlConfig,
+    ov: ControlConfig,
+    action: DesignerDeclare.StackAction = DesignerDeclare.StackAction.Default
+  ) {
     this._instance = instance;
     this._nv = nv;
     this._ov = ov;
@@ -48,19 +37,19 @@ export class Stack {
   async Undo() {
     // 如果当前_instance已卸载，则获取新的_instance
     if (!this.Efficient()) {
-      this._instance = await store.dispatch("Designer/GetControlByName", this._nv.name);
+      this._instance = designerStore.GetControlByName(this._nv.name);
     }
 
     this._instance.disableStack = true;
     switch (this.action) {
-      case StackAction.Delete:
+      case DesignerDeclare.StackAction.Delete:
         // 当行为为删除时，instance 为删除时传入的父级
         this._instance.config.$children.push(this._ov);
         break;
-      case StackAction.Create:
+      case DesignerDeclare.StackAction.Create:
         this._instance.Delete(false);
         break;
-      case StackAction.SwitchContainer:
+      case DesignerDeclare.StackAction.SwitchContainer:
         await this._instance.containerManager.SwitchContainer(this._ov.fromContainer);
         // // 如果_ov拥有“最近一次的”标记，则不还原位置
         // if ("last" in this._ov) break;

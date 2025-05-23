@@ -1,10 +1,12 @@
 import { ControlDeclare, DesignerDeclare } from "@/Types";
-import store from "@/Vuex/Store";
 import { GetFields } from "./Designer";
 import { GetAllSqlFiles } from "../VirtualFileSystem/Index";
 import { dataSourceParamPrefix } from "..";
 import type Control from "@/CoreUI/Designer/Control";
 import type FormControl from "@/Controls/FormControl";
+import { useDesignerStore } from "@/Stores/designerStore";
+
+const designerStore = useDesignerStore();
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceControlConfig = ControlDeclare.DataSourceControlConfig;
@@ -183,7 +185,7 @@ export const baseEvents: ConfiguratorItem[] = [
  * @returns 窗体配置信息
  */
 function GetFlatConfig() {
-  const stack = [store.get.Designer.FormConfig];
+  const stack = [designerStore.formConfig];
   const configs: ControlConfig[] = [];
 
   while (stack.length > 0) {
@@ -274,14 +276,14 @@ export function AddDataSourceProps(fieldMap: ConfiguratorItem[], config: Control
 export function GetParentFormControl(control: Control): FormControl {
   let current = control;
 
-  while (current) {  
+  while (current) {
     if (current.$options?.name === "AsyncComponentWrapper") {
       current = current.$parent as any;
       continue;
     }
     if (!("config" in current)) return null;
     if (current?.config?.type === "Form") return current as any;
-  
+
     current = current.$parent as any;
   }
 

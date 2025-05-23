@@ -1,9 +1,27 @@
-import { BaseWindow } from "./Runtime";
-import { GetCaseNumberSearchToolbar } from "./Runtime/Utils";
+async function loadRuntimeUtilities(): Promise<void> {
+  try {
+    const { BaseWindow, GetCaseNumberSearchToolbar } = await import("./Runtime");
 
-// 窗体基类
-window.BaseWindow = BaseWindow;
-(window as any).GetCaseNumberSearchToolbar = GetCaseNumberSearchToolbar;
+    window.BaseWindow = BaseWindow;
+    (window as any).GetCaseNumberSearchToolbar = GetCaseNumberSearchToolbar;
+
+    return Promise.resolve();
+  } catch (error) {
+    console.error("Failed to load runtime utilities:", error);
+    return Promise.reject(error);
+  }
+}
+
+/**
+ * @description: 加载运行时工具
+ */
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => {
+    loadRuntimeUtilities();
+  });
+} else {
+  loadRuntimeUtilities();
+}
 
 /**
  * 首字母大写

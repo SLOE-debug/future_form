@@ -345,7 +345,7 @@ export default class ToolStripControl extends Control {
       }
 
       // 如果是debug模式
-      if (this.$Store.get.Designer.Debug) {
+      if (this.designerStore.debug) {
         itemJsx.props = itemJsx.props || {};
         itemJsx.props.style = itemJsx.props.style || {};
 
@@ -363,7 +363,7 @@ export default class ToolStripControl extends Control {
                 this.itemCheckedMap.set(i, false);
               });
               this.itemCheckedMap.set(item, true);
-              this.$Store.dispatch("Designer/RenderControlConfigurator", this);
+              this.designerStore.RenderControlConfigurator();
               e.activity = false;
             }}
           >
@@ -399,7 +399,7 @@ export default class ToolStripControl extends Control {
       >
         {this.RenderItems()}
         {/* 如果是debug模式，显示配置 */}
-        {this.$Store.get.Designer.Debug && this.RenderConfigurator()}
+        {this.designerStore.debug && this.RenderConfigurator()}
       </div>
     );
   }

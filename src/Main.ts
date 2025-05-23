@@ -2,6 +2,7 @@ import { createApp } from "vue";
 import App from "@/App";
 import { ElLoading } from "element-plus";
 import { vuex } from "./Vuex/Store";
+import { createPinia } from "pinia";
 import "element-plus/dist/index.css";
 import "./tailwind.css";
 import router from "./Router/Index";
@@ -18,7 +19,10 @@ library.add(far);
 
 async function bootstrap() {
   const app = createApp(App);
+  const pinia = createPinia();
+
   app
+    .use(pinia)
     .use(Instruction)
     .use(ElLoading)
     .use(RegisterControls)

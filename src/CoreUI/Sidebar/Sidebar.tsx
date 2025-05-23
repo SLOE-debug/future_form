@@ -5,6 +5,7 @@ import SvgIcon from "@/Components/SvgIcon";
 import Configurator from "./ToolKit/Configurator";
 import { EventManager } from "@/Utils";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
+import { useDesignerStore } from "@/Stores/designerStore";
 
 type IDirectory = VritualFileSystemDeclare.IDirectory;
 type IFile = VritualFileSystemDeclare.IFile;
@@ -14,6 +15,10 @@ export default class Sidebar extends Vue {
   declare $refs: {
     fileSidebar: InstanceType<typeof FileSidebar>;
   };
+
+  get designerStore() {
+    return useDesignerStore();
+  }
 
   startAdjustX: number = 0;
   BeginAdjust(e: MouseEvent) {
@@ -83,7 +88,7 @@ export default class Sidebar extends Vue {
   }
 
   async Key_Delete() {
-    if (this.$Store.get.Designer.Active || this.activeTab != "project") return;
+    if (this.designerStore.isActive || this.activeTab != "project") return;
 
     ((await this.$Store.dispatch("VirtualFileSystem/GetCurrentEntity")) as IDirectory | IFile).Delete();
   }

@@ -7,6 +7,7 @@ import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { AddControlToDesigner, DropAddControl, FindControlsByType } from "@/Utils/Designer/Designer";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { editor } from "../Editor/EditorPage";
+import { useDesignerStore } from "@/Stores/designerStore";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type Coord = UtilsDeclare.Coord;
@@ -20,7 +21,11 @@ export default class DesignerSpace extends Vue {
   height: string;
 
   get config() {
-    return this.$Store.get.Designer.FormConfig;
+    return this.designerStore.formConfig;
+  }
+
+  get designerStore() {
+    return useDesignerStore();
   }
 
   Drop(e: DragEvent) {
@@ -34,18 +39,17 @@ export default class DesignerSpace extends Vue {
   }
 
   async DeleteControl(e: KeyboardEvent): Promise<ControlConfig[]> {
-    if (!this.$Store.get.Designer.Active) return;
+    if (!this.designerStore.isActive) return;
 
     let delControls = [];
-    for (const c of this.$Store.get.Designer.SelectedContainerControls) {
+    for (const c of this.designerStore.selectedContainerControls) {
       delControls.push(await c.Delete());
     }
     // this.$Store.get.Designer.SelectedContainerControls.map(async (c) => {
     //   return (await c.Delete())?.del;
     // }).filter((c) => c);
-    if (delControls.length) this.$Store.dispatch("Designer/ClearSelected");
-
-    return delControls;
+    if (delControls.length) this.designerStore.ClearSelected();
+    if (delControls.length) return delControls;
   }
 
   pasteCount = 0;
@@ -62,31 +66,28 @@ export default class DesignerSpace extends Vue {
   }
 
   async CtrlKeyCControl(e: KeyboardEvent) {
-    this.$Store.dispatch("Designer/SetCopyControlJson", await this.$Store.dispatch("Designer/CopyControl"));
+    this.designerStore.copyControlJson = await this.designerStore.CopyControl();
     this.pasteCount = 1;
   }
 
   async CtrlKeyVControl(e: KeyboardEvent) {
     try {
-      let configs = JSON.parse(this.$Store.get.Designer.CopyControlJson);
+      let configs = JSON.parse(this.designerStore.copyControlJson);
       this.AddControl(true, ...configs);
       this.pasteCount++;
       this.$nextTick(() => {
-        this.$Store.dispatch("Designer/SelectControlByConfig", configs);
+        this.designerStore.SelectControlByConfig(configs);
       });
     } catch {}
   }
 
   async CtrlKeyAControl(e: KeyboardEvent) {
-    await this.$Store.dispatch(
-      "Designer/SelectControlByConfig",
-      FindControlsByType(this.$Store.get.Designer.FormConfig)
-    );
+    await this.$Store.dispatch("Designer/SelectControlByConfig", FindControlsByType(this.designerStore.formConfig));
     e.preventDefault();
   }
 
   async CtrlKeyZControl(e: KeyboardEvent) {
-    await this.$Store.dispatch("Designer/Undo");
+    await this.designerStore.Undo();
     e.preventDefault();
   }
 
@@ -96,22 +97,20 @@ export default class DesignerSpace extends Vue {
   }
 
   Arrow(type) {
-    this.$Store.get.Designer.SelectedControls.forEach((sc) => {
-      switch (type) {
-        case "ArrowRight":
-          sc.config.left++;
-          break;
-        case "ArrowLeft":
-          sc.config.left--;
-          break;
-        case "ArrowUp":
-          sc.config.top--;
-          break;
-        case "ArrowDown":
-          sc.config.top++;
-          break;
-      }
-    });
+    const directions = {
+      ArrowRight: { axis: "left", delta: 1 },
+      ArrowLeft: { axis: "left", delta: -1 },
+      ArrowUp: { axis: "top", delta: -1 },
+      ArrowDown: { axis: "top", delta: 1 },
+    };
+
+    const { axis, delta } = directions[type] || {};
+
+    if (axis && delta) {
+      this.designerStore.selectedControls.forEach((sc) => {
+        sc.config[axis] += delta;
+      });
+    }
   }
 
   // 键盘按下处理
@@ -138,8 +137,8 @@ export default class DesignerSpace extends Vue {
     if (!this.$Store.get.VirtualFileSystem.CurrentFile.extraData) {
       this.$Store.get.VirtualFileSystem.CurrentFile.extraData = FormControl.GetDefaultConfig();
     }
-    this.$Store.dispatch("Designer/ClearSelected");
-    this.$Store.dispatch("Designer/SetFormConfig", this.$Store.get.VirtualFileSystem.CurrentFile.extraData);
+    this.designerStore.ClearSelected();
+    this.designerStore.SetFormConfig(this.$Store.get.VirtualFileSystem.CurrentFile.extraData);
   }
 
   eventManager: EventManager = new EventManager();
@@ -154,14 +153,14 @@ export default class DesignerSpace extends Vue {
       },
       this
     );
-    await this.$Store.dispatch("Designer/SetDesignerSpace", this);
+    this.designerStore.designerSpace = this;
   }
 
   async unmounted() {
     this.eventManager?.removeAll();
     this.eventManager = null;
-    await this.$Store.dispatch("Designer/SetDesignerSpace", null);
-    this.$Store.dispatch("Designer/ClearStack");
+    this.designerStore.designerSpace = null;
+    this.designerStore.stacks = [];
   }
 
   menu: boolean = false;
@@ -174,13 +173,13 @@ export default class DesignerSpace extends Vue {
         onDragover={(e) => e.preventDefault()}
         onDrop={this.Drop}
         onContextmenu={(e) => {
-          if (!this.$Store.get.Designer.Debug) return;
+          if (!this.designerStore.debug) return;
           this.menu = true;
           this.menuPos = { x: e.clientX, y: e.clientY };
           e.preventDefault();
         }}
         onClick={(e) => {
-          this.$Store.dispatch("Designer/SetActive", true);
+          this.designerStore.isActive = true;
           e.stopPropagation();
         }}
       >

@@ -22,6 +22,7 @@ import {
   ElTableColumn,
 } from "element-plus";
 import { Component, Prop, Vue } from "vue-facing-decorator";
+import { useDesignerStore } from "@/Stores/designerStore";
 
 type ColumnItem = ControlDeclare.ColumnItem;
 
@@ -32,6 +33,10 @@ export default class ColumnsConfigurator extends Vue {
   // 是否是下拉框的表格列配置
   @Prop
   isSelectColumn: boolean = false;
+
+  get designerStore() {
+    return useDesignerStore();
+  }
 
   visible = false;
 
@@ -127,7 +132,7 @@ export default class ColumnsConfigurator extends Vue {
           v-model={this.visible}
           title="表格列配置"
           onClose={() => {
-            this.$Store.dispatch("Designer/RenderControlConfigurator");
+            this.designerStore.RenderControlConfigurator();
           }}
           width={"80%"}
           draggable
@@ -167,7 +172,7 @@ export default class ColumnsConfigurator extends Vue {
                 <>
                   <ElTableColumn prop="field" label="字段">
                     {({ row }) => {
-                      let dataSource = this.$Store.state.Designer.SelectedControls[0].config.dataSource;
+                      let dataSource = this.designerStore.selectedControls[0].config.dataSource;
                       if (dataSource) {
                         let sqlFile = GetFileById(dataSource);
                         let fields = GetFields(sqlFile.content).map(({ field }) => {

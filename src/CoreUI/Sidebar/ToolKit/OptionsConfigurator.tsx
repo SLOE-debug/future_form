@@ -1,3 +1,4 @@
+import { useDesignerStore } from "@/Stores/designerStore";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ElButton, ElDialog, ElInput, ElPopconfirm, ElTable, ElTableColumn } from "element-plus";
 import { Component, Prop, Vue } from "vue-facing-decorator";
@@ -6,6 +7,10 @@ import { Component, Prop, Vue } from "vue-facing-decorator";
 export default class OptionsConfigurator extends Vue {
   @Prop
   options = [];
+
+  get designerStore() {
+    return useDesignerStore();
+  }
 
   visible = false;
 
@@ -20,7 +25,7 @@ export default class OptionsConfigurator extends Vue {
           v-model={this.visible}
           title="设置选项"
           onClose={() => {
-            this.$Store.dispatch("Designer/RenderControlConfigurator");
+            this.designerStore.RenderControlConfigurator();
           }}
         >
           <ElButton

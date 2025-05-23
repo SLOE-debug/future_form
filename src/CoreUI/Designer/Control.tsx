@@ -10,6 +10,7 @@ import DragHandler, { DraggableConfig } from "@/Utils/Designer/DragHandler";
 import ContainerManager from "@/Utils/Designer/ContainerManager";
 import { onUnmounted, watch } from "vue";
 import { IsControlNameExists } from "@/Utils/Designer/Designer";
+import { useDesignerStore } from "@/Stores/designerStore";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceControlConfig = ControlDeclare.DataSourceControlConfig;
@@ -82,10 +83,18 @@ export default class Control extends Vue {
   }
 
   get disabled() {
-    if (this.config.limit == true && this.parentDataSourceControl?.config?.limit == true) {
-      return this.parentDataSourceControl?.config?.readonly || this.config.disabled;
+    const { config } = this;
+    const parentDS = this.parentDataSourceControl;
+
+    if (config?.limit && parentDS?.config?.limit) {
+      return parentDS.config.readonly || config.disabled;
     }
-    return this.config.disabled;
+
+    return config.disabled;
+  }
+
+  get designerStore() {
+    return useDesignerStore();
   }
 
   // 当前控件是否被选中
@@ -95,11 +104,11 @@ export default class Control extends Vue {
 
   // 生产或预览模式
   get isProductionOrPreview() {
-    return !this.$Store.get.Designer.Debug || this.$Store.get.Designer.Preview;
+    return !this.designerStore.debug || this.designerStore.preview;
   }
   // 设计模式且非预览模式
   get isDesignerMode() {
-    return this.$Store.get.Designer.Debug && !this.$Store.get.Designer.Preview;
+    return this.designerStore.debug && !this.designerStore.preview;
   }
 
   /**
@@ -108,7 +117,7 @@ export default class Control extends Vue {
   unSelected() {}
 
   get cursorStyle() {
-    if (!this.$Store.get.Designer.Debug) return "";
+    if (!this.designerStore.debug) return "";
     return this.config.type != "Form" ? "pointer" : "auto";
   }
 
@@ -121,7 +130,7 @@ export default class Control extends Vue {
 
   // 设计器模式下控件的功能
   setupDesignerMode() {
-    this.dragHandler = new DragHandler(this.config as DraggableConfig, this.$Store, {
+    this.dragHandler = new DragHandler(this.config as DraggableConfig, {
       bigShot: () => this.bigShot,
       handles: {
         lt: this.lt,
@@ -157,7 +166,7 @@ export default class Control extends Vue {
       () => DeepClone(this.config),
       (nv, ov) => {
         // 如果非 debug 模式 或 ov 为空
-        if (!this.$Store.get.Designer.Debug || !ov) return;
+        if (!this.designerStore.debug || !ov) return;
         // 是否非选中状态或者禁用堆栈
         if (!this.selected || this.disableStack) return;
         this.handleConfigChange(nv, ov);
@@ -167,10 +176,6 @@ export default class Control extends Vue {
     onUnmounted(() => {
       configWatch();
     });
-
-    // this.$nextTick(() => {
-    //   !this.selected && this.$Store.dispatch("Designer/SelectControl", [this]);
-    // });
   }
 
   // 延迟添加到堆栈的 Timeout
@@ -214,7 +219,7 @@ export default class Control extends Vue {
     // 延迟 150ms 执行
     this.pushStackTimeout = setTimeout(() => {
       // logDiff(nv, this.originalConfig);
-      this.$Store.dispatch("Designer/AddStack", new Stack(this, nv, this.originalConfig));
+      this.designerStore.AddStack(new Stack(this, nv, this.originalConfig));
       // 还原初始值
       this.originalConfig = null;
     }, 150);
@@ -266,7 +271,7 @@ export default class Control extends Vue {
 
     let controls = [this] as Control[];
     let isForm = this.config.type == "Form";
-    let otherControls = this.$Store.get.Designer.SelectedControls.filter((c) => c.config.type != "Form");
+    let otherControls = this.designerStore.selectedControls.filter((c) => c.config.type != "Form");
     if (e.shiftKey && !isForm) {
       controls.unshift(...otherControls);
     }
@@ -287,7 +292,7 @@ export default class Control extends Vue {
       }
     }
 
-    this.$Store.dispatch("Designer/SelectControl", controls);
+    this.designerStore.SelectControl(controls);
   }
 
   async Delete(pushStack = true) {
@@ -303,23 +308,21 @@ export default class Control extends Vue {
     const index = parentControl.config.$children.findIndex((c) => c.id == this.config.id);
     // 如果 pushStack 为 true，则将当前控件添加到堆栈
     if (pushStack) {
-      this.$Store.dispatch(
-        "Designer/AddStack",
+      this.designerStore.AddStack(
         new Stack(parentControl, null, DeepClone(this.config, ["instance"]), StackAction.Delete)
       );
     }
     // 移除控件的声明
     RemoveControlDeclareToDesignerCode(this.config.name);
     // 渲染控件配置器
-    this.$Store.dispatch("Designer/RenderControlConfigurator");
+    this.designerStore.RenderControlConfigurator();
     // 删除控件
     let removedControl = parentControl.config.$children.splice(index, 1)[0];
     return { children: parentControl.config.$children, index, del: removedControl };
   }
 
   Clone(parent: ControlConfig = null) {
-    if (this.$Store.get.Designer.SelectedControls.find((c) => c.config.name == this.config.fromContainer) && !parent)
-      return;
+    if (this.designerStore.selectedControls.find((c) => c.config.name == this.config.fromContainer) && !parent) return;
 
     let conf = DeepClone(this.config, []);
     conf.$children = conf.$children?.map((c) => (this.$refs[c.name] as Control).Clone(conf));
@@ -333,7 +336,7 @@ export default class Control extends Vue {
     let style: any = {};
 
     // 如果非 debug 模式且 visible 为 false，则隐藏
-    if (this.config.visible == false && !this.$Store.get.Designer.Debug) {
+    if (this.config.visible == false && !this.designerStore.debug) {
       style.display = "none";
     }
     return style;
@@ -344,8 +347,8 @@ export default class Control extends Vue {
    */
   get eleStyle() {
     let style: any = {
-      // display: this.$Store.get.Designer.Debug || this.config.visible || this.config.type == "Form" ? "" : "none",
-      pointerEvents: this.$Store.get.Designer.Debug ? "none" : "all",
+      // display: this.designerStore.debug || this.config.visible || this.config.type == "Form" ? "" : "none",
+      pointerEvents: this.designerStore.debug ? "none" : "all",
     };
 
     if (this.config.transparent) style.opacity = this.config.transparent;
@@ -382,7 +385,7 @@ export default class Control extends Vue {
           "data-name": this.config.name,
         }}
         onMousedown={(e) => {
-          if (this.$Store.get.Designer.Debug) {
+          if (this.designerStore.debug) {
             this.Pick(e);
             this.dragHandler.BeginAdjust(e);
           }
@@ -394,7 +397,7 @@ export default class Control extends Vue {
       >
         {<ele style={this.eleStyle} key={this.config.id}></ele>}
         {this.error && <div class={css.error}></div>}
-        {this.$Store.get.Designer.Debug && this.selected && this.dragHandler.HelpPoint()}
+        {this.designerStore.debug && this.selected && this.dragHandler.HelpPoint()}
       </div>
     );
   }

@@ -40,7 +40,7 @@ export default class GroupControl extends Control {
       );
     });
     if (configs.length) {
-      this.$Store.dispatch("Designer/SelectControlByConfig", configs);
+      this.designerStore.SelectControlByConfig(configs);
     }
   }
 

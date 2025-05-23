@@ -1,28 +1,36 @@
+import { useDesignerStore } from "@/Stores/designerStore";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { EventManager } from "@/Utils";
 import { Component, Emit, Prop, Vue } from "vue-facing-decorator";
 
 type Coord = UtilsDeclare.Coord;
+interface BoundingBox {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+// 定义一个常量
+const EMPTY_BOUNDING_BOX: BoundingBox = Object.freeze({
+  top: 0,
+  left: 0,
+  width: 0,
+  height: 0,
+});
 
 @Component
 export default class SlideSelector extends Vue {
   @Prop
   start: Coord;
-  // @Watch("start")
-  // startChange(nv, ov) {
-  //   if (nv) {
-  //     RegisterEvent.call(window, this.winEventHandlers);
-  //   } else {
-  //     this.$emit("slideEnd", this.boundingBox);
-  //     this.boundingBox = this.InitBoundingBox();
-  //     RegisterEvent.call(window, this.winEventHandlers, true);
-  //   }
-  // }
 
-  @Emit("slideEnd")
-  SlideEnd() {}
+  @Emit("slide-end")
+  SlideEnd() {
+    const boundingBoxClone = { ...this.boundingBox };
+    this.boundingBox = { ...EMPTY_BOUNDING_BOX };
+    return boundingBoxClone;
+  }
 
-  boundingBox = this.InitBoundingBox();
+  boundingBox: BoundingBox = { ...EMPTY_BOUNDING_BOX };
   Resize(e: MouseEvent) {
     if (!this.start) return;
     let { x: sx, y: sy } = this.start;
@@ -48,10 +56,6 @@ export default class SlideSelector extends Vue {
     }
   }
 
-  InitBoundingBox() {
-    return { top: 0, left: 0, width: 0, height: 0 };
-  }
-
   get style() {
     return {
       top: this.boundingBox.top + "px",
@@ -61,10 +65,14 @@ export default class SlideSelector extends Vue {
     };
   }
 
+  get designerStore() {
+    return useDesignerStore();
+  }
+
   eventManager: EventManager = new EventManager();
 
   mounted() {
-    if (this.$Store.get.Designer.Debug) {
+    if (this.designerStore.debug) {
       this.eventManager.addBatch(
         window,
         {
@@ -77,7 +85,7 @@ export default class SlideSelector extends Vue {
   }
 
   unmounted() {
-    if (this.$Store.get.Designer.Debug) {
+    if (this.designerStore.debug) {
       this.eventManager?.removeAll();
       this.eventManager = null;
     }

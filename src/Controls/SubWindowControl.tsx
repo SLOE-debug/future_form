@@ -4,8 +4,8 @@ import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { Component, Watch } from "vue-facing-decorator";
 import FormControl from "./FormControl";
 import Compiler from "@/Core/Compile/Compiler";
-import { BaseWindow } from "@/Utils/Runtime/Form";
 import DevelopmentModules from "@/Utils/DevelopmentModules";
+import type { BaseWindow } from "@/Utils/Runtime";
 
 type SubWindowConfig = ControlDeclare.SubWindowConfig;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
@@ -175,7 +175,7 @@ export default class SubWindowControl extends Control {
   render() {
     return super.render(
       <div
-        class={css.subWin + (this.$Store.get.Designer.Debug ? " " + css.debugViewBox : "")}
+        class={css.subWin + (this.designerStore.debug ? " " + css.debugViewBox : "")}
         style={{
           width: "100%",
           height: "100%",
@@ -187,11 +187,11 @@ export default class SubWindowControl extends Control {
           this.$Store.get.Window.Windows[this.subWinInstanceId].focusIndex--;
           this.$Store.dispatch("Window/SetFocusWindow", this.subWinInstanceId);
         }}
-        v-loading={this.contentLoading && !this.$Store.get.Designer.Debug}
+        v-loading={this.contentLoading && !this.designerStore.debug}
         element-loading-text="正在加载窗体..."
         element-loading-background="black"
       >
-        {this.$Store.get.Designer.Debug ? (
+        {this.designerStore.debug ? (
           <>
             <span>控件名称：{this.config.name}</span>
             <br />

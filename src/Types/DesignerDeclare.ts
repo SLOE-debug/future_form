@@ -77,4 +77,23 @@ export namespace DesignerDeclare {
     screenLeft: number;
     container: ControlConfig;
   };
+
+  export enum StackAction {
+    /**
+     * 默认行为
+     */
+    Default,
+    /**
+     * 删除行为
+     */
+    Delete,
+    /**
+     * 创建行为
+     */
+    Create,
+    /**
+     * 切换容器行为
+     */
+    SwitchContainer,
+  }
 }

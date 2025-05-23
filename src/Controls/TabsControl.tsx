@@ -1,16 +1,14 @@
 import Control from "@/CoreUI/Designer/Control";
-import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
-import { MemoizeResult, Guid } from "@/Utils";
+import { Guid } from "@/Utils";
 import { defineAsyncComponent } from "vue";
 import { Component, Watch } from "vue-facing-decorator";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { AddControlDeclareToDesignerCode, DropAddControl } from "@/Utils/Designer/Designer";
+import { DropAddControl } from "@/Utils/Designer/Designer";
 import DevelopmentModules from "@/Utils/DevelopmentModules";
 
-type ControlConfig = ControlDeclare.ControlConfig;
 type TabsConfig = ControlDeclare.TabsConfig;
 
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
@@ -25,7 +23,7 @@ export default class TabsControl extends Control {
 
   @Watch("config.value")
   valueChange() {
-    this.$Store.get.Designer.Debug && this.$Store.dispatch("Designer/RenderControlConfigurator");
+    this.designerStore.debug && this.designerStore.RenderControlConfigurator();
   }
 
   Drop(e: DragEvent) {
@@ -38,7 +36,7 @@ export default class TabsControl extends Control {
   }
 
   get BtnsWidth() {
-    return this.$Store.get.Designer.Debug ? 50 : 0;
+    return this.designerStore.debug ? 50 : 0;
   }
 
   GetContentWidth() {
@@ -66,7 +64,7 @@ export default class TabsControl extends Control {
 
   slideStartCoord: Coord;
   SlideStart(e: MouseEvent) {
-    if (e.button == 0 && e.activity != false && this.$Store.get.Designer.Debug)
+    if (e.button == 0 && e.activity != false && this.designerStore.debug)
       this.slideStartCoord = { x: e.clientX, y: e.clientY };
   }
 
@@ -83,12 +81,11 @@ export default class TabsControl extends Control {
       );
     });
     if (configs.length) {
-      this.$Store.dispatch("Designer/SelectControlByConfig", configs);
+      this.designerStore.SelectControlByConfig(configs);
     }
   }
 
   async Cancel(e: MouseEvent) {
-    // await super.Cancel(e);
     this.slideStartCoord = null;
   }
 
@@ -108,12 +105,14 @@ export default class TabsControl extends Control {
 
   setupDesignerMode(): void {
     super.setupDesignerMode();
+    console.log("添加 cancel 事件");
+
     this.eventManager.add(window, "mouseup", this.Cancel, this);
   }
 
   mounted() {
     this.ShouldAddScrollbar();
-    if (this.$Store.get.Designer.Debug) this.config.scrollTop = {};
+    if (this.designerStore.debug) this.config.scrollTop = {};
   }
 
   /**
@@ -121,7 +120,7 @@ export default class TabsControl extends Control {
    */
   RenderTabHead() {
     return this.config.tabs
-      .filter((t) => (this.$Store.get.Designer.Debug ? true : t.visible != false))
+      .filter((t) => (this.designerStore.debug ? true : t.visible != false))
       .map((t, i) => (
         <div
           class={css.tabItem + (this.config.value == t.id ? " " + css.active : "")}
@@ -132,7 +131,7 @@ export default class TabsControl extends Control {
           }}
         >
           {t.name}
-          {this.$Store.get.Designer.Debug && (
+          {this.designerStore.debug && (
             <FontAwesomeIcon
               icon="circle-xmark"
               style={{

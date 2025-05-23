@@ -21,6 +21,7 @@ import File from "@/Core/VirtualFileSystem/File";
 import { Path } from "@/Utils/VirtualFileSystem/Path";
 import Search from "./Search";
 import { editor } from "@/CoreUI/Editor/EditorPage";
+import { useDesignerStore } from "@/Stores/designerStore";
 
 type IDirectory = VritualFileSystemDeclare.IDirectory;
 
@@ -62,6 +63,10 @@ export default class FileSidebar extends Vue {
         tiggerEventName: "Publish",
       },
     ];
+  }
+
+  get designerStore() {
+    return useDesignerStore();
   }
 
   projectTools = [
@@ -231,7 +236,7 @@ export default class FileSidebar extends Vue {
     editor.SaveAll();
     this.isRun = true;
     await Compiler.Compile();
-    await this.$Store.dispatch("Designer/SetPreview", true);
+    this.designerStore.SetPreview(true);
     // 获取启动文件
     let file = await Compiler.GetStartupFile();
     Compiler.Install(file);

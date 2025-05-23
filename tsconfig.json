@@ -10,9 +10,9 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
+    "experimentalDecorators": true,
     "jsx": "preserve",
     "jsxImportSource": "vue",
-    "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "useDefineForClassFields": true,
     "moduleResolution": "node",

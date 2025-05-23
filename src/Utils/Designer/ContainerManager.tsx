@@ -1,7 +1,6 @@
 import { ControlDeclare, DesignerDeclare, UtilsDeclare } from "@/Types";
 import DevelopmentModules from "../DevelopmentModules";
-import Control, {  DeepClone } from "@/CoreUI/Designer/Control";
-import { GetAllRefs } from "@/Vuex/Modules/Designer";
+import Control, { DeepClone } from "@/CoreUI/Designer/Control";
 import { GetFormAllControls } from "./Designer";
 
 type ControlConfig = ControlDeclare.ControlConfig;
@@ -10,7 +9,6 @@ type ContainerInfo = DesignerDeclare.ContainerInfo;
 type Coord = UtilsDeclare.Coord;
 
 export default class ContainerManager {
-  $Store: any;
   control: Control;
   get config() {
     return this.control.config;
@@ -18,7 +16,6 @@ export default class ContainerManager {
 
   constructor(control: Control) {
     this.control = control;
-    this.$Store = control.$Store;
   }
 
   /**
@@ -80,7 +77,7 @@ export default class ContainerManager {
    * @returns 所有容器的位置信息数组
    */
   GetAllContainer(
-    rootConfig: ControlConfig = this.$Store.get.Designer.FormConfig,
+    rootConfig: ControlConfig = this.control.designerStore.formConfig,
     parentPosition: Coord = { x: 0, y: 0 },
     parentScreenPosition: Coord = { x: 0, y: 0 }
   ): ContainerInfo[] {
@@ -143,7 +140,7 @@ export default class ContainerManager {
    * 切换容器
    */
   async SwitchContainer(newContainerName) {
-    let allContainers = this.GetAllContainer(this.$Store.get.Designer.FormConfig);
+    let allContainers = this.GetAllContainer(this.control.designerStore.formConfig);
     const containerMap = allContainers.reduce((map, containerInfo) => {
       map[containerInfo.container.name] = containerInfo;
       return map;
@@ -178,7 +175,7 @@ export default class ContainerManager {
       ({
         name: undefined,
         value: undefined,
-        $children: this.$Store.get.Designer.FormConfig.$children,
+        $children: this.control.designerStore.formConfig.$children,
       } as any);
 
     await this.control.Delete(false);
@@ -199,7 +196,7 @@ export default class ContainerManager {
    * 处理鼠标抬起时的容器关系
    */
   async HandleContainerOnMouseUp(e: MouseEvent) {
-    const { control, $Store } = this;
+    const { control } = this;
 
     // 如果当前控件没有选中/调整类型不是移动/控件类型是工具条 则不处理
     if (
@@ -210,9 +207,9 @@ export default class ContainerManager {
       return;
     }
 
-    let rect = ($Store.get.Designer.$FormDesigner.$el as HTMLDivElement).getBoundingClientRect();
+    let rect = (control.designerStore.formDesigner.$el as HTMLDivElement).getBoundingClientRect();
 
-    let containers = this.GetAllContainer($Store.get.Designer.FormConfig).reverse();
+    let containers = this.GetAllContainer(control.designerStore.formConfig).reverse();
 
     // 容器 map，避免重复查找
     const containerMap = containers.reduce((map, containerInfo) => {
@@ -239,8 +236,8 @@ export default class ContainerManager {
       await this.JoinContainer(newContainer);
 
       // 添加到堆栈
-      $Store.dispatch(
-        "Designer/AddStack",
+      const { designerStore } = control;
+      designerStore.AddStack(
         new Stack(control, DeepClone(control.config), originalConfig, StackAction.SwitchContainer)
       );
 

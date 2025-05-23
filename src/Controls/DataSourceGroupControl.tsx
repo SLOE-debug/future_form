@@ -32,7 +32,7 @@ export default class DataSourceGroupControl extends Control {
 
   slideStartCoord: Coord;
   SlideStart(e: MouseEvent) {
-    if (e.button == 0 && e.activity != false && this.$Store.get.Designer.Debug)
+    if (e.button == 0 && e.activity != false && this.designerStore.debug)
       this.slideStartCoord = { x: e.clientX, y: e.clientY };
   }
 
@@ -45,7 +45,7 @@ export default class DataSourceGroupControl extends Control {
       );
     });
     if (configs.length) {
-      this.$Store.dispatch("Designer/SelectControlByConfig", configs);
+      this.designerStore.SelectControlByConfig(configs);
     }
   }
 
@@ -73,17 +73,13 @@ export default class DataSourceGroupControl extends Control {
   render() {
     return super.render(
       <>
-        {this.$Store.get.Designer.Debug && (
+        {this.designerStore.debug && (
           <AsyncSvgIcon
             {...{
               name: "GruopMove",
               class:
                 "w-[21px] absolute top-[-10px] left-[10px] z-[2] cursor-move bg-white flex border border-solid border-[#067bef] rounded-[5px] [&>svg]:p-[2px] [&>svg]:mt-[-1px]",
               size: 22,
-              // onMousedown: (e) => {
-              //   this.Pick(e);
-              //   // this.BeginAdjust(e);
-              // },
               "data-type": "Move",
               "data-control": true,
             }}
@@ -91,11 +87,11 @@ export default class DataSourceGroupControl extends Control {
         )}
         <div
           class="w-full h-full overflow-hidden !cursor-auto relative !pointer-events-auto"
-          style={{ border: this.$Store.get.Designer.Debug ? "1px dashed #999" : "" }}
-          onDrop={this.$Store.get.Designer.Debug && this.Drop}
-          onMousedown={this.$Store.get.Designer.Debug && this.SlideStart}
+          style={{ border: this.designerStore.debug ? "1px dashed #999" : "" }}
+          onDrop={this.designerStore.debug && this.Drop}
+          onMousedown={this.designerStore.debug && this.SlideStart}
         >
-          {this.$Store.get.Designer.Debug && (
+          {this.designerStore.debug && (
             <AsyncSlideSelector
               {...{
                 start: this.slideStartCoord,
@@ -114,7 +110,7 @@ export default class DataSourceGroupControl extends Control {
 
   async GetSource(param: any) {
     let res: { data: any };
-    if (this.$Store.get.Designer.Preview) {
+    if (this.designerStore.preview) {
       let { GetFileById } = await DevelopmentModules.Load();
 
       let sqlFile = GetFileById(this.config.dataSource);
@@ -153,7 +149,7 @@ export default class DataSourceGroupControl extends Control {
         break;
     }
 
-    // if (!this.outputDiffDataTimer && !this.$Store.get.Designer.Debug)
+    // if (!this.outputDiffDataTimer && !this.designerStore.debug)
     //   this.outputDiffDataTimer = setInterval(() => {
     //     console.log(this.config.name, this.diffData);
     //   }, 1000 * 2);
@@ -408,7 +404,7 @@ export default class DataSourceGroupControl extends Control {
    */
   private async SaveData(data: any[]) {
     let { GetFileById } = await DevelopmentModules.Load();
-    if (this.$Store.get.Designer.Preview) {
+    if (this.designerStore.preview) {
       let sqlFile = GetFileById(this.config.dataSource);
       return await this.$Api.SaveDataSourceGroupDataInDebug({
         sql: sqlFile.content,

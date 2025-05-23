@@ -1,14 +1,17 @@
 import { ControlAlias, GetDefaultConfig } from "./Controls";
-import { ControlDeclare } from "@/Types";
+import { ControlDeclare, DesignerDeclare } from "@/Types";
 import { Guid } from "..";
 import store from "@/Vuex/Store";
 import * as ts from "typescript";
 import { GetDesignerBackgroundFile, GetFileById } from "../VirtualFileSystem/Index";
 import type Editor from "@/Core/Editor/Editor";
 import type Control from "@/CoreUI/Designer/Control";
-import { Stack, StackAction } from "@/Core/Designer/UndoStack/Stack";
+import { Stack } from "@/Core/Designer/UndoStack/Stack";
 import { nextTick } from "vue";
 import utilsContent from "@/Utils/Runtime/Utils.ts?raw";
+import { useDesignerStore } from "@/Stores/designerStore";
+
+const designerStore = useDesignerStore();
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceGroupConfig = ControlDeclare.DataSourceGroupConfig;
@@ -59,7 +62,7 @@ export function CreateControlByDragEvent(e: DragEvent, vueInstance): ControlConf
   let y = e.clientY - rect.y;
   let type = e.dataTransfer.getData("type");
   if (!type) return;
-  store.dispatch("Designer/ClearSelected");
+  designerStore.ClearSelected();
   let controlComponent = vueInstance?.$.appContext.components[type] as any;
   let config = {
     ...GetDefaultConfig(),
@@ -110,7 +113,7 @@ export function AddControlToDesigner(config: ControlConfig, vueInstance, paste?:
       // 清理无效的容器引用
       delete config.fromContainer;
       delete config.fromTabId;
-      store.get.Designer.FormConfig.$children.push(config);
+      designerStore.formConfig.$children.push(config);
     }
   } else {
     // 普通添加：直接添加到当前容器
@@ -118,8 +121,10 @@ export function AddControlToDesigner(config: ControlConfig, vueInstance, paste?:
   }
 
   nextTick(() => {
-    store.dispatch("Designer/AddStack", new Stack(GetFormAllControls()[config.name], config, null, StackAction.Create));
-    store.dispatch("Designer/SelectControlByConfig", [config]);
+    designerStore.AddStack(
+      new Stack(GetFormAllControls()[config.name], config, null, DesignerDeclare.StackAction.Create)
+    );
+    designerStore.SelectControlByConfig([config]);
   });
 }
 
@@ -161,17 +166,18 @@ export function FindControlsByKeyValue(
  * @returns 找到的控件配置或undefined
  */
 export function GetControlConfigByName(name: string): ControlConfig | undefined {
-  if (!name || !store.get.Designer.FormConfig) {
+  let formConfig = designerStore.formConfig;
+  if (!name || !formConfig) {
     return undefined;
   }
 
   // 检查根级配置是否匹配
-  if (store.get.Designer.FormConfig.name === name) {
-    return store.get.Designer.FormConfig;
+  if (formConfig.name === name) {
+    return formConfig;
   }
 
   // 使用队列进行广度优先搜索所有子控件
-  const queue: ControlConfig[] = [...(store.get.Designer.FormConfig.$children || [])];
+  const queue: ControlConfig[] = [...(formConfig.$children || [])];
 
   while (queue.length > 0) {
     const control = queue.shift();
@@ -596,7 +602,7 @@ export async function LocateMethod(name: string) {
  */
 export function GetFormAllControls(): Record<string, Control> {
   const result: Record<string, Control> = {};
-  const formDesigner = store.get.Designer.$FormDesigner;
+  const formDesigner = designerStore.formDesigner;
 
   if (!formDesigner) return {};
 

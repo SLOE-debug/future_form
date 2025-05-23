@@ -1,3 +1,4 @@
+import { useDesignerStore } from "@/Stores/designerStore";
 import { ControlDeclare, UtilsDeclare } from "@/Types";
 
 type Coord = UtilsDeclare.Coord;
@@ -30,7 +31,7 @@ export default class DragHandler {
   offset: number[] = [];
   adjustType: ControlDeclare.AdjustType = null;
   startCoord: Coord;
-  store: any;
+  designerStore = useDesignerStore();
   config: DraggableConfig;
   // bigShot: boolean = false;
   private getBigShot: () => boolean;
@@ -49,14 +50,12 @@ export default class DragHandler {
 
   constructor(
     config: DraggableConfig,
-    store: any,
     options: {
       bigShot?: () => boolean;
       handles?: DragHandleOptions;
     } = {}
   ) {
     this.config = config;
-    this.store = store;
     this.getBigShot = options.bigShot || (() => false);
 
     // 如果提供了handles配置，使用它来覆盖默认值
@@ -92,7 +91,7 @@ export default class DragHandler {
 
   Adjust(e: MouseEvent) {
     if (!this.startCoord) return;
-    if (e.button != 0 || this.adjustType == null || !this.store.get.Designer.Debug) return;
+    if (e.button != 0 || this.adjustType == null || !this.designerStore.debug) return;
 
     let { x: sx, y: sy } = this.startCoord || { x: 0, y: 0 };
     let x = e.clientX - sx;
@@ -152,7 +151,7 @@ export default class DragHandler {
   SyncStateToSelectedControls(): void {
     if (!this.getBigShot()) return;
 
-    for (const control of this.store.get.Designer.SelectedControls) {
+    for (const control of this.designerStore.selectedControls) {
       if (control.config.id !== this.config.id && control.config.fromContainer === this.config.fromContainer) {
         this.SyncStateTo(control.dragHandler);
       }
