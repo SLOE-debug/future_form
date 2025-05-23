@@ -20,8 +20,9 @@ import Basic from "@/Core/VirtualFileSystem/Basic";
 import File from "@/Core/VirtualFileSystem/File";
 import { Path } from "@/Utils/VirtualFileSystem/Path";
 import Search from "./Search";
-import { editor } from "@/CoreUI/Editor/EditorPage";
-import { useDesignerStore } from "@/Stores/designerStore";
+import { useDesignerStore } from "@/Stores/DesignerStore";
+import { useVirtualFileSystemStore } from "@/Stores/VirtualFileSystemStore";
+import { editor } from "@/Utils/Designer";
 
 type IDirectory = VritualFileSystemDeclare.IDirectory;
 
@@ -69,6 +70,10 @@ export default class FileSidebar extends Vue {
     return useDesignerStore();
   }
 
+  get virtualFileSystemStore() {
+    return useVirtualFileSystemStore();
+  }
+
   projectTools = [
     {
       icon: "file-circle-plus",
@@ -83,8 +88,8 @@ export default class FileSidebar extends Vue {
   @Provide("directory")
   directory: IDirectory = new Directory("");
   created() {
-    this.directory = this.$Store.get.VirtualFileSystem.Root;
-    this.selectedRootVersion = this.$Store.get.VirtualFileSystem.CurrentVersion;
+    this.directory = this.virtualFileSystemStore.root;
+    this.selectedRootVersion = this.virtualFileSystemStore.currentVersion;
   }
 
   // 初始化文件侧边栏
@@ -93,22 +98,22 @@ export default class FileSidebar extends Vue {
     let { files, versionNumbers } = res.data;
     let root = this.Files2Root(files);
 
-    this.$Store.dispatch("VirtualFileSystem/SetRoot", root);
+    this.virtualFileSystemStore.SetRoot(root);
 
     // 打开第一个 fromDesigner 文件
     let file = root.files.find((f) => f.suffix == VritualFileSystemDeclare.FileType.FormDesigner);
     if (file) {
-      this.$Store.dispatch("VirtualFileSystem/SelectFile", file);
+      this.virtualFileSystemStore.SelectFile(file);
     }
 
-    this.directory = this.$Store.get.VirtualFileSystem.Root;
+    this.directory = this.virtualFileSystemStore.root;
 
     for (let version of versionNumbers) {
       version.label = version.versionNumber;
       version.value = version.versionNumber;
     }
 
-    this.$Store.dispatch("VirtualFileSystem/SetRootVersions", versionNumbers);
+    this.virtualFileSystemStore.SetRootVersions(versionNumbers);
   }
 
   // 选择的root版本
@@ -117,7 +122,7 @@ export default class FileSidebar extends Vue {
   async OnSelectedRootVersionChange(nv, ov) {
     // 如果是从created中调用的，不需要执行
     if (!ov) return;
-    this.$Store.dispatch("VirtualFileSystem/SetCurrentVersion", nv);
+    this.virtualFileSystemStore.SetCurrentVersion(nv);
     await this.GetRootByVersion(nv);
     ElMessage.success("切换版本成功！");
   }
@@ -129,12 +134,12 @@ export default class FileSidebar extends Vue {
     // 清空文件夹map
     this.dirMap.clear();
     // 取消选择所有文件
-    await this.$Store.dispatch("VirtualFileSystem/UnSelectAll");
+    this.virtualFileSystemStore.UnSelectAll();
     let res = await this.$Api.GetRootByVersion({ versionNumber });
     let { files } = res.data;
     let root = this.Files2Root(files);
-    await this.$Store.dispatch("VirtualFileSystem/SetRoot", root);
-    this.directory = this.$Store.get.VirtualFileSystem.Root;
+    this.virtualFileSystemStore.SetRoot(root);
+    this.directory = this.virtualFileSystemStore.root;
   }
 
   // 文件夹map
@@ -219,16 +224,16 @@ export default class FileSidebar extends Vue {
   ProjectToolItemClick(m: any) {
     switch (m.title) {
       case "新建文件":
-        this.$Store.dispatch("VirtualFileSystem/CreateFile");
+        this.virtualFileSystemStore.CreateFile();
         break;
       case "新建文件夹":
-        this.$Store.dispatch("VirtualFileSystem/CreateDirectory");
+        this.virtualFileSystemStore.CreateDirectory();
         break;
     }
   }
 
   OpenContextMenu(e: MouseEvent) {
-    this.$Store.dispatch("VirtualFileSystem/SetContextMenuPosition", { x: e.clientX, y: e.clientY });
+    this.virtualFileSystemStore.SetContextMenuPosition({ x: e.clientX, y: e.clientY });
     e.preventDefault();
   }
 
@@ -290,7 +295,7 @@ export default class FileSidebar extends Vue {
       });
 
       ElMessage.success("发布成功！");
-      BackupRoot(this.$Store.get.VirtualFileSystem.Root);
+      BackupRoot(this.virtualFileSystemStore.root);
     } catch (err) {
       if (err !== "cancel") ElMessage.error("发布失败！");
     }
@@ -321,7 +326,7 @@ export default class FileSidebar extends Vue {
   async SaveToCloud() {
     try {
       // 填补versionDescription为上次的描述
-      this.versionDescription = this.$Store.get.VirtualFileSystem.RootVersions[1]?.versionDescription;
+      this.versionDescription = this.virtualFileSystemStore.rootVersions[1]?.versionDescription;
 
       await ElMessageBox(
         {
@@ -360,7 +365,7 @@ export default class FileSidebar extends Vue {
         this.$.appContext
       );
 
-      let files = FlatRoot(this.$Store.get.VirtualFileSystem.Root);
+      let files = FlatRoot(this.virtualFileSystemStore.root);
 
       // 是否有删除的文件
       let hasDelete = files.some((f) => f.deleted);
@@ -405,8 +410,8 @@ export default class FileSidebar extends Vue {
       <div
         class={css.sidebar}
         onMousedown={() => {
-          this.$Store.dispatch("VirtualFileSystem/SelectDirectory", this.$Store.get.VirtualFileSystem.Root);
-          this.$Store.dispatch("VirtualFileSystem/ClearContextMenuPosition");
+          this.virtualFileSystemStore.SelectDirectory(this.virtualFileSystemStore.root);
+          this.virtualFileSystemStore.ClearContextMenuPosition();
         }}
       >
         <div class={css.topTools}>
@@ -435,7 +440,7 @@ export default class FileSidebar extends Vue {
             <div class={css.versionSelector}>
               <div>版本：</div>
               <ElSelectV2
-                options={this.$Store.get.VirtualFileSystem.RootVersions}
+                options={this.virtualFileSystemStore.rootVersions}
                 popper-class={css.versionDropDown}
                 v-model={this.selectedRootVersion}
               >
@@ -520,9 +525,7 @@ export default class FileSidebar extends Vue {
                 <Folder />
               </div>
             </div>
-            <ContextMenu
-              {...{ onClose: () => this.$Store.dispatch("VirtualFileSystem/ClearContextMenuPosition") }}
-            ></ContextMenu>
+            <ContextMenu {...{ onClose: () => this.virtualFileSystemStore.ClearContextMenuPosition() }}></ContextMenu>
           </>
         )}
       </div>

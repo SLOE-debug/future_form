@@ -5,7 +5,8 @@ import SvgIcon from "@/Components/SvgIcon";
 import Configurator from "./ToolKit/Configurator";
 import { EventManager } from "@/Utils";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
-import { useDesignerStore } from "@/Stores/designerStore";
+import { useDesignerStore } from "@/Stores/DesignerStore";
+import { usePageStore } from "@/Stores/PageStore";
 
 type IDirectory = VritualFileSystemDeclare.IDirectory;
 type IFile = VritualFileSystemDeclare.IFile;
@@ -20,6 +21,10 @@ export default class Sidebar extends Vue {
     return useDesignerStore();
   }
 
+  get pageStore() {
+    return usePageStore();
+  }
+
   startAdjustX: number = 0;
   BeginAdjust(e: MouseEvent) {
     this.startAdjustX = e.clientX;
@@ -32,12 +37,12 @@ export default class Sidebar extends Vue {
     if (e.clientX < 20) {
       this.$Store.dispatch("Page/HideSidebar");
       return;
-    } else if (this.$Store.get.Page.SidebarWidth == 2 && e.clientX > 20) {
-      this.startAdjustX = this.$Store.get.Page.SidebarMinWidth;
+    } else if (this.pageStore.sidebarWidth == 2 && e.clientX > 20) {
+      this.startAdjustX = this.pageStore.sidebarMinWidth;
       this.$Store.dispatch("Page/ShowSidebar");
       return;
     }
-    if (e.clientX < this.$Store.get.Page.SidebarMinWidth) return;
+    if (e.clientX < this.pageStore.sidebarMinWidth) return;
     let diff = e.clientX - this.startAdjustX;
     this.startAdjustX = e.clientX;
 
@@ -150,7 +155,7 @@ export default class Sidebar extends Vue {
   render() {
     return (
       <div
-        style={{ width: this.$Store.get.Page.SidebarWidth + "px" }}
+        style={{ width: this.pageStore.sidebarWidth + "px" }}
         class="sidebar absolute select-none h-screen bg-[#151515]"
       >
         <div class="tabs w-full flex items-center h-[4%] pl-[5px] overflow-hidden relative">

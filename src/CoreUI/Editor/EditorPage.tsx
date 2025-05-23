@@ -3,22 +3,30 @@ import { suffix2Color } from "@/Utils/VirtualFileSystem/Index";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { Component, Vue, Watch } from "vue-facing-decorator";
 import { VritualFileSystemDeclare, UtilsDeclare } from "@/Types";
-import Editor from "@/Core/Editor/Editor";
 import DesignerSpace from "../Designer/DesignerSpace";
 import SqlConfigurator from "../Designer/SqlConfigurator";
+import { useVirtualFileSystemStore } from "@/Stores/VirtualFileSystemStore";
+import { usePageStore } from "@/Stores/PageStore";
+import { createEditor, disposeEditor, editor } from "@/Utils/Designer";
 
 type IFile = VritualFileSystemDeclare.IFile;
-
-export const editor = new Editor();
 
 @Component
 export default class EditorPage extends Vue {
   declare $refs: any;
 
-  get Style() {
+  get virtualFileSystemStore() {
+    return useVirtualFileSystemStore();
+  }
+
+  get pageStore() {
+    return usePageStore();
+  }
+
+  get style() {
     return {
-      marginLeft: this.$Store.get.Page.SidebarWidth + "px",
-      width: `calc(100% - ${this.$Store.get.Page.SidebarWidth}px)`,
+      marginLeft: this.pageStore.sidebarWidth + "px",
+      width: `calc(100% - ${this.pageStore.sidebarWidth}px)`,
     };
   }
 
@@ -34,7 +42,7 @@ export default class EditorPage extends Vue {
    * @param nv 新文件
    * @param ov 旧文件
    */
-  @Watch("$Store.get.VirtualFileSystem.CurrentFile")
+  @Watch("virtualFileSystemStore.currentFile")
   OnFileChange(nv: IFile, ov: IFile) {
     if (!nv) {
       this.isDesigner = false;
@@ -86,7 +94,6 @@ export default class EditorPage extends Vue {
   }
 
   unmouted() {
-    editor.Dispose();
     window.removeEventListener("wheel", this.Wheel);
     window.removeEventListener("click", this.Click);
   }
@@ -97,7 +104,7 @@ export default class EditorPage extends Vue {
       // 通过当前 $Store.get.VirtualFileSystem.CurrentFile.id 设置 tabs div 的滚动位置
       let tabs = this.$refs.tabs as HTMLElement;
       let tabRect = tabs.getBoundingClientRect();
-      let currentTab = this.$refs[this.$Store.get.VirtualFileSystem.CurrentFile.id] as HTMLElement;
+      let currentTab = this.$refs[this.virtualFileSystemStore.currentFile.id] as HTMLElement;
       let currentTabRect = currentTab.getBoundingClientRect();
       if (currentTabRect.left < tabRect.left) {
         tabs.scrollLeft += currentTabRect.left - tabRect.left;
@@ -108,9 +115,9 @@ export default class EditorPage extends Vue {
   }
 
   // 当 $Store.get.VirtualFileSystem.OpenFiles.length 改变时
-  @Watch("$Store.get.VirtualFileSystem.OpenFiles.length")
+  @Watch("virtualFileSystemStore.openFiles.length")
   OnOpenFilesLengthChange() {
-    if (this.$Store.get.VirtualFileSystem.OpenFiles.length == 0) {
+    if (this.virtualFileSystemStore.openFiles.length == 0) {
       this.isDesigner = false;
     }
   }
@@ -147,10 +154,8 @@ export default class EditorPage extends Vue {
    * 关闭其他文件
    */
   CloseOther() {
-    let currentFile = this.$Store.get.VirtualFileSystem.OpenFiles[this.currentContextMenuFileIndex];
-    let otherFiles = this.$Store.get.VirtualFileSystem.OpenFiles.filter(
-      (m, i) => m.id != this.currentContextMenuFileId
-    );
+    let currentFile = this.virtualFileSystemStore.openFiles[this.currentContextMenuFileIndex];
+    let otherFiles = this.virtualFileSystemStore.openFiles.filter((m, i) => m.id != this.currentContextMenuFileId);
     this.$Store.dispatch("VirtualFileSystem/SetAutoSelectNearFile", false);
     for (const file of otherFiles) {
       this.Close(file);
@@ -163,8 +168,8 @@ export default class EditorPage extends Vue {
    * 关闭右侧文件
    */
   CloseRight() {
-    let currentFile = this.$Store.get.VirtualFileSystem.OpenFiles[this.currentContextMenuFileIndex];
-    let rightFiles = this.$Store.get.VirtualFileSystem.OpenFiles.filter((m, i) => i > this.currentContextMenuFileIndex);
+    let currentFile = this.virtualFileSystemStore.openFiles[this.currentContextMenuFileIndex];
+    let rightFiles = this.virtualFileSystemStore.openFiles.filter((m, i) => i > this.currentContextMenuFileIndex);
     this.$Store.dispatch("VirtualFileSystem/SetAutoSelectNearFile", false);
     for (let i = rightFiles.length - 1; i >= 0; i--) {
       this.Close(rightFiles[i]);
@@ -177,8 +182,8 @@ export default class EditorPage extends Vue {
    * 关闭左侧文件
    */
   CloseLeft() {
-    let currentFile = this.$Store.get.VirtualFileSystem.OpenFiles[this.currentContextMenuFileIndex];
-    let leftFiles = this.$Store.get.VirtualFileSystem.OpenFiles.filter((m, i) => i < this.currentContextMenuFileIndex);
+    let currentFile = this.virtualFileSystemStore.openFiles[this.currentContextMenuFileIndex];
+    let leftFiles = this.virtualFileSystemStore.openFiles.filter((m, i) => i < this.currentContextMenuFileIndex);
     this.$Store.dispatch("VirtualFileSystem/SetAutoSelectNearFile", false);
     for (const file of leftFiles) {
       this.Close(file);
@@ -217,9 +222,7 @@ export default class EditorPage extends Vue {
               class="h-[25px] text-white text-[14px] flex items-center justify-between p-[0_20px] hover:bg-[#094771]"
               onClick={(e: MouseEvent) => {
                 // 获取事件选中的文件
-                let file = this.$Store.get.VirtualFileSystem.OpenFiles.find(
-                  (f) => f.id == this.currentContextMenuFileId
-                );
+                let file = this.virtualFileSystemStore.openFiles.find((f) => f.id == this.currentContextMenuFileId);
                 this[`${m.code}`] && this[`${m.code}`](file);
                 this.isShowContextMenu = false;
               }}
@@ -266,7 +269,7 @@ export default class EditorPage extends Vue {
 
   render() {
     return (
-      <div style={this.Style} class="editor h-screen">
+      <div style={this.style} class="editor h-screen">
         <div
           class={["h-[35px] select-none w-full flex", css.tabs].join(" ")}
           ref="tabs"
@@ -278,12 +281,12 @@ export default class EditorPage extends Vue {
           }}
           onContextmenu={this.TabsContextMenu}
         >
-          {this.$Store.get.VirtualFileSystem.OpenFiles.map((m, i) => {
+          {this.virtualFileSystemStore.openFiles.map((m, i) => {
             return (
               <div
                 class={[
                   "item cursor-pointer text-[#e6e6e6] p-[0_10px] h-full flex items-center text-[.8rem] duration-[.15s] hover:bg-[#1e1e1e]",
-                  this.$Store.get.VirtualFileSystem.CurrentFile == m ? "active bg-[#1e1e1e]" : "",
+                  this.virtualFileSystemStore.currentFile == m ? "active bg-[#1e1e1e]" : "",
                 ].join(" ")}
                 onClick={(e) => {
                   this.$Store.dispatch("VirtualFileSystem/SelectFile", m);
@@ -312,14 +315,11 @@ export default class EditorPage extends Vue {
           }
         </div>
         <div class="content relative h-[calc(100vh-35px)]">
-          {this.isDesigner && this.$Store.get.VirtualFileSystem.CurrentFile && (
-            <DesignerSpace ref={"designerSpace"} key={this.$Store.get.VirtualFileSystem.CurrentFile.id}></DesignerSpace>
+          {this.isDesigner && this.virtualFileSystemStore.currentFile && (
+            <DesignerSpace ref={"designerSpace"} key={this.virtualFileSystemStore.currentFile.id}></DesignerSpace>
           )}
           {this.isSqlEditor && (
-            <SqlConfigurator
-              ref="sqlConfigurator"
-              key={this.$Store.get.VirtualFileSystem.CurrentFile.id}
-            ></SqlConfigurator>
+            <SqlConfigurator ref="sqlConfigurator" key={this.virtualFileSystemStore.currentFile.id}></SqlConfigurator>
           )}
           <div
             ref="editor"

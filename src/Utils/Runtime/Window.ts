@@ -1,11 +1,9 @@
 import type FormControl from "@/Controls/FormControl";
 import Compiler from "@/Core/Compile/Compiler";
-import { GlobalApi } from "@/Plugins/Api/ExtendApi";
 import { ControlDeclare } from "@/Types";
 import store from "@/Vuex/Store";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { WatchStopHandle, watch } from "vue";
-import { GetOrCreateFromStorage } from "../BasicUtils";
 import { globalVariate } from ".";
 
 type ToolStripConfig = ControlDeclare.ToolStripConfig;
@@ -173,44 +171,6 @@ export class BaseWindow {
   GetCommonToolStrips(): ToolStripItem[] {
     return [
       {
-        name: "$_select",
-        type: "select",
-        placeholder: "请选择案号",
-        width: 150,
-        height: 24,
-        options: [],
-        value: "",
-        clearable: true,
-        loading: false,
-        loadingText: "正在搜索案号中，请稍后...",
-        empty: "未找到相关案号<br />请尝试输入完整案号！",
-        remote: true,
-        display: "table",
-        columns: [
-          { title: "案件文号", field: "ref_no", width: 150 },
-          {
-            title: "申请号",
-            field: "applicationNumber",
-            width: 120,
-          },
-          {
-            title: "委托客户",
-            field: "client_id",
-            width: 50,
-          },
-          {
-            title: "发明名称",
-            field: "invention_title",
-            width: 200,
-          },
-        ],
-        filterable: true,
-        events: {
-          systemRemoteMethod: this.RemoteSearchCaseNo.bind(this),
-          systemOnChange: this.systemOnChange.bind(this),
-        },
-      },
-      {
         name: "$_edit",
         type: "button",
         iconSize: 14,
@@ -271,78 +231,6 @@ export class BaseWindow {
         },
       },
     ];
-  }
-
-  // 历史案号列表key
-  protected readonly $historySelectRefNoKey = "historySelectRefNo";
-
-  /**
-   * 远程搜索案号
-   */
-  private async RemoteSearchCaseNo(config: ToolStripConfig, item: ToolStripItem, e: string) {
-    if (!!e && e.length > 2) {
-      item.loading = true;
-
-      try {
-        let res = await GlobalApi.GetListByExpression({
-          exp: `SELECT ref_no
-                    , CASE 
-                        WHEN case_type = 2
-                            THEN pct_file_no
-                        WHEN app_source = 3
-                            OR app_source = 5
-                            THEN file_no
-                        ELSE file_no
-                        END AS applicationNumber
-                    , client_id
-                    , invention_title
-                FROM patent_primary
-                WHERE ref_no LIKE @ref_no`,
-          paramters: {
-            ref_no: `%${e}%`,
-          },
-        });
-        item.loading = false;
-
-        item.options = res.data.map((r) => ({
-          label: r.ref_no,
-          value: r.ref_no,
-          m: r,
-        }));
-      } catch {
-        item.loading = false;
-      }
-    } else {
-      let history = GetOrCreateFromStorage(this.$historySelectRefNoKey, []);
-      item.options = history.map((h) => ({
-        label: h.ref_no,
-        value: h.ref_no,
-        m: h,
-      }));
-    }
-  }
-
-  /**
-   * 选择案号
-   */
-  private systemOnChange(config: ToolStripConfig, item: ToolStripItem, e: string) {
-    if (!e) return;
-    // 筛选出当前案号的数据
-    let m = item.options.find((o) => o.value == e)?.m;
-
-    // 获取历史选择的案号
-    let history = GetOrCreateFromStorage(this.$historySelectRefNoKey, []);
-    // 如果历史数据中没有当前案号，则添加
-    if (!history.find((h) => h.ref_no == e)) {
-      history.push(m);
-    } else {
-      // 反之，将当前案号移动到第一个
-      history = history.filter((h) => h.ref_no != e);
-      history.unshift(m);
-    }
-    // 如果历史案号大于5个，则删除第一个
-    if (history.length > 5) history.shift();
-    localStorage.setItem("historySelectRefNo", JSON.stringify(history));
   }
 
   /**

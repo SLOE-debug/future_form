@@ -2,8 +2,10 @@ import { Component, Inject, Prop, Vue } from "vue-facing-decorator";
 import Entity from "./Entity";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { IsDirectory } from "@/Utils/VirtualFileSystem/Index";
+import { useVirtualFileSystemStore } from "@/Stores/VirtualFileSystemStore";
 
 type IDirectory = VritualFileSystemDeclare.IDirectory;
+type IFile = VritualFileSystemDeclare.IFile;
 
 @Component
 export default class Folder extends Vue {
@@ -12,6 +14,10 @@ export default class Folder extends Vue {
 
   @Inject
   directory: IDirectory;
+
+  get virtualFileSystemStore() {
+    return useVirtualFileSystemStore();
+  }
 
   render() {
     let dirs = this.directory.directories;
@@ -30,11 +36,11 @@ export default class Folder extends Vue {
           isDirectory: isDirectory,
           onMousedown: (e: MouseEvent) => {
             if (isDirectory) {
-              this.$Store.dispatch("VirtualFileSystem/SelectDirectory", entity);
+              this.virtualFileSystemStore.SelectDirectory(entity as IDirectory);
             } else {
-              this.$Store.dispatch("VirtualFileSystem/SelectFile", entity);
+              this.virtualFileSystemStore.SelectFile(entity as IFile);
             }
-            this.$Store.dispatch("VirtualFileSystem/ClearContextMenuPosition");
+            this.virtualFileSystemStore.ClearContextMenuPosition();
             e.stopPropagation();
           },
         };

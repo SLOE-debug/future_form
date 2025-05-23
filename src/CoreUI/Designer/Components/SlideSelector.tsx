@@ -1,4 +1,4 @@
-import { useDesignerStore } from "@/Stores/designerStore";
+import { useDesignerStore } from "@/Stores/DesignerStore";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { EventManager } from "@/Utils";
 import { Component, Emit, Prop, Vue } from "vue-facing-decorator";

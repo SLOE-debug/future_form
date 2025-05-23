@@ -9,9 +9,12 @@ import type Control from "@/CoreUI/Designer/Control";
 import { Stack } from "@/Core/Designer/UndoStack/Stack";
 import { nextTick } from "vue";
 import utilsContent from "@/Utils/Runtime/Utils.ts?raw";
-import { useDesignerStore } from "@/Stores/designerStore";
+import { useDesignerStore } from "@/Stores/DesignerStore";
+import { useVirtualFileSystemStore } from "@/Stores/VirtualFileSystemStore";
+import { editor } from ".";
 
 const designerStore = useDesignerStore();
+const virtualFileSystemStore = useVirtualFileSystemStore();
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceGroupConfig = ControlDeclare.DataSourceGroupConfig;
@@ -38,18 +41,6 @@ function ProcessFileContent(content: string) {
 export const ExtensionLibraries: Record<string, string> = {
   "Runtime/Utils": ProcessFileContent(utilsContent),
 };
-
-/**
- * 获取设计器代码编辑器实例
- * @returns 编辑器实例
- */
-let editor: Editor | null = null;
-async function getEditor() {
-  if (!editor) {
-    editor = await import("@/CoreUI/Editor/EditorPage").then((m) => m.editor);
-  }
-  return editor;
-}
 
 /**
  * 创建控件通过拖拽事件
@@ -389,7 +380,7 @@ function DataSourceControlTypeDeclare(config: DataSourceGroupConfig) {
         GetSource(params: { `;
 
   // 通过 config.sourceName 获取引用的sql文件
-  let sqlFile = GetFileById(config.dataSource);
+  let sqlFile = GetFileById(virtualFileSystemStore.root, config.dataSource);
   let params = sqlFile?.extraData?.params as { name: string; type: string }[];
 
   if (!!params) {
@@ -406,7 +397,7 @@ function DataSourceControlTypeDeclare(config: DataSourceGroupConfig) {
  * 处理控件声明的通用函数
  */
 async function transformPageClass(transformer: (members: ts.ClassElement[]) => ts.ClassElement[]) {
-  let pageCode = store.get.VirtualFileSystem.CurrentFile.content;
+  let pageCode = virtualFileSystemStore.currentFile.content;
   let sourceFile = ts.createSourceFile("page.ts", pageCode, ts.ScriptTarget.ESNext, true);
 
   function visitor(context: ts.TransformationContext) {
@@ -434,10 +425,9 @@ async function transformPageClass(transformer: (members: ts.ClassElement[]) => t
 
   const transformedSourceFile = result.transformed[0];
   const printedResult = printer.printFile(transformedSourceFile as ts.SourceFile);
-  store.get.VirtualFileSystem.CurrentFile.content = printedResult;
+  virtualFileSystemStore.currentFile.content = printedResult;
 
-  const editor = await getEditor();
-  editor.RefreshModel(store.get.VirtualFileSystem.CurrentFile);
+  editor.RefreshModel(virtualFileSystemStore.currentFile);
 }
 
 /**
@@ -514,7 +504,8 @@ function IsClassInheritFromPage(node: ts.Node): boolean {
  * @param params 参数
  */
 export async function AddMethodToDesignerBackground(name: string, params: { name: string; type: string }[]) {
-  let backgroundCode = GetDesignerBackgroundFile().content;
+  const { root, currentFile } = virtualFileSystemStore;
+  let backgroundCode = GetDesignerBackgroundFile(root, currentFile).content;
   let sourceFile = ts.createSourceFile("background.ts", backgroundCode, ts.ScriptTarget.ESNext, true);
   const visitor =
     (context: ts.TransformationContext) =>
@@ -561,9 +552,8 @@ export async function AddMethodToDesignerBackground(name: string, params: { name
   const result = ts.transform(sourceFile, [visitor]);
   const printer = ts.createPrinter();
   const newCode = printer.printFile(result.transformed[0] as ts.SourceFile);
-  GetDesignerBackgroundFile().content = newCode;
-  const editor = await getEditor();
-  editor.RefreshModel(GetDesignerBackgroundFile());
+  GetDesignerBackgroundFile(root, currentFile).content = newCode;
+  editor.RefreshModel(GetDesignerBackgroundFile(root, currentFile));
   LocateMethod(name);
 }
 
@@ -571,7 +561,7 @@ export async function AddMethodToDesignerBackground(name: string, params: { name
  * 定位到设计器代码中的方法
  */
 export async function LocateMethod(name: string) {
-  let backgroundFile = GetDesignerBackgroundFile();
+  let backgroundFile = GetDesignerBackgroundFile(virtualFileSystemStore.root, virtualFileSystemStore.currentFile);
   let backgroundCode = backgroundFile.content;
   let sourceFile = ts.createSourceFile("background.ts", backgroundCode, ts.ScriptTarget.ESNext, true);
   let methodNode: ts.MethodDeclaration;
@@ -587,7 +577,6 @@ export async function LocateMethod(name: string) {
   if (methodNode) {
     await store.dispatch("VirtualFileSystem/SelectFile", backgroundFile);
     setTimeout(async () => {
-      const editor = await getEditor();
       let pos = editor.editor.getModel().getPositionAt(methodNode.getStart());
 
       editor.editor.focus();

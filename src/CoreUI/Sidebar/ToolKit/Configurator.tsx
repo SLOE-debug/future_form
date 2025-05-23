@@ -9,7 +9,7 @@ import { GetDesignerBackgroundFile, GetFileById, IsDirectory } from "@/Utils/Vir
 import type Control from "@/CoreUI/Designer/Control";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useDesignerStore } from "@/Stores/designerStore";
+import { useDesignerStore } from "@/Stores/DesignerStore";
 
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 type IDirectory = VritualFileSystemDeclare.IDirectory;

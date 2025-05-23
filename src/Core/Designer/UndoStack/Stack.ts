@@ -1,6 +1,6 @@
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import Control from "@/CoreUI/Designer/Control";
-import { useDesignerStore } from "@/Stores/designerStore";
+import { useDesignerStore } from "@/Stores/DesignerStore";
 import { DesignerDeclare } from "@/Types";
 
 const designerStore = useDesignerStore();

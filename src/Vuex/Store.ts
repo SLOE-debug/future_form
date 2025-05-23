@@ -1,13 +1,11 @@
 import { App } from "vue";
 import { createStore, Store } from "vuex";
-import { VirtualFileSystemState } from "./Modules/VirtualFileSystem";
-import { PageState } from "./Modules/Page";
 import WindowModule, { WindowState } from "./Modules/Window";
 import IndexModule, { IndexState } from "./Modules/Index";
 
 export type RootState = {
-  Page: PageState;
-  VirtualFileSystem: VirtualFileSystemState;
+  // Page: PageState;
+  // VirtualFileSystem: VirtualFileSystemState;
   Window: WindowState;
   Index: IndexState;
 };

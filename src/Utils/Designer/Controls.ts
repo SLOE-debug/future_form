@@ -4,7 +4,7 @@ import { GetAllSqlFiles } from "../VirtualFileSystem/Index";
 import { dataSourceParamPrefix } from "..";
 import type Control from "@/CoreUI/Designer/Control";
 import type FormControl from "@/Controls/FormControl";
-import { useDesignerStore } from "@/Stores/designerStore";
+import { useDesignerStore } from "@/Stores/DesignerStore";
 
 const designerStore = useDesignerStore();
 

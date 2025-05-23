@@ -6,8 +6,9 @@ import ContextMenu from "@/CoreUI/Designer/Components/ContextMenu";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import { AddControlToDesigner, DropAddControl, FindControlsByType } from "@/Utils/Designer/Designer";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
-import { editor } from "../Editor/EditorPage";
-import { useDesignerStore } from "@/Stores/designerStore";
+import { useDesignerStore } from "@/Stores/DesignerStore";
+import { useVirtualFileSystemStore } from "@/Stores/VirtualFileSystemStore";
+import { editor } from "@/Utils/Designer";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type Coord = UtilsDeclare.Coord;
@@ -26,6 +27,10 @@ export default class DesignerSpace extends Vue {
 
   get designerStore() {
     return useDesignerStore();
+  }
+
+  get virtualFileSystemStore() {
+    return useVirtualFileSystemStore();
   }
 
   Drop(e: DragEvent) {
@@ -82,7 +87,7 @@ export default class DesignerSpace extends Vue {
   }
 
   async CtrlKeyAControl(e: KeyboardEvent) {
-    await this.$Store.dispatch("Designer/SelectControlByConfig", FindControlsByType(this.designerStore.formConfig));
+    this.designerStore.SelectControlByConfig(FindControlsByType(this.designerStore.formConfig));
     e.preventDefault();
   }
 
@@ -92,7 +97,7 @@ export default class DesignerSpace extends Vue {
   }
 
   F7Control(e: KeyboardEvent) {
-    this.$Store.dispatch("VirtualFileSystem/SelectFile", this.$Store.get.VirtualFileSystem.CurrentFile.children[0]);
+    this.virtualFileSystemStore.SelectFile(this.virtualFileSystemStore.currentFile.children[0]);
     e.preventDefault();
   }
 
@@ -118,7 +123,7 @@ export default class DesignerSpace extends Vue {
     if (
       (e.target as HTMLElement).nodeName == "INPUT" || // 输入框
       (e.target as HTMLElement).nodeName == "TEXTAREA" || // 文本框
-      this.$Store.get.VirtualFileSystem.CurrentFile?.suffix != VritualFileSystemDeclare.FileType.FormDesigner
+      this.virtualFileSystemStore.currentFile?.suffix != VritualFileSystemDeclare.FileType.FormDesigner
     )
       return;
 
@@ -134,11 +139,11 @@ export default class DesignerSpace extends Vue {
   }
 
   created() {
-    if (!this.$Store.get.VirtualFileSystem.CurrentFile.extraData) {
-      this.$Store.get.VirtualFileSystem.CurrentFile.extraData = FormControl.GetDefaultConfig();
+    if (!this.virtualFileSystemStore.currentFile.extraData) {
+      this.virtualFileSystemStore.currentFile.extraData = FormControl.GetDefaultConfig();
     }
     this.designerStore.ClearSelected();
-    this.designerStore.SetFormConfig(this.$Store.get.VirtualFileSystem.CurrentFile.extraData);
+    this.designerStore.SetFormConfig(this.virtualFileSystemStore.currentFile.extraData);
   }
 
   eventManager: EventManager = new EventManager();
@@ -199,7 +204,7 @@ export default class DesignerSpace extends Vue {
             rt: false,
             move: false,
             // locate: { index: 0 },
-            config: this.$Store.get.VirtualFileSystem.CurrentFile.extraData,
+            config: this.virtualFileSystemStore.currentFile.extraData,
             ref: "form",
           }}
         ></FormControl>

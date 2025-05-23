@@ -6,9 +6,11 @@ import * as monaco from "monaco-editor";
 import * as actions from "monaco-editor/esm/vs/platform/actions/common/actions";
 import controlDeclareContent from "@/Types/ControlDeclare?raw";
 import eventDeclareContent from "@/Types/EventDeclare?raw";
-import utilsContent from "@/Utils/Runtime/Utils.ts?raw";
 import { ElMessage } from "element-plus";
 import { ExtensionLibraries } from "@/Utils/Designer";
+import { useVirtualFileSystemStore } from "@/Stores/VirtualFileSystemStore";
+
+const virtualFileSystemStore = useVirtualFileSystemStore();
 
 type IFile = VritualFileSystemDeclare.IFile;
 type ICompareFile = VritualFileSystemDeclare.ICompareFile;
@@ -239,10 +241,9 @@ export default class Editor {
    * 模型内容改变
    */
   ModelContentChanged() {
-    if (!store.get.VirtualFileSystem.CurrentFile) return;
+    if (!virtualFileSystemStore.currentFile) return;
 
-    store.get.VirtualFileSystem.CurrentFile.isUnsaved =
-      this.editor.getValue() != store.get.VirtualFileSystem.CurrentFile.content;
+    virtualFileSystemStore.currentFile.isUnsaved = this.editor.getValue() != virtualFileSystemStore.currentFile.content;
     this.modelChangeCallbacks.forEach((m) => m());
   }
 
@@ -272,8 +273,8 @@ export default class Editor {
    * 保存文件
    */
   Save() {
-    store.get.VirtualFileSystem.CurrentFile.content = this.editor.getValue();
-    store.get.VirtualFileSystem.CurrentFile.isUnsaved = false;
+    virtualFileSystemStore.currentFile.content = this.editor.getValue();
+    virtualFileSystemStore.currentFile.isUnsaved = false;
     store.dispatch("VirtualFileSystem/SaveRoot");
   }
 
@@ -281,7 +282,7 @@ export default class Editor {
    * 保存所有文件
    */
   SaveAll() {
-    let dirs = [store.get.VirtualFileSystem.Root];
+    let dirs = [virtualFileSystemStore.root];
     while (dirs.length) {
       let dir = dirs.pop();
       for (const file of dir.files) {
@@ -366,7 +367,7 @@ export default class Editor {
       contextMenuOrder: 0,
       keybindings: [monaco.KeyMod.Shift | monaco.KeyCode.F7],
       run: () => {
-        let parent = GetParentByFile(store.get.VirtualFileSystem.CurrentFile) as IFile;
+        let parent = GetParentByFile(virtualFileSystemStore.root, virtualFileSystemStore.currentFile) as IFile;
         if (parent?.suffix == VritualFileSystemDeclare.FileType.FormDesigner) {
           store.dispatch("VirtualFileSystem/SelectFile", parent);
         } else {
@@ -488,10 +489,10 @@ export default class Editor {
    * @returns 建议
    */
   CreateFilePathSuggestions(range: monaco.Range, relative = true) {
-    let currentFile = store.state.VirtualFileSystem.CurrentFile;
+    let currentFile = virtualFileSystemStore.currentFile;
 
     let suggestions = [];
-    let dirs = [store.state.VirtualFileSystem.Root];
+    let dirs = [virtualFileSystemStore.root];
     while (dirs.length) {
       let dir = dirs.pop();
 
@@ -610,7 +611,7 @@ export default class Editor {
    * 创建所有模型
    */
   CreateAllFileModel() {
-    let dirs = [store.get.VirtualFileSystem.Root];
+    let dirs = [virtualFileSystemStore.root];
 
     while (dirs.length) {
       let dir = dirs.pop();
@@ -638,7 +639,7 @@ export default class Editor {
    * 切换版本
    */
   SwitchVersion() {
-    let dirs = [store.get.VirtualFileSystem.Root];
+    let dirs = [virtualFileSystemStore.root];
     let path2File = new Map<string, IFile>();
 
     while (dirs.length) {

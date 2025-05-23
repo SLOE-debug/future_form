@@ -59,7 +59,7 @@ export function GetCaseNumberSearchToolbar(
 /**
  * 默认的远程搜索案号方法
  */
-async function DefaultRemoteCaseNoSearch(config: ToolStripConfig, item: ToolStripItem, e: string) {
+export async function DefaultRemoteCaseNoSearch(config: ToolStripConfig, item: ToolStripItem, e: string) {
   if (e?.length > 2) {
     item.loading = true;
 
@@ -103,7 +103,7 @@ const historySelectRefNoKey = "historySelectRefNo";
 /**
  * 选择案号
  */
-function DefaultCaseNoSelectChange(config: ToolStripConfig, item: ToolStripItem, e: string) {
+export function DefaultCaseNoSelectChange(config: ToolStripConfig, item: ToolStripItem, e: string) {
   if (!e) return;
 
   // 获取选中的案件数据

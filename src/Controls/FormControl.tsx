@@ -9,12 +9,13 @@ import DataSourceGroupControl from "./DataSourceGroupControl";
 import store from "@/Vuex/Store";
 import { BaseWindow } from "@/Utils/Runtime";
 import SubWindowControl from "./SubWindowControl";
-import { editor } from "@/CoreUI/Editor/EditorPage";
 import DevelopmentModules from "@/Utils/DevelopmentModules";
-import { EventManager } from "@/Utils";
+import { useVirtualFileSystemStore } from "@/Stores/VirtualFileSystemStore";
+import { editor } from "@/Utils/Designer";
+
+const virtualFileSystemStore = useVirtualFileSystemStore();
 
 type FormConfig = ControlDeclare.FormConfig;
-
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 type Coord = UtilsDeclare.Coord;
 
@@ -160,7 +161,7 @@ export default class FormControl extends Control {
 
   static GetDefaultConfig(): FormConfig {
     return {
-      name: store.get.VirtualFileSystem.CurrentFile.name.replace(".form.ts", ""),
+      name: virtualFileSystemStore.currentFile.name.replace(".form.ts", ""),
       width: 700,
       height: 500,
       type: "Form",
@@ -185,7 +186,7 @@ export async function GetProps(config: FormConfig) {
   let { Path } = await DevelopmentModules.Load();
   let { ts } = await DevelopmentModules.Load();
 
-  let windows = GetAllFormFiles();
+  let windows = GetAllFormFiles(virtualFileSystemStore.root);
 
   const fieldMap: ConfiguratorItem[] = [
     {
@@ -279,12 +280,12 @@ export async function GetProps(config: FormConfig) {
           exportName = "BaseWindow";
         }
 
-        let file = GetFileById(value);
+        let file = GetFileById(virtualFileSystemStore.root, value);
 
         if (file) {
           // 计算相对路径
           let relativePath = Path.GetRelativePath(
-            store.get.VirtualFileSystem.CurrentFile.GetFullName(),
+            virtualFileSystemStore.currentFile.GetFullName(),
             file.GetFullName()
           );
 
@@ -294,7 +295,7 @@ export async function GetProps(config: FormConfig) {
           importStr = `import ${exportName} from "${relativePath}";`;
         }
 
-        let pageCode = store.get.VirtualFileSystem.CurrentFile.content;
+        let pageCode = virtualFileSystemStore.currentFile.content;
         let sourceFile = ts.createSourceFile("temp.ts", pageCode, ts.ScriptTarget.ESNext, true);
         // 递归查找 Page 类继承的类名
         let extendsClass = "";
@@ -324,7 +325,7 @@ export async function GetProps(config: FormConfig) {
           newContent = newContent.replace(/import\s+ExtendsWindow\s+from\s+['"].*['"];/, "");
 
           // 当前文件的id
-          let id = store.get.VirtualFileSystem.CurrentFile.id;
+          let id = virtualFileSystemStore.currentFile.id;
 
           // 如果有 import 语句，则加上 import 语句
           if (importStr) {
@@ -342,10 +343,10 @@ export async function GetProps(config: FormConfig) {
             );
           }
           // 更新文件内容
-          let model = editor.models.get(store.get.VirtualFileSystem.CurrentFile.GetFullName());
+          let model = editor.models.get(virtualFileSystemStore.currentFile.GetFullName());
           model.setValue(newContent);
-          store.get.VirtualFileSystem.CurrentFile.content = model.getValue();
-          model.setValue(store.get.VirtualFileSystem.CurrentFile.content);
+          virtualFileSystemStore.currentFile.content = model.getValue();
+          model.setValue(virtualFileSystemStore.currentFile.content);
         }
       },
     },

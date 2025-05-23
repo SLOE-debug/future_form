@@ -1,6 +1,6 @@
 import WindowCollection from "@/Components/WindowCollection";
 import Compiler from "@/Core/Compile/Compiler";
-import { useDesignerStore } from "@/Stores/designerStore";
+import { useDesignerStore } from "@/Stores/DesignerStore";
 import { EventManager } from "@/Utils";
 import { ElMessage } from "element-plus";
 import { Component, Vue } from "vue-facing-decorator";

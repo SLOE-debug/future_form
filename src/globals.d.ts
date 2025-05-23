@@ -1,5 +1,3 @@
-import { BaseWindow } from "./Utils/Runtime";
-
 export {};
 
 declare global {
@@ -7,7 +5,6 @@ declare global {
   let electronAPI: any;
   interface Window {
     css: any;
-    BaseWindow: typeof BaseWindow;
     importAsync: Function;
     electronAPI: any;
   }

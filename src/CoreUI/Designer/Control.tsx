@@ -10,7 +10,7 @@ import DragHandler, { DraggableConfig } from "@/Utils/Designer/DragHandler";
 import ContainerManager from "@/Utils/Designer/ContainerManager";
 import { onUnmounted, watch } from "vue";
 import { IsControlNameExists } from "@/Utils/Designer/Designer";
-import { useDesignerStore } from "@/Stores/designerStore";
+import { useDesignerStore } from "@/Stores/DesignerStore";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceControlConfig = ControlDeclare.DataSourceControlConfig;

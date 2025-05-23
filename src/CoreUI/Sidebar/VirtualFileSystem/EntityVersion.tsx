@@ -1,6 +1,7 @@
 import CompareFile from "@/Core/VirtualFileSystem/CompareFile";
-import { editor } from "@/CoreUI/Editor/EditorPage";
+import { useVirtualFileSystemStore } from "@/Stores/VirtualFileSystemStore";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
+import { editor } from "@/Utils/Designer";
 import { ElDialog, ElTable, ElTableColumn, ElPagination, ElLink, ElTag } from "element-plus";
 import { Component, Vue } from "vue-facing-decorator";
 
@@ -25,6 +26,10 @@ export default class EntityVersion extends Vue {
     return Math.ceil(this.total / this.pageSize);
   }
 
+  get virtualFileSystemStore() {
+    return useVirtualFileSystemStore();
+  }
+
   // 文件id
   fileId: string;
 
@@ -40,7 +45,7 @@ export default class EntityVersion extends Vue {
 
   // 对比文件
   CompareFile(file: IFile) {
-    let currentFile = this.$Store.get.VirtualFileSystem.CurrentFile;
+    let currentFile = this.virtualFileSystemStore.currentFile;
     let compareFile = new CompareFile(
       file.name + "@" + (file as any).versionDate,
       file.suffix,

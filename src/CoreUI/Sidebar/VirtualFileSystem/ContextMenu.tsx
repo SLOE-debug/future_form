@@ -1,8 +1,7 @@
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
-import { Component, Emit, Prop, Vue } from "vue-facing-decorator";
-import { ElMessage, ElMessageBox } from "element-plus";
-import { GetParentByDirectory, GetParentByFile, IsDirectory } from "@/Utils/VirtualFileSystem/Index";
+import { Component, Emit, Vue } from "vue-facing-decorator";
+import { useVirtualFileSystemStore } from "@/Stores/VirtualFileSystemStore";
 
 type Coord = UtilsDeclare.Coord;
 type IDirectory = VritualFileSystemDeclare.IDirectory;
@@ -10,8 +9,12 @@ type IFile = VritualFileSystemDeclare.IFile;
 
 @Component
 export default class ContextMenu extends Vue {
+  get virtualFileSystemStore() {
+    return useVirtualFileSystemStore();
+  }
+
   get position(): Coord {
-    return this.$Store.get.VirtualFileSystem.ContextMenuPosition;
+    return this.virtualFileSystemStore.contextMenuPosition;
   }
 
   get style() {
@@ -40,7 +43,7 @@ export default class ContextMenu extends Vue {
   }
 
   get ContextMenus() {
-    return this.$Store.get.VirtualFileSystem.ContextMenus;
+    return this.virtualFileSystemStore.contextMenus;
   }
 
   render() {

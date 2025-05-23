@@ -1,5 +1,4 @@
 import { VritualFileSystemDeclare } from "@/Types";
-import store from "@/Vuex/Store";
 import { CloneStruct } from "..";
 
 type IFile = VritualFileSystemDeclare.IFile;
@@ -26,8 +25,8 @@ export const suffix2Color = {
 /**
  * 获取文件夹的父级
  */
-export function GetParentByDirectory(dir: IDirectory) {
-  const queue: Array<IDirectory> = [store.get.VirtualFileSystem.Root];
+export function GetParentByDirectory(root: IDirectory, dir: IDirectory) {
+  const queue: Array<IDirectory> = [root];
 
   while (queue.length > 0) {
     const current = queue.shift();
@@ -44,8 +43,8 @@ export function GetParentByDirectory(dir: IDirectory) {
  * @param file 文件
  * @returns 文件父级
  */
-export function GetParentByFile(file: IFile) {
-  const queue: Array<IFile | IDirectory> = [store.get.VirtualFileSystem.Root];
+export function GetParentByFile(root: IDirectory, file: IFile) {
+  const queue: Array<IFile | IDirectory> = [root];
 
   while (queue.length > 0) {
     const current = queue.shift();
@@ -74,13 +73,13 @@ export function GetParentByFile(file: IFile) {
 /**
  * 获取设计器后台文件，例：tets.form.ts 的关联文件 test.ts
  */
-export function GetDesignerBackgroundFile() {
-  let backgroundFile = store.get.VirtualFileSystem.CurrentFile;
+export function GetDesignerBackgroundFile(root: IDirectory, currentFile: IFile) {
+  let backgroundFile = currentFile;
   if (!backgroundFile) return;
   if (backgroundFile.suffix == VritualFileSystemDeclare.FileType.FormDesigner) {
     return backgroundFile.children[0];
   }
-  backgroundFile = GetParentByFile(backgroundFile) as IFile;
+  backgroundFile = GetParentByFile(root, backgroundFile) as IFile;
   if (backgroundFile.suffix == VritualFileSystemDeclare.FileType.FormDesigner) {
     return backgroundFile.children[0];
   }
@@ -89,67 +88,61 @@ export function GetDesignerBackgroundFile() {
 }
 
 /**
- * 获取所有sql文件
+ * 通用遍历文件系统查找方法，支持各种过滤条件
+ * @param root 根目录
+ * @param filterFn 过滤函数，返回true表示匹配
+ * @param findOne 是否只查找一个文件，找到后立即返回
+ * @returns 匹配的文件数组或单个文件
  */
-export function GetAllSqlFiles() {
-  let sqlFiles: Array<IFile> = [];
-  let dirs = [store.get.VirtualFileSystem.Root] as Array<IFile | IDirectory>;
+export function FindFilesIn<T extends boolean = false>(
+  root: IDirectory,
+  filterFn: (file: IFile) => boolean,
+  findOne: T = false as T
+): T extends true ? IFile | undefined : Array<IFile> {
+  const files: Array<IFile> = [];
+  const dirs = [root] as Array<IFile | IDirectory>;
+
   while (dirs.length > 0) {
-    let dir = dirs.shift();
+    const dir = dirs.shift()!;
     if (IsDirectory(dir)) {
       dirs.push(...dir.directories);
       dirs.push(...dir.files);
+      // 确保子文件也被处理
+      dir.files.forEach((file) => {
+        dirs.push(...file.children);
+      });
     } else {
-      if (dir.suffix == VritualFileSystemDeclare.FileType.Sql) {
-        sqlFiles.push(dir);
+      if (filterFn(dir)) {
+        if (findOne) {
+          return dir as any;
+        }
+        files.push(dir);
       }
     }
   }
-  return sqlFiles;
+
+  return (findOne ? undefined : files) as any;
+}
+
+/**
+ * 获取所有sql文件
+ */
+export function GetAllSqlFiles(root: IDirectory): Array<IFile> {
+  return FindFilesIn(root, (file) => file.suffix === VritualFileSystemDeclare.FileType.Sql);
 }
 
 /**
  * 获取所有form文件
  */
-export function GetAllFormFiles() {
-  let formFiles: Array<IFile> = [];
-  let dirs = [store.get.VirtualFileSystem.Root] as Array<IFile | IDirectory>;
-  while (dirs.length > 0) {
-    let dir = dirs.shift();
-    if (IsDirectory(dir)) {
-      dirs.push(...dir.directories);
-      dirs.push(...dir.files);
-    } else {
-      if (dir.suffix == VritualFileSystemDeclare.FileType.FormDesigner) {
-        formFiles.push(dir);
-      }
-    }
-  }
-  return formFiles;
+export function GetAllFormFiles(root: IDirectory): Array<IFile> {
+  return FindFilesIn(root, (file) => file.suffix === VritualFileSystemDeclare.FileType.FormDesigner);
 }
 
 /**
  * 通过id获取文件
  */
-export function GetFileById(id: string) {
-  let file: IFile;
-  let dirs = [store.get.VirtualFileSystem.Root] as Array<IFile | IDirectory>;
-  while (dirs.length > 0) {
-    let dir = dirs.shift();
-    if (IsDirectory(dir)) {
-      dirs.push(...dir.directories);
-      dirs.push(...dir.files);
-      dir.files.forEach((file) => {
-        dirs.push(...file.children);
-      });
-    } else {
-      if (dir.id == id) {
-        file = dir;
-        break;
-      }
-    }
-  }
-  return file;
+export function GetFileById(root: IDirectory, id: string) {
+  return FindFilesIn<true>(root, (file) => file.id === id, true);
 }
 
 /**

@@ -22,7 +22,7 @@ import {
   ElTableColumn,
 } from "element-plus";
 import { Component, Prop, Vue } from "vue-facing-decorator";
-import { useDesignerStore } from "@/Stores/designerStore";
+import { useDesignerStore } from "@/Stores/DesignerStore";
 
 type ColumnItem = ControlDeclare.ColumnItem;
 

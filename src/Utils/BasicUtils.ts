@@ -1,9 +1,28 @@
+import type {
+  BaseWindow,
+  GetCaseNumberSearchToolbar,
+  DefaultCaseNoSelectChange,
+  DefaultRemoteCaseNoSearch,
+} from "./Runtime";
+
+declare global {
+  interface Window {
+    BaseWindow: typeof BaseWindow;
+    GetCaseNumberSearchToolbar: typeof GetCaseNumberSearchToolbar;
+    DefaultCaseNoSelectChange: typeof DefaultCaseNoSelectChange;
+    DefaultRemoteCaseNoSearch: typeof DefaultRemoteCaseNoSearch;
+  }
+}
+
 async function loadRuntimeUtilities(): Promise<void> {
   try {
-    const { BaseWindow, GetCaseNumberSearchToolbar } = await import("./Runtime");
+    const { BaseWindow, GetCaseNumberSearchToolbar, DefaultCaseNoSelectChange, DefaultRemoteCaseNoSearch } =
+      await import("./Runtime");
 
     window.BaseWindow = BaseWindow;
-    (window as any).GetCaseNumberSearchToolbar = GetCaseNumberSearchToolbar;
+    window.GetCaseNumberSearchToolbar = GetCaseNumberSearchToolbar;
+    window.DefaultCaseNoSelectChange = DefaultCaseNoSelectChange;
+    window.DefaultRemoteCaseNoSearch = DefaultRemoteCaseNoSearch;
 
     return Promise.resolve();
   } catch (error) {

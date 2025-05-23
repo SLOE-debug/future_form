@@ -257,23 +257,16 @@ export default class ToolStripControl extends Control {
         popperClass={["selectPopper", item.display == "table" ? "tableSelectPopper" : ""].join(" ")}
         remoteMethod={(e) => {
           let {
-            events: { systemRemoteMethod, onRemoteMethod },
+            events: { onRemoteMethod },
           } = item;
-
-          // 执行 onRemoteMethod 并获取返回值，返回值来指示是否需要继续执行 systemRemoteMethod
-          if (onRemoteMethod && onRemoteMethod(item, e) === false) return;
-          // 如果有 systemRemoteMethod，则执行
-          systemRemoteMethod && systemRemoteMethod(this.config, item, e);
+          onRemoteMethod?.(this.config, item, e);
         }}
         ref={item.name}
         onChange={(e) => {
           let {
-            events: { systemOnChange, onChange },
+            events: { onChange },
           } = item;
-          // 执行 onChange 并获取返回值，返回值来指示是否需要继续执行 systemOnChange
-          if (onChange && onChange(item, e) === false) return;
-          // 如果有 systemOnChange，则执行
-          systemOnChange && systemOnChange(this.config, item, e);
+          onChange?.(this.config, item, e);
         }}
         {...{
           "data-value": item.value,

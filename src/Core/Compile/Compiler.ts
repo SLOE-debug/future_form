@@ -140,11 +140,13 @@ export default class Compiler {
       match.forEach((refStr) => {
         const ref = refStr.match(/from\s+['|"](.*)['|"]/);
         if (ref) {
-          let refPath = ref[1]; // 例：./Main
+          let refPath = ref[1]; // 例：./Main or third-party-lib
           let currentPath = path; // 例：/index.ts
-          let refAbsolutePath = Path.GetAbsolutePath(currentPath, refPath); // 例：/Main
 
-          // 存在疑问，refs 中是否需要存储文件id
+          // 判断是否是第三方库
+          const isThirdParty = !!ExtensionLibraries[refPath];
+          // 如果是第三方库，则不获取绝对路径
+          let refAbsolutePath = isThirdParty ? refPath : Path.GetAbsolutePath(currentPath, refPath);
           file.refs.push({ refPath, absPath: refAbsolutePath });
         }
       });
@@ -204,23 +206,41 @@ export default class Compiler {
 
   /**
    * 通过绝对路径或文件ID获取服务器的编译后的文件
+   * @param param 文件路径或ID
+   * @param type 查询类型: 'fullPath' | 'fileId'
+   * @returns 编译后的文件
    */
-  static async GetPublishFile(param: string, type: "fullPath" | "fileId") {
-    let file = this.CompiledFiles.find((f) => f[type] == param);
+  static async GetPublishFile(param: string, type: "fullPath" | "fileId"): Promise<CompiledFile> {
+    // 如果是外部库引用，直接返回null
+    if (type === "fullPath" && ExtensionLibraries[param]) {
+      return null;
+    }
+
+    // 先从已编译文件中查找
+    let file = this.CompiledFiles.find((f) => f[type] === param);
+
+    // 如果本地没有，从API获取
     if (!file) {
-      let paramObj = { [type]: param };
-      file = (await GlobalApi.GetPublishFile(paramObj)).data as CompiledFile;
+      const { data } = await GlobalApi.GetPublishFile({ [type]: param });
+      file = data as CompiledFile;
       this.CompiledFiles.push(file);
     }
-    for (const ref of file.refs) {
-      let isExist = this.CompiledFiles.find((f) => f.fullPath == ref.absPath);
-      if (!isExist) {
-        await Compiler.GetPublishFile(ref.absPath, "fullPath");
-      }
-    }
+
+    // 递归加载所有引用的文件
+    await Promise.all(
+      file.refs.map(async ({ absPath }) => {
+        const isExist = this.CompiledFiles.some((f) => f.fullPath === absPath);
+        if (!isExist) {
+          await this.GetPublishFile(absPath, "fullPath");
+        }
+      })
+    );
+
+    // 如果文件未安装，则安装它
     if (!this.fileId2BlobUrlMap.has(file.fileId)) {
       this.Install(file);
     }
+
     return file;
   }
 

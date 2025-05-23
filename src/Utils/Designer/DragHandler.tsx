@@ -1,4 +1,4 @@
-import { useDesignerStore } from "@/Stores/designerStore";
+import { useDesignerStore } from "@/Stores/DesignerStore";
 import { ControlDeclare, UtilsDeclare } from "@/Types";
 
 type Coord = UtilsDeclare.Coord;
@@ -154,6 +154,7 @@ export default class DragHandler {
     for (const control of this.designerStore.selectedControls) {
       if (control.config.id !== this.config.id && control.config.fromContainer === this.config.fromContainer) {
         this.SyncStateTo(control.dragHandler);
+        console.log(`同步状态到控件: ${control.config.name}`);
       }
     }
   }
@@ -175,7 +176,6 @@ export default class DragHandler {
       <>
         {dragHandles.map((handle) => (
           <div
-            key={handle.position}
             class={{
               [css.dot]: true,
               [handle.className]: true,

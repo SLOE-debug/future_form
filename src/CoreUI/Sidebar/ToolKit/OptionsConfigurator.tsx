@@ -1,4 +1,4 @@
-import { useDesignerStore } from "@/Stores/designerStore";
+import { useDesignerStore } from "@/Stores/DesignerStore";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ElButton, ElDialog, ElInput, ElPopconfirm, ElTable, ElTableColumn } from "element-plus";
 import { Component, Prop, Vue } from "vue-facing-decorator";

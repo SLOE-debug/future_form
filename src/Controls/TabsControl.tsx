@@ -105,8 +105,6 @@ export default class TabsControl extends Control {
 
   setupDesignerMode(): void {
     super.setupDesignerMode();
-    console.log("添加 cancel 事件");
-
     this.eventManager.add(window, "mouseup", this.Cancel, this);
   }
 

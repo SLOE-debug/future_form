@@ -1,6 +1,6 @@
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import Basic from "./Basic";
-import { editor } from "@/CoreUI/Editor/EditorPage";
+import { editor } from "@/Utils/Designer";
 
 type IFile = VritualFileSystemDeclare.IFile;
 
