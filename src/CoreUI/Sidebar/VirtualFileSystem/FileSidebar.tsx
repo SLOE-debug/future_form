@@ -23,6 +23,7 @@ import Search from "./Search";
 import { useDesignerStore } from "@/Stores/DesignerStore";
 import { useVirtualFileSystemStore } from "@/Stores/VirtualFileSystemStore";
 import { editor } from "@/Utils/Designer";
+import { markRaw } from "vue";
 
 type IDirectory = VritualFileSystemDeclare.IDirectory;
 
@@ -162,7 +163,7 @@ export default class FileSidebar extends Vue {
       file.id = fileInDb.fileId;
       file.suffix = fileInDb.suffix;
       file.specialFile = fileInDb.specialFile;
-      if (!("_csharpnull" in fileInDb.extraData)) file.extraData = fileInDb.extraData;
+      if (!("_csharpnull" in fileInDb.extraData)) file.extraData = markRaw(fileInDb.extraData);
 
       file.versionDescription = fileInDb.versionDescription;
       file.content = fileInDb.content;

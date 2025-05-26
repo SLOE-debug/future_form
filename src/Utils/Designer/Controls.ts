@@ -5,8 +5,10 @@ import { dataSourceParamPrefix } from "..";
 import type Control from "@/CoreUI/Designer/Control";
 import type FormControl from "@/Controls/FormControl";
 import { useDesignerStore } from "@/Stores/DesignerStore";
+import { useVirtualFileSystemStore } from "@/Stores/VirtualFileSystemStore";
 
 const designerStore = useDesignerStore();
+const virtualFileSystemStore = useVirtualFileSystemStore();
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceControlConfig = ControlDeclare.DataSourceControlConfig;
@@ -207,7 +209,7 @@ function GetFlatConfig() {
  * @param config 控件配置
  */
 export function AddDataSourceProps(fieldMap: ConfiguratorItem[], config: ControlConfig & DataSourceControlConfig) {
-  let sqlFiles = GetAllSqlFiles();
+  let sqlFiles = GetAllSqlFiles(virtualFileSystemStore.root);
   let option = fieldMap.splice(
     fieldMap.findIndex((m) => m.name == "选项"),
     1

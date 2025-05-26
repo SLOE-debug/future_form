@@ -113,7 +113,7 @@ export default class ContainerManager {
         // 则将其添加到结果中
         if (
           childConfig.container &&
-          GetFormAllControls()[childConfig.name].dragHandler.adjustType !== ControlDeclare.AdjustType.Move
+          GetFormAllControls()[childConfig.name].adjustType !== ControlDeclare.AdjustType.Move
         ) {
           allContainers.push({
             globalLeft,
@@ -200,7 +200,7 @@ export default class ContainerManager {
 
     // 如果当前控件没有选中/调整类型不是移动/控件类型是工具条 则不处理
     if (
-      control.dragHandler.adjustType !== ControlDeclare.AdjustType.Move ||
+      control.adjustType !== ControlDeclare.AdjustType.Move ||
       !control.selected ||
       control.config.type === "ToolStrip"
     ) {

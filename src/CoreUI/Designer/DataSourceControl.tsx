@@ -3,11 +3,19 @@ import { globalCache } from "@/Utils/Caches";
 import DevelopmentModules from "@/Utils/DevelopmentModules";
 import { ComponentBase } from "vue-facing-decorator";
 import Control from "./Control";
+import { ControlDeclare } from "@/Types";
+import { useVirtualFileSystemStore } from "@/Stores/VirtualFileSystemStore";
 
 type SourceParams = Record<string, any>;
 
 @ComponentBase
 export default class DataSourceControl extends Control {
+  declare config: ControlDeclare.ControlConfig & ControlDeclare.DataSourceControlConfig;
+
+  get virtualFileSystemStore() {
+    return useVirtualFileSystemStore();
+  }
+
   async created() {
     if (this.isDesignerMode) return;
     // 如果有绑定的数据源，则获取数据源
@@ -57,7 +65,7 @@ export default class DataSourceControl extends Control {
       } else {
         // 预览模式请求
         const { GetFileById } = await DevelopmentModules.Load();
-        const file = GetFileById(cacheKey);
+        const file = GetFileById(this.virtualFileSystemStore.root, cacheKey);
 
         const response = await this.$Api.GetSourceInDebug({
           sql: file.content,

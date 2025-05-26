@@ -1,18 +1,22 @@
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { ref, computed, nextTick } from "vue";
 import * as ts from "typescript";
 import FormControl from "@/Controls/FormControl";
 import type Control from "@/CoreUI/Designer/Control";
 import DesignerSpace from "@/CoreUI/Designer/DesignerSpace";
 import type { Stack } from "@/Core/Designer/UndoStack/Stack";
-import { ControlDeclare, DesignerDeclare } from "@/Types";
+import { ControlDeclare, DesignerDeclare, VritualFileSystemDeclare } from "@/Types";
 import { FillControlNameCache } from "@/Utils/Designer/Designer";
 import { GetDesignerBackgroundFile } from "@/Utils/VirtualFileSystem/Index";
 import { GetBaseControlProps } from "@/Utils/Designer/Controls";
+import { pauseTracking, resetTracking, shallowReactive, shallowRef, triggerRef } from "@vue/reactivity";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 type MenuItem = DesignerDeclare.MenuItem;
+
+type IDirectory = VritualFileSystemDeclare.IDirectory;
+type IFile = VritualFileSystemDeclare.IFile;
 
 /**
  * 获取当前窗体的所有引用
@@ -75,10 +79,52 @@ export const useDesignerStore = defineStore("designer", () => {
   const copyControlJson = ref<string>("");
   const controlNames = ref<string[]>([]);
   const isActive = ref<boolean>(false);
+  const eventNames = ref<string[]>([]);
 
-  const eventNames = computed(() => {
-    const file = GetDesignerBackgroundFile();
-    if (!file) return [];
+  const dragState = shallowReactive<{
+    isDragging: boolean;
+    adjustType: ControlDeclare.AdjustType | null;
+    startCoord: { x: number; y: number } | null;
+    offset: number[];
+    lastMousePos: { x: number; y: number } | null;
+  }>({ isDragging: false, adjustType: null, startCoord: null, offset: [], lastMousePos: null });
+  // 缓存控件信息为 shallowRef，避免深度 reactive
+  const cachedControls = shallowRef<
+    Array<{
+      el: HTMLDivElement;
+      originalLeft: number;
+      originalTop: number;
+      originalWidth: number;
+      originalHeight: number;
+      control: Control;
+    }>
+  >([]);
+
+  const selectedContainerControls = computed(() =>
+    selectedControls.value.filter((c) => {
+      if (bigShotControl.value) {
+        return c.config.fromContainer === bigShotControl.value.config.fromContainer;
+      }
+      return true;
+    })
+  );
+
+  /**
+   * 更新事件名称列表
+   * @param root 文件系统根目录
+   * @param currentFile 当前文件
+   */
+  async function UpdateEventNames(root: IDirectory, currentFile: IFile | null) {
+    if (!currentFile) {
+      eventNames.value = [];
+      return;
+    }
+
+    const file = GetDesignerBackgroundFile(root, currentFile);
+    if (!file) {
+      eventNames.value = [];
+      return;
+    }
 
     const code = file.content;
     const sourceFile = ts.createSourceFile("temp.ts", code, ts.ScriptTarget.ESNext, true);
@@ -93,17 +139,8 @@ export const useDesignerStore = defineStore("designer", () => {
     }
 
     ts.forEachChild(sourceFile, GetEvents);
-    return events;
-  });
-
-  const selectedContainerControls = computed(() =>
-    selectedControls.value.filter((c) => {
-      if (bigShotControl.value) {
-        return c.config.fromContainer === bigShotControl.value.config.fromContainer;
-      }
-      return true;
-    })
-  );
+    eventNames.value = events;
+  }
 
   /**
    * 撤销操作
@@ -329,6 +366,166 @@ export const useDesignerStore = defineStore("designer", () => {
     return null;
   }
 
+  /**
+   * 开始拖拽调整
+   */
+  function BeginDragAdjust(e: MouseEvent, control: Control) {
+    if (!debug.value || e.activity === false) return;
+
+    e.activity = false;
+    if (e.button !== 0) return;
+
+    const target = e.target as HTMLDivElement;
+    const { offset, type } = target.dataset;
+
+    dragState.isDragging = true;
+    dragState.startCoord = { x: e.clientX, y: e.clientY };
+    dragState.lastMousePos = { x: e.clientX, y: e.clientY };
+    if (type) {
+      dragState.adjustType = ControlDeclare.AdjustType.Move;
+    }
+    if (offset) {
+      dragState.adjustType = ControlDeclare.AdjustType.Resize;
+      dragState.offset = offset.split(",").map((s) => parseInt(s));
+    }
+
+    // 将调整类型应用到控件
+    control.adjustType = dragState.adjustType;
+
+    // 缓存所有参与拖拽的控件信息
+    cachedControls.value = selectedContainerControls.value
+      .map((ctrl) => ({
+        el: ctrl.$el as HTMLDivElement,
+        originalLeft: ctrl.config.left,
+        originalTop: ctrl.config.top,
+        originalWidth: ctrl.config.width,
+        originalHeight: ctrl.config.height,
+        control: ctrl,
+      }))
+      .filter((item) => item.el);
+
+    // 绑定全局事件
+    window.addEventListener("mousemove", HandleGlobalMouseMove);
+    window.addEventListener("mouseup", HandleGlobalMouseUp);
+  }
+
+  /**
+   * 全局鼠标移动处理 - 基于缓存的DOM直接操作
+   */
+  function HandleGlobalMouseMove(e: MouseEvent) {
+    if (!dragState.isDragging || !dragState.lastMousePos) return;
+
+    const { x: lastX, y: lastY } = dragState.lastMousePos;
+    const deltaX = e.clientX - lastX;
+    const deltaY = e.clientY - lastY;
+
+    // 如果移动距离太小，忽略
+    if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) return;
+
+    // 直接操作缓存的DOM元素，不访问任何control相关内容
+    switch (dragState.adjustType) {
+      case ControlDeclare.AdjustType.Move:
+        HandleBatchMoveDOM(deltaX, deltaY);
+        break;
+      case ControlDeclare.AdjustType.Resize:
+        HandleBatchResizeDOM(deltaX, deltaY);
+        break;
+    }
+
+    // 更新最后的鼠标位置
+    dragState.lastMousePos = { x: e.clientX, y: e.clientY };
+  }
+
+  /**
+   * 批量移动DOM处理 - 直接操作DOM，不访问control
+   */
+  function HandleBatchMoveDOM(deltaX: number, deltaY: number) {
+    cachedControls.value.forEach((cached) => {
+      const newLeft = cached.originalLeft + deltaX;
+      const newTop = cached.originalTop + deltaY;
+
+      cached.el.style.left = `${newLeft}px`;
+      cached.el.style.top = `${newTop}px`;
+
+      // 更新缓存的当前值
+      cached.originalLeft = newLeft;
+      cached.originalTop = newTop;
+    });
+  }
+
+  /**
+   * 批量调整大小DOM处理 - 直接操作DOM，不访问control
+   */
+  function HandleBatchResizeDOM(deltaX: number, deltaY: number) {
+    const [offsetX, offsetY] = dragState.offset;
+    const MIN_SIZE = 20;
+
+    cachedControls.value.forEach((cached) => {
+      const adjustX = deltaX * offsetX;
+      const adjustY = deltaY * offsetY;
+      const isLeft = Math.sign(offsetX) === -1;
+      const isTop = Math.sign(offsetY) === -1;
+
+      const canAdjustWidth = cached.originalWidth + adjustX >= MIN_SIZE;
+      const canAdjustHeight = cached.originalHeight + adjustY >= MIN_SIZE;
+
+      if (isLeft && canAdjustWidth) {
+        const newLeft = cached.originalLeft + -adjustX;
+        cached.el.style.left = `${newLeft}px`;
+        cached.originalLeft = newLeft;
+      }
+      if (isTop && canAdjustHeight) {
+        const newTop = cached.originalTop + -adjustY;
+        cached.el.style.top = `${newTop}px`;
+        cached.originalTop = newTop;
+      }
+
+      if (canAdjustWidth) {
+        const newWidth = cached.originalWidth + adjustX;
+        cached.el.style.width = `${newWidth}px`;
+        cached.originalWidth = newWidth;
+      }
+      if (canAdjustHeight) {
+        const newHeight = cached.originalHeight + adjustY;
+        cached.el.style.height = `${newHeight}px`;
+        cached.originalHeight = newHeight;
+      }
+    });
+  }
+
+  /**
+   * 全局鼠标抬起处理
+   */
+  function HandleGlobalMouseUp(e: MouseEvent) {
+    if (!dragState.isDragging) return;
+
+    // 暂停依赖收集
+    pauseTracking();
+    // 批量赋值到 config
+    cachedControls.value.forEach((item) => {
+      item.control.config.left = item.originalLeft;
+      item.control.config.top = item.originalTop;
+      item.control.config.width = item.originalWidth;
+      item.control.config.height = item.originalHeight;
+      item.control.adjustType = null;
+    });
+    // 恢复并一次性触发
+    resetTracking();
+    triggerRef(selectedControls);
+
+    // 清理拖拽状态
+    dragState.isDragging = false;
+    dragState.adjustType = null;
+    dragState.startCoord = null;
+    dragState.lastMousePos = null;
+    dragState.offset = [];
+    cachedControls.value = [];
+
+    // 移除全局事件监听
+    window.removeEventListener("mousemove", HandleGlobalMouseMove);
+    window.removeEventListener("mouseup", HandleGlobalMouseUp);
+  }
+
   return {
     // 状态
     debug,
@@ -345,9 +542,8 @@ export const useDesignerStore = defineStore("designer", () => {
     copyControlJson,
     controlNames,
     isActive,
-
-    // 计算属性
     eventNames,
+    // 计算属性
     selectedContainerControls,
 
     // 方法
@@ -363,5 +559,7 @@ export const useDesignerStore = defineStore("designer", () => {
     SetFormConfig,
     SetPreview,
     GetControlByName,
+    BeginDragAdjust,
+    UpdateEventNames,
   };
 });

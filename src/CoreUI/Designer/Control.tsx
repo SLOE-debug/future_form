@@ -6,15 +6,12 @@ import { JSX } from "vue/jsx-runtime";
 import { ElMessage } from "element-plus";
 import DevelopmentModules from "@/Utils/DevelopmentModules";
 import { GetParentDataSourceGroupControl, GetParentFormControl } from "@/Utils/Designer/Controls";
-import DragHandler, { DraggableConfig } from "@/Utils/Designer/DragHandler";
 import ContainerManager from "@/Utils/Designer/ContainerManager";
 import { onUnmounted, watch } from "vue";
 import { IsControlNameExists } from "@/Utils/Designer/Designer";
 import { useDesignerStore } from "@/Stores/DesignerStore";
 
 type ControlConfig = ControlDeclare.ControlConfig;
-type DataSourceControlConfig = ControlDeclare.DataSourceControlConfig;
-
 type EventHandlers = UtilsDeclare.EventHandlers;
 
 /**
@@ -55,7 +52,7 @@ export function DeepClone<T>(obj: T, excludeKeys: string[] = ["instance", "$chil
 @ComponentBase
 export default class Control extends Vue {
   @Prop
-  config: ControlConfig & DataSourceControlConfig;
+  config: ControlConfig;
 
   @Prop({ default: true })
   l: boolean;
@@ -101,6 +98,8 @@ export default class Control extends Vue {
   selected = false;
   // 是否禁用设计模式下的堆栈
   disableStack = false;
+  // 当前的调整类型
+  adjustType: ControlDeclare.AdjustType = null;
 
   // 生产或预览模式
   get isProductionOrPreview() {
@@ -121,28 +120,12 @@ export default class Control extends Vue {
     return this.config.type != "Form" ? "pointer" : "auto";
   }
 
-  // 拖拽处理类
-  dragHandler: DragHandler;
   // 空间容器关系管理类
   containerManager: ContainerManager;
   // 事件管理器
   eventManager: EventManager = new EventManager();
-
   // 设计器模式下控件的功能
   setupDesignerMode() {
-    this.dragHandler = new DragHandler(this.config as DraggableConfig, {
-      bigShot: () => this.bigShot,
-      handles: {
-        lt: this.lt,
-        t: this.t,
-        rt: this.rt,
-        r: this.r,
-        rb: this.rb,
-        b: this.b,
-        lb: this.lb,
-        l: this.l,
-      },
-    });
     this.containerManager = new ContainerManager(this);
     this.eventManager.add(
       window,
@@ -151,14 +134,6 @@ export default class Control extends Vue {
         this.containerManager.HandleContainerOnMouseUp(e);
       },
       this
-    );
-    this.eventManager.addBatch(
-      window,
-      {
-        mousemove: this.dragHandler.Adjust,
-        mouseup: this.dragHandler.Cancel,
-      },
-      this.dragHandler
     );
 
     // 监听配置的变化
@@ -368,6 +343,42 @@ export default class Control extends Vue {
   /**大人物(是否是以此为依据对齐/移动/调整的控件) */
   bigShot = false;
 
+  // 渲染拖拽点的辅助方法
+  HelpPoint() {
+    // 定义所有拖拽点的配置
+    const dragHandles = [
+      { position: "lt", offset: [-1, -1], className: `${css.l} ${css.t} ${css.nwse}`, visible: this.lt },
+      { position: "t", offset: [0, -1], className: `${css.t} ${css.ns}`, visible: this.t },
+      { position: "rt", offset: [1, -1], className: `${css.r} ${css.t} ${css.nesw}`, visible: this.rt },
+      { position: "r", offset: [1, 0], className: `${css.r} ${css.ew}`, visible: this.r },
+      { position: "rb", offset: [1, 1], className: `${css.r} ${css.b} ${css.nwse}`, visible: this.rb },
+      { position: "b", offset: [0, 1], className: `${css.b} ${css.ns}`, visible: this.b },
+      { position: "lb", offset: [-1, 1], className: `${css.l} ${css.b} ${css.nesw}`, visible: this.lb },
+      { position: "l", offset: [-1, 0], className: `${css.l} ${css.ew}`, visible: this.l },
+    ];
+
+    return (
+      <>
+        {dragHandles.map((handle) => (
+          <div
+            class={{
+              [css.dot]: true,
+              [handle.className]: true,
+              [css.bigshot]: this.bigShot,
+            }}
+            data-offset={handle.offset}
+            v-show={handle.visible}
+            onMousedown={(e) => {
+              if (this.designerStore.debug) {
+                this.designerStore.BeginDragAdjust(e, this);
+              }
+            }}
+          ></div>
+        ))}
+      </>
+    );
+  }
+
   render(ele: JSX.Element) {
     return (
       <div
@@ -387,7 +398,7 @@ export default class Control extends Vue {
         onMousedown={(e) => {
           if (this.designerStore.debug) {
             this.Pick(e);
-            this.dragHandler.BeginAdjust(e);
+            this.designerStore.BeginDragAdjust(e, this);
           }
           this.error = false;
         }}
@@ -395,9 +406,10 @@ export default class Control extends Vue {
           this.events.onClick && this.events.onClick(this.config, e);
         }}
       >
+        {" "}
         {<ele style={this.eleStyle} key={this.config.id}></ele>}
         {this.error && <div class={css.error}></div>}
-        {this.designerStore.debug && this.selected && this.dragHandler.HelpPoint()}
+        {this.designerStore.debug && this.selected && this.HelpPoint()}
       </div>
     );
   }

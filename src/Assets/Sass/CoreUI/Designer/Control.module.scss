@@ -1,3 +1,6 @@
+$dotSize: 6px;
+$offset: calc(-#{$dotSize} / 2);
+
 .control {
   position: absolute;
   display: flex;
@@ -12,5 +15,44 @@
     text-align: center;
     background-color: red;
     height: 50%;
+  }
+
+  .dot {
+    position: absolute;
+    border: 1px solid rgb(6, 123, 239);
+    width: $dotSize;
+    height: $dotSize;
+    background-color: white;
+    z-index: 9999;
+    user-select: none;
+  }
+  // 大人物的 dot 样式
+  .bigshot {
+    background-color: rgb(6, 123, 239);
+    border: 1px solid white;
+  }
+  .nwse {
+    cursor: nwse-resize;
+  }
+  .ns {
+    cursor: ns-resize;
+  }
+  .nesw {
+    cursor: nesw-resize;
+  }
+  .ew {
+    cursor: ew-resize;
+  }
+  .l {
+    left: $offset;
+  }
+  .r {
+    right: $offset;
+  }
+  .t {
+    top: $offset;
+  }
+  .b {
+    bottom: $offset;
   }
 }

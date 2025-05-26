@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { ref, computed, shallowRef } from "vue";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import Directory from "@/Core/VirtualFileSystem/Directory";
 import File from "@/Core/VirtualFileSystem/File";
@@ -7,12 +7,15 @@ import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import CompareFile from "@/Core/VirtualFileSystem/CompareFile";
 import { BackupRoot, FlatRoot, GetParentByDirectory, GetParentByFile } from "@/Utils/VirtualFileSystem/Index";
 import { editor } from "@/Utils/Designer";
+import { useDesignerStore } from "./DesignerStore";
 
 type IDirectory = VritualFileSystemDeclare.IDirectory;
 type IFile = VritualFileSystemDeclare.IFile;
 type ICompareFile = VritualFileSystemDeclare.ICompareFile;
 type MenuItem = VritualFileSystemDeclare.MenuItem;
 type Coord = UtilsDeclare.Coord;
+
+const designerStore = useDesignerStore();
 
 const defaultRoot = new Directory("");
 // Startup.ts文件
@@ -32,15 +35,6 @@ export const useVirtualFileSystemStore = defineStore("virtualFileSystem", () => 
   const currentVersion = ref<string>("last");
   const autoSelectNearFile = ref<boolean>(true);
 
-  // getters
-  const rootGetter = computed(() => root.value);
-  const currentDirectoryGetter = computed(() => currentDirectory.value);
-  const currentFileGetter = computed(() => currentFile.value);
-  const contextMenusGetter = computed(() => contextMenus.value);
-  const openFilesGetter = computed(() => openFiles.value);
-  const contextMenuPositionGetter = computed(() => contextMenuPosition.value);
-  const rootVersionsGetter = computed(() => rootVersions.value);
-  const currentVersionGetter = computed(() => currentVersion.value);
   // actions
   // 取消选择所有文件/文件夹
   function UnSelectAll() {
@@ -96,6 +90,7 @@ export const useVirtualFileSystemStore = defineStore("virtualFileSystem", () => 
     } else {
       currentFile.value = null;
     }
+    designerStore.UpdateEventNames(root.value, currentFile.value);
   }
 
   // 删除文件
@@ -219,16 +214,6 @@ export const useVirtualFileSystemStore = defineStore("virtualFileSystem", () => 
     rootVersions,
     currentVersion,
     autoSelectNearFile,
-
-    // getters
-    rootGetter,
-    currentDirectoryGetter,
-    currentFileGetter,
-    contextMenusGetter,
-    openFilesGetter,
-    contextMenuPositionGetter,
-    rootVersionsGetter,
-    currentVersionGetter,
 
     // actions
     UnSelectAll,

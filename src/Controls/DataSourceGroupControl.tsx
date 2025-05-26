@@ -10,6 +10,9 @@ import { CloneStruct } from "@/Utils";
 import DevelopmentModules from "@/Utils/DevelopmentModules";
 import { DropAddControl } from "@/Utils/Designer";
 import { TwoWayBinding } from "@/Utils/Runtime";
+import { useVirtualFileSystemStore } from "@/Stores/VirtualFileSystemStore";
+
+const virtualFileSystemStore = useVirtualFileSystemStore();
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type DataSourceGroupConfig = ControlDeclare.DataSourceGroupConfig;
@@ -113,7 +116,7 @@ export default class DataSourceGroupControl extends Control {
     if (this.designerStore.preview) {
       let { GetFileById } = await DevelopmentModules.Load();
 
-      let sqlFile = GetFileById(this.config.dataSource);
+      let sqlFile = GetFileById(virtualFileSystemStore.root, this.config.dataSource);
 
       res = await this.$Api.GetDataSourceGroupDataInDebug({
         sql: sqlFile.content,
@@ -405,7 +408,7 @@ export default class DataSourceGroupControl extends Control {
   private async SaveData(data: any[]) {
     let { GetFileById } = await DevelopmentModules.Load();
     if (this.designerStore.preview) {
-      let sqlFile = GetFileById(this.config.dataSource);
+      let sqlFile = GetFileById(virtualFileSystemStore.root, this.config.dataSource);
       return await this.$Api.SaveDataSourceGroupDataInDebug({
         sql: sqlFile.content,
         tableName: sqlFile.extraData.table,
@@ -454,7 +457,7 @@ export async function GetProps(config: DataSourceGroupConfig, instance: DataSour
   let { GetAllSqlFiles } = await DevelopmentModules.Load();
   let { baseProps } = await DevelopmentModules.Load();
 
-  let sqlFiles = GetAllSqlFiles();
+  let sqlFiles = GetAllSqlFiles(virtualFileSystemStore.root);
 
   const fieldMap: ConfiguratorItem[] = [
     // 过滤掉 禁用 和 必填 属性
