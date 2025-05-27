@@ -139,11 +139,12 @@ export default class DesignerSpace extends Vue {
   }
 
   created() {
-    if (!this.virtualFileSystemStore.currentFile.extraData) {
-      this.virtualFileSystemStore.currentFile.extraData = FormControl.GetDefaultConfig();
+    let { extraData } = this.virtualFileSystemStore.currentFile;
+    if (!extraData) {
+      extraData = FormControl.GetDefaultConfig();
     }
     this.designerStore.ClearSelected();
-    this.designerStore.SetFormConfig(this.virtualFileSystemStore.currentFile.extraData);
+    this.designerStore.SetFormConfig(extraData);
   }
 
   eventManager: EventManager = new EventManager();
@@ -203,8 +204,7 @@ export default class DesignerSpace extends Vue {
             lb: false,
             rt: false,
             move: false,
-            // locate: { index: 0 },
-            config: this.virtualFileSystemStore.currentFile.extraData,
+            config: this.designerStore.formConfig,
             ref: "form",
           }}
         ></FormControl>

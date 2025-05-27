@@ -9,7 +9,16 @@ import { ControlDeclare, DesignerDeclare, VritualFileSystemDeclare } from "@/Typ
 import { FillControlNameCache } from "@/Utils/Designer/Designer";
 import { GetDesignerBackgroundFile } from "@/Utils/VirtualFileSystem/Index";
 import { GetBaseControlProps } from "@/Utils/Designer/Controls";
-import { pauseTracking, resetTracking, shallowReactive, shallowRef, triggerRef } from "@vue/reactivity";
+import {
+  pauseTracking,
+  reactive,
+  resetTracking,
+  shallowReactive,
+  shallowRef,
+  toRaw,
+  triggerRef,
+} from "@vue/reactivity";
+import { DeepClone } from "@/CoreUI/Designer/Control";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
@@ -66,7 +75,7 @@ let tempStacks: Stack[] = [];
 export const useDesignerStore = defineStore("designer", () => {
   // 状态 (State)
   const debug = ref<boolean>(false);
-  const formConfig = ref<ControlConfig | null>(null);
+  const formConfig = reactive<ControlConfig>({} as ControlConfig);
   const selectedControls = ref<Control[]>([]);
   const bigShotControl = ref<Control | null>(null);
   const controlProps = ref<ConfiguratorItem[]>([]);
@@ -338,8 +347,44 @@ export const useDesignerStore = defineStore("designer", () => {
    * 设置表单配置
    */
   function SetFormConfig(config: ControlConfig) {
-    formConfig.value = config;
+    const rawConfig = toRaw(config);
+    Object.assign(formConfig, MakeReactive(rawConfig));
     if (config) FillControlNameCache(config);
+  }
+
+  /**
+   * 递归地将 config 对象转换为 reactive
+   * @param config 控件配置对象
+   * @returns reactive 配置对象
+   */
+  function MakeReactive(config: ControlConfig): ControlConfig {
+    if (!config || typeof config !== "object") {
+      return config;
+    }
+
+    // 创建一个新的对象来避免修改原始对象
+    const newConfig: any = {};
+
+    // 递归处理所有属性
+    for (const key in config) {
+      if (config.hasOwnProperty(key)) {
+        const value = config[key];
+
+        if (Array.isArray(value)) {
+          // 处理数组：递归处理数组中的每个元素
+          newConfig[key] = value.map((item) => MakeReactive(item));
+        } else if (value && typeof value === "object") {
+          // 处理对象：递归处理
+          newConfig[key] = MakeReactive(value);
+        } else {
+          // 处理基本类型：直接复制
+          newConfig[key] = value;
+        }
+      }
+    }
+
+    // 将整个配置对象转换为 reactive
+    return reactive(newConfig);
   }
 
   /**
