@@ -5,49 +5,18 @@ import { EventManager } from "@/Utils";
 import { JSX } from "vue/jsx-runtime";
 import { ElMessage } from "element-plus";
 import DevelopmentModules from "@/Utils/DevelopmentModules";
-import { GetParentDataSourceGroupControl, GetParentFormControl } from "@/Utils/Designer/Controls";
+import {
+  IsControlNameExists,
+  DeepClone,
+  GetParentDataSourceGroupControl,
+  GetParentFormControl,
+} from "@/Utils/Designer";
 import ContainerManager from "@/Utils/Designer/ContainerManager";
 import { onUnmounted, watch } from "vue";
-import { IsControlNameExists } from "@/Utils/Designer/Designer";
 import { useDesignerStore } from "@/Stores/DesignerStore";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type EventHandlers = UtilsDeclare.EventHandlers;
-
-/**
- * 深度克隆对象，排除指定的属性
- * @param obj 要克隆的对象
- * @param excludeKeys 要排除的属性名数组
- * @returns 克隆后的对象
- */
-export function DeepClone<T>(obj: T, excludeKeys: string[] = ["instance", "$children"]): T {
-  // 处理基本类型、null和undefined
-  if (obj === null || obj === undefined || typeof obj !== "object") {
-    return obj;
-  }
-
-  // 处理数组
-  if (Array.isArray(obj)) {
-    return obj.map((item) => DeepClone(item, excludeKeys)) as unknown as T;
-  }
-
-  // 处理日期对象
-  if (obj instanceof Date) {
-    return new Date(obj.getTime()) as unknown as T;
-  }
-
-  // 创建新对象
-  const result = {} as T;
-
-  // 复制所有非排除的属性
-  for (const key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key) && !excludeKeys.includes(key)) {
-      result[key as keyof T] = DeepClone(obj[key as keyof T], excludeKeys);
-    }
-  }
-
-  return result;
-}
 
 @ComponentBase
 export default class Control extends Vue {

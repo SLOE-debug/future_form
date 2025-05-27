@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, computed, nextTick } from "vue";
+import { ref, computed } from "vue";
 import * as ts from "typescript";
 import FormControl from "@/Controls/FormControl";
 import type Control from "@/CoreUI/Designer/Control";
@@ -18,7 +18,6 @@ import {
   toRaw,
   triggerRef,
 } from "@vue/reactivity";
-import { DeepClone } from "@/CoreUI/Designer/Control";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
