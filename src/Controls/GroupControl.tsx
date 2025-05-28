@@ -70,7 +70,7 @@ export default class GroupControl extends Control {
         )}
         <div
           class="w-full h-full relative overflow-hidden !pointer-events-auto !cursor-auto"
-          onDrop={this.designerStore.debug && this.Drop}
+          onDrop={this.isDesignerMode && this.Drop}
           onMousedown={this.designerStore.debug && this.SlideStart}
           style={{
             borderRadius: this.config.round + "px",
@@ -95,7 +95,7 @@ export default class GroupControl extends Control {
             .map((kid) => this.designerStore.flatConfigs.entities[kid])
             .map((c, i) => {
               let control = this.$.appContext.components[c.type + "Control"];
-              return <control key={c.id} config={c} ref={c.name} style={{ zIndex: i }}></control>;
+              return <control key={c.id} id={c.id} ref={c.name} style={{ zIndex: i }}></control>;
             })}
         </div>
       </>

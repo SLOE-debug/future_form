@@ -311,6 +311,8 @@ export default class Control extends Vue {
       childrenIds.splice(index, 1);
     }
 
+    this.designerStore.ClearSelected();
+
     return { children: childrenIds, index, del: removedControl };
   }
 

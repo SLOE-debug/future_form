@@ -169,21 +169,20 @@ class DragAdjustManager {
   /**
    * 全局鼠标抬起处理
    */
-  private static handleGlobalMouseUp = (e: MouseEvent) => {
+  private static handleGlobalMouseUp = async (e: MouseEvent) => {
     if (!this.dragState.isDragging) return;
 
     // 批量赋值到 config
-    this.cachedControls.value.forEach((item) => {
-      // 检查 config 是否存在，防止在容器切换过程中 config 被删除
+    for (const item of this.cachedControls.value) {
       if (item.control.config) {
         item.control.config.left = item.originalLeft;
         item.control.config.top = item.originalTop;
         item.control.config.width = item.originalWidth;
         item.control.config.height = item.originalHeight;
-        GlobalContainerManager.handleContainerOnMouseUp(e, item.control);
+        await GlobalContainerManager.handleContainerOnMouseUp(e, item.control);
         item.control.adjustType = null;
       }
-    });
+    }
 
     // 清理拖拽状态
     this.dragState.isDragging = false;

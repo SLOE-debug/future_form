@@ -18,7 +18,6 @@ type MenuItem = DesignerDeclare.MenuItem;
 type IDirectory = VritualFileSystemDeclare.IDirectory;
 type IFile = VritualFileSystemDeclare.IFile;
 
-
 /**
  * 获取当前窗体的所有引用
  * @param obj 窗体的vue对象
@@ -80,7 +79,6 @@ export const useDesignerStore = defineStore("designer", () => {
   const controlNames = ref<string[]>([]);
   const isActive = ref<boolean>(false);
   const eventNames = ref<string[]>([]);
-
 
   const flatConfigs = {
     entities: shallowReactive({}) as Record<string, ControlConfig>,
@@ -370,7 +368,6 @@ export const useDesignerStore = defineStore("designer", () => {
 
     return null;
   }
-
 
   return {
     // 状态

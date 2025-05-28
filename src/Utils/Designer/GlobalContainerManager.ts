@@ -16,7 +16,6 @@ type Coord = UtilsDeclare.Coord;
  * 管理所有控件的容器关系，避免每个控件都创建实例
  */
 class GlobalContainerManager {
-
   /**
    * 检查容器是否可见
    * @param containerConfig 容器配置
@@ -82,7 +81,7 @@ class GlobalContainerManager {
   ): ContainerInfo[] {
     const designerStore = useDesignerStore();
     const virtualFileSystemStore = useVirtualFileSystemStore();
-    
+
     const actualRootConfigId = rootConfigId || virtualFileSystemStore.currentFile?.id;
     if (!actualRootConfigId) return [];
 
@@ -125,10 +124,7 @@ class GlobalContainerManager {
         // 且该控件的 adjustType 不是 Move
         // 则将其添加到结果中
         const allControls = GetFormAllControls();
-        if (
-          childConfig.container &&
-          allControls[childConfig.name]?.adjustType !== ControlDeclare.AdjustType.Move
-        ) {
+        if (childConfig.container && allControls[childConfig.name]?.adjustType !== ControlDeclare.AdjustType.Move) {
           allContainers.push({
             globalLeft,
             globalTop,
@@ -171,74 +167,70 @@ class GlobalContainerManager {
    * 移出容器
    */
   static outContainer(control: Control, container: ContainerInfo) {
-    if (!container) return;
-    const { globalLeft, globalTop, screenTop } = container;
+    const designerStore = useDesignerStore();
+    const virtualFileSystemStore = useVirtualFileSystemStore();
+    const { flatConfigs } = designerStore;
 
-    control.config.left += globalLeft;
-    control.config.top += globalTop - screenTop;
+    // 确定要移除的容器ID
+    const containerId = container
+      ? Object.values(flatConfigs.entities).find((c) => c.name === container.container.name)?.id
+      : virtualFileSystemStore.currentFile?.id;
 
-    control.config.fromContainer = null;
-    control.config.fromTabId = null;
+    if (!containerId) {
+      console.warn(`找不到容器ID: ${container?.container.name || "根容器"}`);
+      return;
+    }
+
+    // 从容器的 childrenMap 中移除控件
+    const children = flatConfigs.childrenMap[containerId] || [];
+    const index = children.indexOf(control.config.id);
+
+    if (index !== -1) {
+      flatConfigs.childrenMap[containerId] = children.filter((id) => id !== control.config.id);
+      console.log(`从${container?.container.name || "根容器"}中移除控件 ${control.config.id}`);
+    }
+
+    // 调整控件位置（仅当从非根容器移出时）
+    if (container) {
+      const { globalLeft, globalTop, screenTop } = container;
+      control.config.left += globalLeft;
+      control.config.top += globalTop - screenTop;
+
+      // 清除容器关联信息
+      control.config.fromContainer = null;
+      control.config.fromTabId = null;
+    }
   }
 
   /**
    * 加入容器
    */
-  static async joinContainer(control: Control, container: ContainerInfo) {
+  static async joinContainer(control: Control, container?: ContainerInfo) {
     const { AddControlDeclareToDesignerCode } = await DevelopmentModules.Load();
     const designerStore = useDesignerStore();
     const virtualFileSystemStore = useVirtualFileSystemStore();
-
-    const globalLeft = container?.globalLeft || 0;
-    const globalTop = container?.globalTop || 0;
-    const screenTop = container?.screenTop || 0;
-    const targetContainer =
-      container?.container ||
-      ({
-        name: undefined,
-        value: undefined,
-      } as any);
-
-    // 获取当前控件的父容器ID，用于从旧容器中移除
     const { flatConfigs } = designerStore;
-    const currentFromContainer = control.config.fromContainer;
 
-    // 从旧容器中移除控件引用，但不删除控件配置
-    if (currentFromContainer) {
-      const oldContainerConfig = Object.values(flatConfigs.entities).find((c) => c.name === currentFromContainer);
-      if (oldContainerConfig) {
-        const oldContainerChildren = flatConfigs.childrenMap[oldContainerConfig.id] || [];
-        const index = oldContainerChildren.indexOf(control.config.id);
-        if (index !== -1) {
-          oldContainerChildren.splice(index, 1);
-        }
-      }
-    } else {
-      // 如果没有旧容器，从根容器中移除
-      const rootChildren = flatConfigs.childrenMap[virtualFileSystemStore.currentFile?.id] || [];
-      const index = rootChildren.indexOf(control.config.id);
-      if (index !== -1) {
-        rootChildren.splice(index, 1);
-      }
-    }
+    // 提取容器信息并设置默认值
+    const { globalLeft = 0, globalTop = 0, screenTop = 0 } = container || {};
+    const targetContainer = container?.container;
 
-    // 更新控件位置和容器信息
+    // 更新控件位置相对于新容器
     control.config.left -= globalLeft;
     control.config.top -= globalTop - screenTop;
 
-    if (targetContainer.value) {
-      control.config.fromTabId = targetContainer.value;
+    // 更新控件的 fromContainer 和 fromTabId
+    control.config.fromContainer = targetContainer?.name || null;
+    control.config.fromTabId = targetContainer?.value || null;
+
+    // 添加控件到目标容器的 childrenMap 中
+    const targetContainerId = targetContainer?.id || virtualFileSystemStore.currentFile?.id;
+    if (targetContainerId) {
+      flatConfigs.childrenMap[targetContainerId] ??= [];
+      flatConfigs.childrenMap[targetContainerId].push(control.config.id);
+
+      console.log(`控件 ${control.config.id} 已添加到容器 ${targetContainer?.name || "根容器"} 的 childrenMap 中`);
     }
-
-    control.config.fromContainer = targetContainer.name;
-
-    // 添加到新容器
-    const targetContainerId = targetContainer.id || virtualFileSystemStore.currentFile?.id;
-
-    if (!flatConfigs.childrenMap[targetContainerId]) {
-      flatConfigs.childrenMap[targetContainerId] = [];
-    }
-    flatConfigs.childrenMap[targetContainerId].push(control.config.id);
 
     AddControlDeclareToDesignerCode(control.config);
   }
@@ -249,7 +241,7 @@ class GlobalContainerManager {
   static async handleContainerOnMouseUp(e: MouseEvent, control: Control) {
     const designerStore = useDesignerStore();
 
-    // 如果当前控件没有选中/调整类型不是移动/控件类型是工具条 则不处理
+    // 早期返回：检查控件是否满足处理条件
     if (
       control.adjustType !== ControlDeclare.AdjustType.Move ||
       !control.selected ||
@@ -259,40 +251,39 @@ class GlobalContainerManager {
     }
 
     const rect = (designerStore.formDesigner.$el as HTMLDivElement).getBoundingClientRect();
-
     const containers = this.getAllContainer().reverse();
 
-    // 容器 map，避免重复查找
-    const containerMap = containers.reduce((map, containerInfo) => {
-      map[containerInfo.container.name] = containerInfo;
-      return map;
-    }, {} as Record<string, ContainerInfo>);
+    // 计算鼠标相对位置
+    const mousePos = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
 
-    let { clientX: x, clientY: y } = e;
-    x = x - rect.left;
-    y = y - rect.top;
+    // 获取当前和目标容器
+    const oldContainer = containers.find((c) => c.container.name === control.config.fromContainer);
+    const newContainer = this.findContainerAtPosition(mousePos.x, mousePos.y, containers, control.config.name);
 
+    // 仅在容器发生变化时处理切换
+    if (newContainer === oldContainer) return;
+
+    console.log(
+      `控件 ${control.config.name} 从容器 ${oldContainer?.container.name || "根容器"} 切换到 ${
+        newContainer?.container.name || "根容器"
+      }`
+    );
+
+    // 执行容器切换
     const { Stack, StackAction } = await DevelopmentModules.Load();
+    const originalConfig = DeepClone(control.config);
 
-    const oldContainer = containerMap[control?.config?.fromContainer] || undefined;
-    // 寻找鼠标位置所在的容器
-    const newContainer = this.findContainerAtPosition(x, y, containers, control.config.name);
+    control.disableStack = true;
+    this.outContainer(control, oldContainer);
+    await this.joinContainer(control, newContainer);
 
-    if (newContainer !== oldContainer) {
-      // 禁用 control 的堆栈
-      control.disableStack = true;
+    // 添加到操作历史栈
+    designerStore.AddStack(new Stack(control, DeepClone(control.config), originalConfig, StackAction.SwitchContainer));
 
-      const originalConfig = DeepClone(control.config);
-      this.outContainer(control, oldContainer);
-      await this.joinContainer(control, newContainer);
-
-      // 添加到堆栈
-      designerStore.AddStack(
-        new Stack(control, DeepClone(control.config), originalConfig, StackAction.SwitchContainer)
-      );
-
-      control.disableStack = false;
-    }
+    control.disableStack = false;
   }
 
   /**
