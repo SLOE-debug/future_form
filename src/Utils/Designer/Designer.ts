@@ -148,18 +148,29 @@ export function FindControlsByKeyValue(
   prevTop: number = 0,
   prevLeft: number = 0
 ): ControlConfig {
-  if (config.$children && config.$children.length > 0) {
-    for (let c of config.$children) {
-      if (c[key] == value) {
-        if (!id) return c;
-        if (c.id != id) return c;
+  // 使用扁平化配置查找控件
+  function searchRecursive(configId: string, currentPrevTop: number, currentPrevLeft: number): ControlConfig {
+    const currentConfig = designerStore.flatConfigs.entities[configId];
+    if (!currentConfig) return undefined;
+    
+    const childrenIds = designerStore.flatConfigs.childrenMap[configId] || [];
+    for (const childId of childrenIds) {
+      const childConfig = designerStore.flatConfigs.entities[childId];
+      if (!childConfig) continue;
+      
+      if (childConfig[key] == value) {
+        if (!id) return childConfig;
+        if (childConfig.id != id) return childConfig;
         return undefined;
       } else {
-        let config = FindControlsByKeyValue(c, key, value, id, prevTop + c.top, prevLeft + c.left);
-        if (config) return config;
+        const result = searchRecursive(childId, currentPrevTop + childConfig.top, currentPrevLeft + childConfig.left);
+        if (result) return result;
       }
     }
+    return undefined;
   }
+  
+  return searchRecursive(config.id, prevTop, prevLeft);
 }
 
 /**
@@ -204,16 +215,24 @@ export function IsControlNameExists(config: ControlConfig): boolean {
 export function FindControlsByType(config: ControlConfig, type = undefined): ControlConfig[] {
   let results = [];
 
-  if (config.$children && config.$children.length > 0) {
-    for (const child of config.$children) {
-      if (child.type === type || type == undefined) {
-        results.push(child);
+  // 使用扁平化配置查找控件
+  function searchRecursive(configId: string) {
+    const childrenIds = designerStore.flatConfigs.childrenMap[configId] || [];
+    
+    for (const childId of childrenIds) {
+      const childConfig = designerStore.flatConfigs.entities[childId];
+      if (!childConfig) continue;
+      
+      if (childConfig.type === type || type == undefined) {
+        results.push(childConfig);
       }
 
-      results = results.concat(FindControlsByType(child, type));
+      // 递归搜索子控件
+      searchRecursive(childId);
     }
   }
 
+  searchRecursive(config.id);
   return results;
 }
 
@@ -263,20 +282,30 @@ export function GenerateUniqueControlName(type: string): string {
  */
 export function FillControlNameCache(config: ControlConfig) {
   if (config.type == "Form") cacheControlName = {};
-  config.$children.forEach((c) => {
-    let match = c.name.match(/\d+/g) as any[];
+  
+  // 使用扁平化配置递归填充控件名称缓存
+  function fillCacheRecursive(configId: string) {
+    const currentConfig = designerStore.flatConfigs.entities[configId];
+    if (!currentConfig) return;
+    
+    let match = currentConfig.name.match(/\d+/g) as any[];
     if (match) {
-      let prevName = cacheControlName[ControlAlias[c.type]];
+      let prevName = cacheControlName[ControlAlias[currentConfig.type]];
       let n = parseInt(match[0]);
-      if (!prevName) cacheControlName[ControlAlias[c.type]] = `${ControlAlias[c.type]}_${n}`;
+      if (!prevName) cacheControlName[ControlAlias[currentConfig.type]] = `${ControlAlias[currentConfig.type]}_${n}`;
       else {
         match = prevName.match(/\d+/g) as any[];
         let prevNum = parseInt(match[0]);
-        if (n > prevNum) cacheControlName[ControlAlias[c.type]] = `${ControlAlias[c.type]}_${n}`;
+        if (n > prevNum) cacheControlName[ControlAlias[currentConfig.type]] = `${ControlAlias[currentConfig.type]}_${n}`;
       }
     }
-    if (c.$children?.length) FillControlNameCache(c);
-  });
+    
+    // 递归处理子控件
+    const childrenIds = designerStore.flatConfigs.childrenMap[configId] || [];
+    childrenIds.forEach((childId) => fillCacheRecursive(childId));
+  }
+  
+  fillCacheRecursive(config.id);
 }
 
 /**

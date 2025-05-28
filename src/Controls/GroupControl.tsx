@@ -3,13 +3,11 @@ import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
 import DevelopmentModules from "@/Utils/DevelopmentModules";
-import { Guid } from "@/Utils";
 import { defineAsyncComponent } from "vue";
 import { Component } from "vue-facing-decorator";
 import { DropAddControl } from "@/Utils/Designer";
 
 type GroupConfig = ControlDeclare.GroupConfig;
-type ControlConfig = ControlDeclare.ControlConfig;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 type Coord = UtilsDeclare.Coord;
 
@@ -18,7 +16,9 @@ const AsyncSvgIcon = defineAsyncComponent(() => import("@/Components/SvgIcon"));
 
 @Component
 export default class GroupControl extends Control {
-  declare config: GroupConfig;
+  public override get config() {
+    return super.config as GroupConfig;
+  }
 
   Drop(e: DragEvent) {
     DropAddControl(e, this);
@@ -27,18 +27,20 @@ export default class GroupControl extends Control {
 
   slideStartCoord: Coord;
   SlideStart(e: MouseEvent) {
-    if (e.button == 0 && e.activity != false && this.$Store.get.Designer.Debug)
+    if (e.button == 0 && e.activity != false && this.designerStore.debug)
       this.slideStartCoord = { x: e.clientX, y: e.clientY };
   }
 
   SlideEnd(e) {
     if (!e || !e.width || !e.height) return;
 
-    let configs = this.config.$children.filter((c) => {
-      return (
-        c.left < e.left + e.width && c.left + c.width > e.left && c.top < e.top + e.height && c.top + c.height > e.top
-      );
-    });
+    let configs = this.kids
+      .map((kid) => this.designerStore.flatConfigs.entities[kid])
+      .filter((c) => {
+        return (
+          c.left < e.left + e.width && c.left + c.width > e.left && c.top < e.top + e.height && c.top + c.height > e.top
+        );
+      });
     if (configs.length) {
       this.designerStore.SelectControlByConfig(configs);
     }
@@ -55,7 +57,7 @@ export default class GroupControl extends Control {
   render() {
     return super.render(
       <>
-        {this.$Store.get.Designer.Debug && (
+        {this.designerStore.debug && (
           <AsyncSvgIcon
             {...{
               name: "GruopMove",
@@ -68,8 +70,8 @@ export default class GroupControl extends Control {
         )}
         <div
           class="w-full h-full relative overflow-hidden !pointer-events-auto !cursor-auto"
-          onDrop={this.$Store.get.Designer.Debug && this.Drop}
-          onMousedown={this.$Store.get.Designer.Debug && this.SlideStart}
+          onDrop={this.designerStore.debug && this.Drop}
+          onMousedown={this.designerStore.debug && this.SlideStart}
           style={{
             borderRadius: this.config.round + "px",
             backgroundColor: this.config.bgColor,
@@ -77,10 +79,10 @@ export default class GroupControl extends Control {
             borderStyle: this.config.borderStyle,
             borderColor: this.config.borderColor || "auto",
             boxShadow: this.config.sunk ? `0 0 10px ${this.config.borderColor} inset` : "",
-            border: this.$Store.get.Designer.Debug ? "1px dashed #999" : "",
+            border: this.designerStore.debug ? "1px dashed #999" : "",
           }}
         >
-          {this.$Store.get.Designer.Debug && (
+          {this.designerStore.debug && (
             <AsyncSlideSelector
               {...{
                 start: this.slideStartCoord,
@@ -89,10 +91,12 @@ export default class GroupControl extends Control {
             />
           )}
 
-          {this.config.$children.map((c, i) => {
-            let control = this.$.appContext.components[c.type + "Control"];
-            return <control key={c.id} config={c} ref={c.name} style={{ zIndex: i }}></control>;
-          })}
+          {this.kids
+            .map((kid) => this.designerStore.flatConfigs.entities[kid])
+            .map((c, i) => {
+              let control = this.$.appContext.components[c.type + "Control"];
+              return <control key={c.id} config={c} ref={c.name} style={{ zIndex: i }}></control>;
+            })}
         </div>
       </>
     );

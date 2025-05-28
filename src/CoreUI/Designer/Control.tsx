@@ -12,9 +12,11 @@ import {
   GetParentFormControl,
   GetParentControl,
 } from "@/Utils/Designer";
-import ContainerManager from "@/Utils/Designer/ContainerManager";
+import DragAdjustManager from "@/Utils/Designer/DragAdjustManager";
+import GlobalContainerManager from "@/Utils/Designer/GlobalContainerManager";
 import { onUnmounted, watch } from "vue";
 import { useDesignerStore } from "@/Stores/DesignerStore";
+import { useVirtualFileSystemStore } from "@/Stores/VirtualFileSystemStore";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type EventHandlers = UtilsDeclare.EventHandlers;
@@ -44,6 +46,10 @@ export default class Control extends Vue {
 
   get designerStore() {
     return useDesignerStore();
+  }
+
+  get virtualFileSystemStore() {
+    return useVirtualFileSystemStore();
   }
 
   get config(): ControlConfig {
@@ -99,21 +105,18 @@ export default class Control extends Vue {
     return this.config.type != "Form" ? "pointer" : "auto";
   }
 
-  // 空间容器关系管理类
-  containerManager: ContainerManager;
   // 事件管理器
   eventManager: EventManager = new EventManager();
   // 设计器模式下控件的功能
   setupDesignerMode() {
-    this.containerManager = new ContainerManager(this);
-    this.eventManager.add(
-      window,
-      "mouseup",
-      (e: MouseEvent) => {
-        this.containerManager.HandleContainerOnMouseUp(e);
-      },
-      this
-    );
+    // this.eventManager.add(
+    //   window,
+    //   "mouseup",
+    //   (e: MouseEvent) => {
+    //     GlobalContainerManager.handleContainerOnMouseUp(e, this);
+    //   },
+    //   this
+    // );
 
     // 监听配置的变化
     const configWatch = watch(
@@ -215,7 +218,6 @@ export default class Control extends Vue {
   unmounted() {
     this.eventManager?.removeAll();
     this.eventManager = null;
-    this.containerManager = null;
     this.isUnmounted = true;
     this.events = {};
   }
@@ -395,7 +397,7 @@ export default class Control extends Vue {
             v-show={handle.visible}
             onMousedown={(e) => {
               if (this.designerStore.debug) {
-                this.designerStore.BeginDragAdjust(e, this);
+                DragAdjustManager.beginDragAdjust(e, this, this.designerStore.selectedContainerControls);
               }
             }}
           ></div>
@@ -423,7 +425,7 @@ export default class Control extends Vue {
         onMousedown={(e) => {
           if (this.designerStore.debug) {
             this.Pick(e);
-            this.designerStore.BeginDragAdjust(e, this);
+            DragAdjustManager.beginDragAdjust(e, this, this.designerStore.selectedContainerControls);
           }
           this.error = false;
         }}

@@ -187,19 +187,17 @@ export const baseEvents: ConfiguratorItem[] = [
  * @returns 窗体配置信息
  */
 function GetFlatConfig() {
-  const stack = [designerStore.formConfig];
   const configs: ControlConfig[] = [];
-
-  while (stack.length > 0) {
-    const current = stack.pop();
-
-    if (current.$children && current.$children.length != 0) {
-      current.$children.forEach((c) => {
-        configs.push(c);
-        stack.push(c);
-      });
+  const { flatConfigs } = designerStore;
+  
+  // 直接从扁平化配置中获取所有控件
+  for (const id in flatConfigs.entities) {
+    const config = flatConfigs.entities[id];
+    if (config && config.type !== "Form") {
+      configs.push(config);
     }
   }
+  
   return configs;
 }
 
@@ -383,6 +381,7 @@ export function GetDefaultConfig(): ControlConfig {
     $children: [],
   };
 }
+
 /**
  * 深度克隆对象，排除指定的属性
  * @param obj 要克隆的对象

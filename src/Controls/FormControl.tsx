@@ -47,11 +47,17 @@ export default class FormControl extends Control {
   SlideEnd(e) {
     if (!e || !e.width || !e.height) return;
 
-    let configs = this.designerStore.formConfig.$children.filter((c) => {
-      return (
-        c.left < e.left + e.width && c.left + c.width > e.left && c.top < e.top + e.height && c.top + c.height > e.top
+    let configs = this.kids
+      .map((kid) => this.designerStore.flatConfigs.entities[kid])
+      .filter(
+        (c) =>
+          c &&
+          c.left < e.left + e.width &&
+          c.left + c.width > e.left &&
+          c.top < e.top + e.height &&
+          c.top + c.height > e.top
       );
-    });
+
     if (configs.length) {
       this.designerStore.SelectControlByConfig(configs);
     }

@@ -11,7 +11,9 @@ type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 
 @Component
 export default class ButtonControl extends Control {
-  declare config: ButtonConfig;
+  public override get config() {
+    return super.config as ButtonConfig;
+  }
 
   render() {
     return super.render(

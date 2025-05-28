@@ -3,21 +3,19 @@ import DevelopmentModules from "../DevelopmentModules";
 import Control from "@/CoreUI/Designer/Control";
 import { GetFormAllControls } from "./Designer";
 import { DeepClone } from ".";
+import { useDesignerStore } from "@/Stores/DesignerStore";
+import { useVirtualFileSystemStore } from "@/Stores/VirtualFileSystemStore";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type TabsConfig = ControlDeclare.TabsConfig;
 type ContainerInfo = DesignerDeclare.ContainerInfo;
 type Coord = UtilsDeclare.Coord;
 
-export default class ContainerManager {
-  control: Control;
-  get config() {
-    return this.control.config;
-  }
-
-  constructor(control: Control) {
-    this.control = control;
-  }
+/**
+ * 全局容器管理器 - 静态方法模式
+ * 管理所有控件的容器关系，避免每个控件都创建实例
+ */
+class GlobalContainerManager {
 
   /**
    * 检查容器是否可见
@@ -25,7 +23,7 @@ export default class ContainerManager {
    * @param allContainers 所有容器信息
    * @returns 是否可见
    */
-  IsContainerVisible(containerConfig: ControlConfig, allContainers: ContainerInfo[]): boolean {
+  static isContainerVisible(containerConfig: ControlConfig, allContainers: ContainerInfo[]): boolean {
     // 创建容器映射以提高查找效率
     const containerMap = allContainers.reduce((map, containerInfo) => {
       map[containerInfo.container.name] = containerInfo.container;
@@ -60,7 +58,7 @@ export default class ContainerManager {
    * @param config 控件配置
    * @returns 滚动条位置
    */
-  NeedlessScrollTopHandler(config: ControlConfig): Coord {
+  static needlessScrollTopHandler(config: ControlConfig): Coord {
     const { type, scrollTop } = config;
     // 定义一个 map 对象，将不同类型的控件映射到对应的 scrollTop 值
     const scrollTopMap: Record<string, Coord> = {
@@ -72,18 +70,24 @@ export default class ContainerManager {
 
   /**
    * 获取所有容器控件的位置信息
-   * @param rootConfig 根控件配置
+   * @param rootConfigId 根控件配置ID
    * @param parentPosition 父级控件的全局位置
    * @param parentScreenPosition 父级控件的屏幕位置
    * @returns 所有容器的位置信息数组
    */
-  GetAllContainer(
-    rootConfigId: string = this.control.virtualFileSystemStore.currentFile.id,
+  static getAllContainer(
+    rootConfigId?: string,
     parentPosition: Coord = { x: 0, y: 0 },
     parentScreenPosition: Coord = { x: 0, y: 0 }
   ): ContainerInfo[] {
+    const designerStore = useDesignerStore();
+    const virtualFileSystemStore = useVirtualFileSystemStore();
+    
+    const actualRootConfigId = rootConfigId || virtualFileSystemStore.currentFile?.id;
+    if (!actualRootConfigId) return [];
+
     const allContainers: ContainerInfo[] = [];
-    const { flatConfigs } = this.control.designerStore;
+    const { flatConfigs } = designerStore;
 
     const queue: {
       configId: string;
@@ -91,7 +95,7 @@ export default class ContainerManager {
       screenPos: Coord;
     }[] = [
       {
-        configId: rootConfigId,
+        configId: actualRootConfigId,
         parentPos: parentPosition,
         screenPos: parentScreenPosition,
       },
@@ -113,16 +117,17 @@ export default class ContainerManager {
         const globalTop = childConfig.top + parentPos.y;
 
         // 处理滚动条位置
-        const scrollOffset = this.NeedlessScrollTopHandler(childConfig);
+        const scrollOffset = this.needlessScrollTopHandler(childConfig);
         const childScreenLeft = screenPos.x + scrollOffset.x;
         const childScreenTop = screenPos.y + scrollOffset.y;
 
         // 如果子控件是容器
-        // 且该控件的 dargHandler.adjustType 不是 Move
+        // 且该控件的 adjustType 不是 Move
         // 则将其添加到结果中
+        const allControls = GetFormAllControls();
         if (
           childConfig.container &&
-          GetFormAllControls()[childConfig.name].adjustType !== ControlDeclare.AdjustType.Move
+          allControls[childConfig.name]?.adjustType !== ControlDeclare.AdjustType.Move
         ) {
           allContainers.push({
             globalLeft,
@@ -148,33 +153,41 @@ export default class ContainerManager {
   /**
    * 切换容器
    */
-  async SwitchContainer(newContainerName) {
-    let allContainers = this.GetAllContainer();
+  static async switchContainer(control: Control, newContainerName: string) {
+    const allContainers = this.getAllContainer();
     const containerMap = allContainers.reduce((map, containerInfo) => {
       map[containerInfo.container.name] = containerInfo;
       return map;
     }, {} as Record<string, ContainerInfo>);
 
-    let oldContainer = containerMap[this.config.fromContainer];
-    let newContainer = containerMap[newContainerName];
+    const oldContainer = containerMap[control.config.fromContainer];
+    const newContainer = containerMap[newContainerName];
 
-    this.OutContainer(oldContainer);
-    await this.JoinContainer(newContainer);
+    this.outContainer(control, oldContainer);
+    await this.joinContainer(control, newContainer);
   }
 
-  OutContainer(container: ContainerInfo) {
+  /**
+   * 移出容器
+   */
+  static outContainer(control: Control, container: ContainerInfo) {
     if (!container) return;
     const { globalLeft, globalTop, screenTop } = container;
 
-    this.config.left += globalLeft;
-    this.config.top += globalTop - screenTop;
+    control.config.left += globalLeft;
+    control.config.top += globalTop - screenTop;
 
-    this.config.fromContainer = null;
-    this.config.fromTabId = null;
+    control.config.fromContainer = null;
+    control.config.fromTabId = null;
   }
 
-  async JoinContainer(container: ContainerInfo) {
+  /**
+   * 加入容器
+   */
+  static async joinContainer(control: Control, container: ContainerInfo) {
     const { AddControlDeclareToDesignerCode } = await DevelopmentModules.Load();
+    const designerStore = useDesignerStore();
+    const virtualFileSystemStore = useVirtualFileSystemStore();
 
     const globalLeft = container?.globalLeft || 0;
     const globalTop = container?.globalTop || 0;
@@ -187,54 +200,54 @@ export default class ContainerManager {
       } as any);
 
     // 获取当前控件的父容器ID，用于从旧容器中移除
-    const { flatConfigs } = this.control.designerStore;
-    const currentFromContainer = this.config.fromContainer;
+    const { flatConfigs } = designerStore;
+    const currentFromContainer = control.config.fromContainer;
 
     // 从旧容器中移除控件引用，但不删除控件配置
     if (currentFromContainer) {
       const oldContainerConfig = Object.values(flatConfigs.entities).find((c) => c.name === currentFromContainer);
       if (oldContainerConfig) {
         const oldContainerChildren = flatConfigs.childrenMap[oldContainerConfig.id] || [];
-        const index = oldContainerChildren.indexOf(this.config.id);
+        const index = oldContainerChildren.indexOf(control.config.id);
         if (index !== -1) {
           oldContainerChildren.splice(index, 1);
         }
       }
     } else {
       // 如果没有旧容器，从根容器中移除
-      const rootChildren = flatConfigs.childrenMap[this.control.virtualFileSystemStore.currentFile.id] || [];
-      const index = rootChildren.indexOf(this.config.id);
+      const rootChildren = flatConfigs.childrenMap[virtualFileSystemStore.currentFile?.id] || [];
+      const index = rootChildren.indexOf(control.config.id);
       if (index !== -1) {
         rootChildren.splice(index, 1);
       }
     }
 
     // 更新控件位置和容器信息
-    this.config.left -= globalLeft;
-    this.config.top -= globalTop - screenTop;
+    control.config.left -= globalLeft;
+    control.config.top -= globalTop - screenTop;
 
     if (targetContainer.value) {
-      this.config.fromTabId = targetContainer.value;
+      control.config.fromTabId = targetContainer.value;
     }
 
-    this.config.fromContainer = targetContainer.name;
+    control.config.fromContainer = targetContainer.name;
 
     // 添加到新容器
-    const targetContainerId = targetContainer.id || this.control.virtualFileSystemStore.currentFile.id;
+    const targetContainerId = targetContainer.id || virtualFileSystemStore.currentFile?.id;
 
     if (!flatConfigs.childrenMap[targetContainerId]) {
       flatConfigs.childrenMap[targetContainerId] = [];
     }
-    flatConfigs.childrenMap[targetContainerId].push(this.config.id);
+    flatConfigs.childrenMap[targetContainerId].push(control.config.id);
 
-    AddControlDeclareToDesignerCode(this.config);
+    AddControlDeclareToDesignerCode(control.config);
   }
 
   /**
    * 处理鼠标抬起时的容器关系
    */
-  async HandleContainerOnMouseUp(e: MouseEvent) {
-    const { control } = this;
+  static async handleContainerOnMouseUp(e: MouseEvent, control: Control) {
+    const designerStore = useDesignerStore();
 
     // 如果当前控件没有选中/调整类型不是移动/控件类型是工具条 则不处理
     if (
@@ -245,9 +258,9 @@ export default class ContainerManager {
       return;
     }
 
-    let rect = (control.designerStore.formDesigner.$el as HTMLDivElement).getBoundingClientRect();
+    const rect = (designerStore.formDesigner.$el as HTMLDivElement).getBoundingClientRect();
 
-    let containers = this.GetAllContainer().reverse();
+    const containers = this.getAllContainer().reverse();
 
     // 容器 map，避免重复查找
     const containerMap = containers.reduce((map, containerInfo) => {
@@ -261,20 +274,19 @@ export default class ContainerManager {
 
     const { Stack, StackAction } = await DevelopmentModules.Load();
 
-    let oldContainer = containerMap[control?.config?.fromContainer] || undefined;
+    const oldContainer = containerMap[control?.config?.fromContainer] || undefined;
     // 寻找鼠标位置所在的容器
-    let newContainer = this.FindContainerAtPosition(x, y, containers, control.config.name);
+    const newContainer = this.findContainerAtPosition(x, y, containers, control.config.name);
 
     if (newContainer !== oldContainer) {
-      // 禁用 c 的堆栈
+      // 禁用 control 的堆栈
       control.disableStack = true;
 
-      let originalConfig = DeepClone(control.config);
-      this.OutContainer(oldContainer);
-      await this.JoinContainer(newContainer);
+      const originalConfig = DeepClone(control.config);
+      this.outContainer(control, oldContainer);
+      await this.joinContainer(control, newContainer);
 
       // 添加到堆栈
-      const { designerStore } = control;
       designerStore.AddStack(
         new Stack(control, DeepClone(control.config), originalConfig, StackAction.SwitchContainer)
       );
@@ -291,7 +303,7 @@ export default class ContainerManager {
    * @param currentControlName 当前控件名称（用于排除自身）
    * @returns 找到的容器信息，如果没找到则返回undefined
    */
-  FindContainerAtPosition(
+  static findContainerAtPosition(
     x: number,
     y: number,
     containers: ContainerInfo[],
@@ -312,7 +324,7 @@ export default class ContainerManager {
         absoluteMouseY >= containerTop &&
         absoluteMouseY <= containerTop + containerHeight;
 
-      const isValidContainer = container.name !== currentControlName && this.IsContainerVisible(container, containers);
+      const isValidContainer = container.name !== currentControlName && this.isContainerVisible(container, containers);
 
       if (isMouseInsideContainer && isValidContainer) {
         return containerInfo;
@@ -322,3 +334,5 @@ export default class ContainerManager {
     return undefined;
   }
 }
+
+export default GlobalContainerManager;

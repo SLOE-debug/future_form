@@ -2,6 +2,7 @@ import { ControlDeclare } from "@/Types/ControlDeclare";
 import Control from "@/CoreUI/Designer/Control";
 import { useDesignerStore } from "@/Stores/DesignerStore";
 import { DesignerDeclare } from "@/Types";
+import GlobalContainerManager from "@/Utils/Designer/GlobalContainerManager";
 
 const designerStore = useDesignerStore();
 
@@ -50,8 +51,8 @@ export class Stack {
         this._instance.Delete(false);
         break;
       case DesignerDeclare.StackAction.SwitchContainer:
-        await this._instance.containerManager.SwitchContainer(this._ov.fromContainer);
-        // // 如果_ov拥有“最近一次的”标记，则不还原位置
+        await GlobalContainerManager.switchContainer(this._instance, this._ov.fromContainer);
+        // // 如果_ov拥有"最近一次的"标记，则不还原位置
         // if ("last" in this._ov) break;
         this._instance.config.top = this._ov.top;
         this._instance.config.left = this._ov.left;

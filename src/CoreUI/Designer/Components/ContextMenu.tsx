@@ -44,14 +44,20 @@ export default class ContextMenu extends Vue {
   async BringFront() {
     for (const control of this.designerStore.selectedControls) {
       let { del, children } = await control.Delete();
-      children.push(del);
+      // 将删除的控件添加到扁平化配置中
+      this.designerStore.flatConfigs.entities[del.id] = del;
+      // 将控件ID添加到父控件的子控件列表末尾
+      children.push(del.id);
     }
   }
 
   async UnderFloor() {
     for (const control of this.designerStore.selectedControls) {
       let { del, children } = await control.Delete();
-      children.unshift(del);
+      // 将删除的控件添加到扁平化配置中
+      this.designerStore.flatConfigs.entities[del.id] = del;
+      // 将控件ID添加到父控件的子控件列表开头
+      children.unshift(del.id);
     }
   }
 
@@ -68,22 +74,48 @@ export default class ContextMenu extends Vue {
   }
 
   MoveUpLevel() {
-    let { i, children } = this.GetCurrentControlArray(
-      this.designerStore.formConfig,
-      this.designerStore.selectedControls[0].config.id
-    );
-    if (i < children.length - 1) {
-      [children[i], children[i + 1]] = [children[i + 1], children[i]];
+    const selectedControl = this.designerStore.selectedControls[0];
+    const { flatConfigs } = this.designerStore;
+    
+    // 查找父控件ID
+    let parentId = null;
+    for (const id in flatConfigs.childrenMap) {
+      const children = flatConfigs.childrenMap[id];
+      if (children.includes(selectedControl.config.id)) {
+        parentId = id;
+        break;
+      }
+    }
+    
+    if (parentId) {
+      const children = flatConfigs.childrenMap[parentId];
+      const i = children.findIndex(id => id === selectedControl.config.id);
+      if (i < children.length - 1) {
+        [children[i], children[i + 1]] = [children[i + 1], children[i]];
+      }
     }
   }
 
   MoveDownLevel() {
-    let { i, children } = this.GetCurrentControlArray(
-      this.designerStore.formConfig,
-      this.designerStore.selectedControls[0].config.id
-    );
-    if (i > 0) {
-      [children[i - 1], children[i]] = [children[i], children[i - 1]];
+    const selectedControl = this.designerStore.selectedControls[0];
+    const { flatConfigs } = this.designerStore;
+    
+    // 查找父控件ID
+    let parentId = null;
+    for (const id in flatConfigs.childrenMap) {
+      const children = flatConfigs.childrenMap[id];
+      if (children.includes(selectedControl.config.id)) {
+        parentId = id;
+        break;
+      }
+    }
+    
+    if (parentId) {
+      const children = flatConfigs.childrenMap[parentId];
+      const i = children.findIndex(id => id === selectedControl.config.id);
+      if (i > 0) {
+        [children[i - 1], children[i]] = [children[i], children[i - 1]];
+      }
     }
   }
 
@@ -162,18 +194,10 @@ export default class ContextMenu extends Vue {
     this[m.code] && this[m.code]();
   }
 
+  // 这个方法已经不再需要，因为我们直接使用扁平化配置
   GetCurrentControlArray(config: ControlConfig, id: string) {
-    if (config.$children && config.$children.length) {
-      let i = config.$children.findIndex((c) => c.id == id);
-      if (i != -1) {
-        return { i, children: config.$children };
-      } else {
-        for (let i = 0; i < config.$children.length; i++) {
-          let obj = this.GetCurrentControlArray(config.$children[i], id);
-          if (obj) return obj;
-        }
-      }
-    }
+    // 保留方法以防其他地方调用，但实际逻辑已移至调用方
+    return null;
   }
 
   render() {

@@ -150,7 +150,7 @@ export default class DesignerSpace extends Vue {
     this.designerStore.ClearSelected();
 
     // 克隆 extraData，避免修改原始数据
-    let clonedExtraData = DeepClone(extraData);
+    let clonedExtraData = DeepClone(extraData, []);
     clonedExtraData.id = this.virtualFileSystemStore.currentFile.id;
     this.designerStore.SetFormConfig(clonedExtraData);
   }
