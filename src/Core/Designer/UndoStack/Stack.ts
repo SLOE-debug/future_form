@@ -43,8 +43,8 @@ export class Stack {
     this._instance.disableStack = true;
     switch (this.action) {
       case DesignerDeclare.StackAction.Delete:
-        // 当行为为删除时，instance 为删除时传入的父级
-        this._instance.config.$children.push(this._ov);
+        // 当行为为删除时，instance 为删除时传入的父级，_ov 为被删除的完整控件配置
+        this.restoreDeletedControl(this._ov, this._instance.config.id);
         break;
       case DesignerDeclare.StackAction.Create:
         this._instance.Delete(false);
@@ -63,6 +63,35 @@ export class Stack {
     this._instance.$nextTick(() => {
       this._instance.disableStack = false;
     });
+  }
+
+  /**
+   * 恢复被删除的控件到拍平配置中
+   */
+  private restoreDeletedControl(deletedConfig: ControlConfig, parentId: string) {
+    // 递归恢复控件及其所有子控件到拍平配置
+    const restoreToFlatConfig = (config: ControlConfig) => {
+      // 恢复控件到 entities
+      designerStore.flatConfigs.entities[config.id] = config;
+
+      // 如果有子控件，递归恢复
+      if (config.$children && config.$children.length > 0) {
+        // 恢复子控件映射
+        designerStore.flatConfigs.childrenMap[config.id] = config.$children.map((child) => child.id);
+
+        // 递归恢复每个子控件
+        config.$children.forEach((child) => restoreToFlatConfig(child));
+      }
+    };
+
+    // 恢复被删除的控件及其所有子控件
+    restoreToFlatConfig(deletedConfig);
+
+    // 将被删除的控件添加到父控件的子控件映射中
+    if (!designerStore.flatConfigs.childrenMap[parentId]) {
+      designerStore.flatConfigs.childrenMap[parentId] = [];
+    }
+    designerStore.flatConfigs.childrenMap[parentId].push(deletedConfig.id);
   }
 
   /**

@@ -10,6 +10,7 @@ import type Control from "@/CoreUI/Designer/Control";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDesignerStore } from "@/Stores/DesignerStore";
+import { useVirtualFileSystemStore } from "@/Stores/VirtualFileSystemStore";
 
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 type IDirectory = VritualFileSystemDeclare.IDirectory;
@@ -21,6 +22,10 @@ export default class Configurator extends Vue {
 
   get designerStore() {
     return useDesignerStore();
+  }
+
+  get virtualFileSystemStore() {
+    return useVirtualFileSystemStore();
   }
 
   SyncConfiguration(m: ConfiguratorItem, isEvent: boolean) {
@@ -108,7 +113,7 @@ export default class Configurator extends Vue {
               placeholder={m.des}
               disabled={
                 m.onlyDesign &&
-                this.$Store.get.VirtualFileSystem.CurrentFile.suffix != VritualFileSystemDeclare.FileType.FormDesigner
+                this.virtualFileSystemStore.currentFile.suffix != VritualFileSystemDeclare.FileType.FormDesigner
               }
               key={m.config.id}
               {...{
@@ -183,11 +188,11 @@ export default class Configurator extends Vue {
    * 定位数据源文件
    */
   LocateDataSourceFile(fileId) {
-    let file = GetFileById(fileId);
+    let file = GetFileById(this.virtualFileSystemStore.root, fileId);
     if (file) {
       // 向 window 发出一个 按键 1 事件
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "1" }));
-      this.$Store.dispatch("VirtualFileSystem/SelectFile", file);
+      this.virtualFileSystemStore.SelectFile(file);
       // 循环 file 的 parent 改为全部展开
       let parent = file.parent;
       while (parent) {
@@ -206,7 +211,7 @@ export default class Configurator extends Vue {
    * @param key 键
    */
   AppendOrLocateMethod(m: ConfiguratorItem, ref: any, key: string) {
-    if (!GetDesignerBackgroundFile()) {
+    if (!GetDesignerBackgroundFile(this.virtualFileSystemStore.root, this.virtualFileSystemStore.currentFile)) {
       ElMessage.error("无效操作，当前选择的文件与设计器无关！");
       return;
     }

@@ -1,7 +1,8 @@
 import { ControlDeclare, DesignerDeclare, UtilsDeclare } from "@/Types";
 import DevelopmentModules from "../DevelopmentModules";
-import Control, { DeepClone } from "@/CoreUI/Designer/Control";
+import Control from "@/CoreUI/Designer/Control";
 import { GetFormAllControls } from "./Designer";
+import { DeepClone } from ".";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type TabsConfig = ControlDeclare.TabsConfig;

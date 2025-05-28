@@ -279,14 +279,9 @@ export function GetParentFormControl(control: Control): FormControl {
   let current = control;
 
   while (current) {
-    if (current.$options?.name === "AsyncComponentWrapper") {
-      current = current.$parent as any;
-      continue;
-    }
-    if (!("config" in current)) return null;
-    if (current?.config?.type === "Form") return current as any;
-
-    current = current.$parent as any;
+    current = GetParentControl(current);
+    if (!current) return null;
+    if (current.config?.type === "Form") return current as any;
   }
 
   return null;
@@ -299,14 +294,48 @@ export function GetParentDataSourceGroupControl(control: Control): any {
   let current = control;
 
   while (current) {
+    // 使用 GetParentControl 获取下一个父控件
+    current = GetParentControl(current);
+    if (!current) return null;
+    // 如果遇到表单控件，停止查找
+    if (current.config?.type === "Form") return null;
+    // 检查是否是数据源控件
+    if (current.config?.type === "DataSourceGroup") return current;
+  }
+
+  return null;
+}
+
+/**
+ * 获取当前 control 的父控件（深度判断是否源自 Control.tsx）
+ */
+export function GetParentControl(control: Control): Control | null {
+  let current: any = control.$parent;
+
+  while (current) {
+    // 跳过异步组件包装器
     if (current.$options?.name === "AsyncComponentWrapper") {
-      current = current.$parent as any;
+      current = current.$parent;
       continue;
     }
-    if (!("config" in current)) return null;
-    if (current?.config?.type === "Form") return null;
-    if (current?.config?.type === "DataSourceGroup") return current;
-    current = current.$parent as any;
+
+    // 检查是否有 config 属性
+    if (!("config" in current)) {
+      current = current.$parent;
+      continue;
+    }
+
+    // 检查是否有 Control 的特征方法/属性
+    if (
+      current.config &&
+      typeof current.Delete === "function" &&
+      typeof current.Clone === "function" &&
+      "selected" in current
+    ) {
+      return current as Control;
+    }
+
+    current = current.$parent;
   }
 
   return null;

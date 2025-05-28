@@ -9,15 +9,7 @@ import { ControlDeclare, DesignerDeclare, VritualFileSystemDeclare } from "@/Typ
 import { FillControlNameCache } from "@/Utils/Designer/Designer";
 import { GetDesignerBackgroundFile } from "@/Utils/VirtualFileSystem/Index";
 import { GetBaseControlProps } from "@/Utils/Designer/Controls";
-import {
-  pauseTracking,
-  reactive,
-  resetTracking,
-  shallowReactive,
-  shallowRef,
-  toRaw,
-  triggerRef,
-} from "@vue/reactivity";
+import { reactive, shallowReactive, shallowRef } from "@vue/reactivity";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
@@ -25,6 +17,25 @@ type MenuItem = DesignerDeclare.MenuItem;
 
 type IDirectory = VritualFileSystemDeclare.IDirectory;
 type IFile = VritualFileSystemDeclare.IFile;
+
+// 拖拽调整状态
+type DragAdjustState = {
+  isDragging: boolean;
+  adjustType: ControlDeclare.AdjustType | null;
+  startCoord: { x: number; y: number } | null;
+  offset: number[];
+  lastMousePos: { x: number; y: number } | null;
+};
+
+// 缓存的控件信息
+type CachedControl = {
+  el: HTMLDivElement;
+  originalLeft: number;
+  originalTop: number;
+  originalWidth: number;
+  originalHeight: number;
+  control: Control;
+};
 
 /**
  * 获取当前窗体的所有引用
@@ -74,7 +85,6 @@ let tempStacks: Stack[] = [];
 export const useDesignerStore = defineStore("designer", () => {
   // 状态 (State)
   const debug = ref<boolean>(false);
-  const formConfig = reactive<ControlConfig>({} as ControlConfig);
   const selectedControls = ref<Control[]>([]);
   const bigShotControl = ref<Control | null>(null);
   const controlProps = ref<ConfiguratorItem[]>([]);
@@ -89,24 +99,20 @@ export const useDesignerStore = defineStore("designer", () => {
   const isActive = ref<boolean>(false);
   const eventNames = ref<string[]>([]);
 
-  const dragState = shallowReactive<{
-    isDragging: boolean;
-    adjustType: ControlDeclare.AdjustType | null;
-    startCoord: { x: number; y: number } | null;
-    offset: number[];
-    lastMousePos: { x: number; y: number } | null;
-  }>({ isDragging: false, adjustType: null, startCoord: null, offset: [], lastMousePos: null });
+  const dragState = shallowReactive<DragAdjustState>({
+    isDragging: false,
+    adjustType: null,
+    startCoord: null,
+    offset: [],
+    lastMousePos: null,
+  });
   // 缓存控件信息为 shallowRef，避免深度 reactive
-  const cachedControls = shallowRef<
-    Array<{
-      el: HTMLDivElement;
-      originalLeft: number;
-      originalTop: number;
-      originalWidth: number;
-      originalHeight: number;
-      control: Control;
-    }>
-  >([]);
+  const cachedControls = shallowRef<CachedControl[]>([]);
+
+  const flatConfigs = {
+    entities: shallowReactive({}) as Record<string, ControlConfig>,
+    childrenMap: shallowReactive({}) as Record<string, string[]>,
+  };
 
   const selectedContainerControls = computed(() =>
     selectedControls.value.filter((c) => {
@@ -346,44 +352,26 @@ export const useDesignerStore = defineStore("designer", () => {
    * 设置表单配置
    */
   function SetFormConfig(config: ControlConfig) {
-    const rawConfig = toRaw(config);
-    Object.assign(formConfig, MakeReactive(rawConfig));
+    FlattenFormConfig(config);
     if (config) FillControlNameCache(config);
   }
 
-  /**
-   * 递归地将 config 对象转换为 reactive
-   * @param config 控件配置对象
-   * @returns reactive 配置对象
-   */
-  function MakeReactive(config: ControlConfig): ControlConfig {
-    if (!config || typeof config !== "object") {
-      return config;
-    }
+  // 拍平 formConfig 的所有控件配置
+  function FlattenFormConfig(config: ControlConfig) {
+    if (!config || typeof config !== "object") return;
 
-    // 创建一个新的对象来避免修改原始对象
-    const newConfig: any = {};
+    flatConfigs.entities = {};
+    flatConfigs.childrenMap = {};
 
-    // 递归处理所有属性
-    for (const key in config) {
-      if (config.hasOwnProperty(key)) {
-        const value = config[key];
-
-        if (Array.isArray(value)) {
-          // 处理数组：递归处理数组中的每个元素
-          newConfig[key] = value.map((item) => MakeReactive(item));
-        } else if (value && typeof value === "object") {
-          // 处理对象：递归处理
-          newConfig[key] = MakeReactive(value);
-        } else {
-          // 处理基本类型：直接复制
-          newConfig[key] = value;
-        }
+    function flatten({ $children, ...rest }: ControlConfig) {
+      flatConfigs.entities[rest.id] = rest;
+      if ($children?.length) {
+        flatConfigs.childrenMap[rest.id] = $children.map((c) => c.id);
+        $children.forEach((child) => flatten(child));
       }
     }
 
-    // 将整个配置对象转换为 reactive
-    return reactive(newConfig);
+    flatten(config);
   }
 
   /**
@@ -543,8 +531,6 @@ export const useDesignerStore = defineStore("designer", () => {
   function HandleGlobalMouseUp(e: MouseEvent) {
     if (!dragState.isDragging) return;
 
-    // 暂停依赖收集
-    pauseTracking();
     // 批量赋值到 config
     cachedControls.value.forEach((item) => {
       item.control.config.left = item.originalLeft;
@@ -553,9 +539,6 @@ export const useDesignerStore = defineStore("designer", () => {
       item.control.config.height = item.originalHeight;
       item.control.adjustType = null;
     });
-    // 恢复并一次性触发
-    resetTracking();
-    triggerRef(selectedControls);
 
     // 清理拖拽状态
     dragState.isDragging = false;
@@ -573,7 +556,7 @@ export const useDesignerStore = defineStore("designer", () => {
   return {
     // 状态
     debug,
-    formConfig,
+    flatConfigs,
     selectedControls,
     bigShotControl,
     controlProps,

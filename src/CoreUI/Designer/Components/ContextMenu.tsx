@@ -1,4 +1,5 @@
 import { useDesignerStore } from "@/Stores/DesignerStore";
+import { useVirtualFileSystemStore } from "@/Stores/VirtualFileSystemStore";
 import { ControlDeclare } from "@/Types/ControlDeclare";
 import { DesignerDeclare } from "@/Types/DesignerDeclare";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
@@ -12,8 +13,13 @@ type Coord = UtilsDeclare.Coord;
 export default class ContextMenu extends Vue {
   @Prop
   position: Coord;
+
   get designerStore() {
     return useDesignerStore();
+  }
+
+  get virtualFileSystemStore() {
+    return useVirtualFileSystemStore();
   }
 
   get style() {
@@ -32,7 +38,7 @@ export default class ContextMenu extends Vue {
   }
 
   async ViewCode() {
-    this.$Store.dispatch("VirtualFileSystem/SelectFile", this.$Store.get.VirtualFileSystem.CurrentFile.children[0]);
+    this.virtualFileSystemStore.SelectFile(this.virtualFileSystemStore.currentFile.children[0]);
   }
 
   async BringFront() {

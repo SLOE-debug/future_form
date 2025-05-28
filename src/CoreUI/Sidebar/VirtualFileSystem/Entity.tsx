@@ -5,9 +5,12 @@ import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import SvgIcon from "../../../Components/SvgIcon";
 import { suffix2Color } from "@/Utils/VirtualFileSystem/Index";
 import EntityVersion from "./EntityVersion";
+import { useVirtualFileSystemStore } from "@/Stores/VirtualFileSystemStore";
 
 type IDirectory = VritualFileSystemDeclare.IDirectory;
 type IFile = VritualFileSystemDeclare.IFile;
+
+const virtualFileSystemStore = useVirtualFileSystemStore();
 
 @Component
 export default class Entity extends Vue {
@@ -121,9 +124,9 @@ export default class Entity extends Vue {
   async Rename(newName: string) {
     if (!newName && !this.entity.name) {
       if (this.isDirectory) {
-        this.$Store.dispatch("VirtualFileSystem/DeleteDirectory", this.entity);
+        virtualFileSystemStore.DeleteDirectory(this.entity as IDirectory);
       } else {
-        this.$Store.dispatch("VirtualFileSystem/DeleteFile", this.entity);
+        virtualFileSystemStore.DeleteFile(this.entity as IFile);
       }
       return;
     }
@@ -149,9 +152,9 @@ export default class Entity extends Vue {
     let collection = this.isDirectory ? this.Parentdirectory.directories : this.Parentdirectory.files;
 
     if (this.isDirectory) {
-      this.$Store.dispatch("VirtualFileSystem/SelectDirectory", this.entity);
+      virtualFileSystemStore.SelectDirectory(this.entity as IDirectory);
     } else {
-      this.$Store.dispatch("VirtualFileSystem/SelectFile", this.entity);
+      virtualFileSystemStore.SelectFile(this.entity as IFile);
     }
 
     // 按名称排序 collection

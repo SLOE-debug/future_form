@@ -54,7 +54,7 @@ export default class EntityVersion extends Vue {
       file.extraData,
       currentFile.extraData
     );
-    this.$Store.dispatch("VirtualFileSystem/OpenCompareFile", compareFile);
+    this.virtualFileSystemStore.OpenCompareFile(compareFile);
     editor.CompareFile(compareFile);
     this.visible = false;
   }

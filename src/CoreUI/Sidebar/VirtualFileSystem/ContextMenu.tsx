@@ -31,10 +31,10 @@ export default class ContextMenu extends Vue {
   async Select(item: any) {
     switch (item.code) {
       case "rename":
-        ((await this.$Store.dispatch("VirtualFileSystem/GetCurrentEntity")) as IDirectory | IFile).Rename();
+        this.virtualFileSystemStore.GetCurrentEntity().Rename();
         break;
       case "delete":
-        ((await this.$Store.dispatch("VirtualFileSystem/GetCurrentEntity")) as IDirectory | IFile).Delete();
+        this.virtualFileSystemStore.GetCurrentEntity().Delete();
         break;
       default:
         break;

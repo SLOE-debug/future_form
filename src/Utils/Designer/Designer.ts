@@ -4,7 +4,6 @@ import { Guid } from "..";
 import store from "@/Vuex/Store";
 import * as ts from "typescript";
 import { GetDesignerBackgroundFile, GetFileById } from "../VirtualFileSystem/Index";
-import type Editor from "@/Core/Editor/Editor";
 import type Control from "@/CoreUI/Designer/Control";
 import { Stack } from "@/Core/Designer/UndoStack/Stack";
 import { nextTick } from "vue";
@@ -94,22 +93,34 @@ export function AddControlToDesigner(config: ControlConfig, vueInstance, paste?:
     }
   }
 
-  // 确定将控件添加到哪个容器中
+  // 确定父容器ID
+  let parentId: string;
+
   if (paste) {
     // 粘贴操作：尝试找到原容器，如不存在则添加到根表单
     const containerConfig = config.fromContainer && GetControlConfigByName(config.fromContainer);
     if (containerConfig) {
-      containerConfig.$children.push(config);
+      parentId = containerConfig.id;
     } else {
       // 清理无效的容器引用
       delete config.fromContainer;
       delete config.fromTabId;
-      designerStore.formConfig.$children.push(config);
+      // 如果没有找到原容器，则添加到根表单
+      parentId = virtualFileSystemStore.currentFile.id;
     }
   } else {
     // 普通添加：直接添加到当前容器
-    vueInstance.config.$children.push(config);
+    parentId = vueInstance.config.id;
   }
+
+  // 将新控件添加到拍平配置中
+  designerStore.flatConfigs.entities[config.id] = config;
+
+  // 更新父容器的子控件映射
+  if (!designerStore.flatConfigs.childrenMap[parentId]) {
+    designerStore.flatConfigs.childrenMap[parentId] = [];
+  }
+  designerStore.flatConfigs.childrenMap[parentId].push(config.id);
 
   nextTick(() => {
     designerStore.AddStack(
@@ -157,29 +168,18 @@ export function FindControlsByKeyValue(
  * @returns 找到的控件配置或undefined
  */
 export function GetControlConfigByName(name: string): ControlConfig | undefined {
-  let formConfig = designerStore.formConfig;
-  if (!name || !formConfig) {
+  if (!name) {
     return undefined;
   }
 
-  // 检查根级配置是否匹配
-  if (formConfig.name === name) {
-    return formConfig;
-  }
+  // 从拍平的配置中查找控件
+  const flatConfigs = designerStore.flatConfigs;
 
-  // 使用队列进行广度优先搜索所有子控件
-  const queue: ControlConfig[] = [...(formConfig.$children || [])];
-
-  while (queue.length > 0) {
-    const control = queue.shift();
-
-    if (control.name === name) {
-      return control;
-    }
-
-    // 将子控件添加到队列中继续搜索
-    if (control.$children && control.$children.length > 0) {
-      queue.push(...control.$children);
+  // 在 entities 中查找匹配的控件名称
+  for (const id in flatConfigs.entities) {
+    const config = flatConfigs.entities[id];
+    if (config && config.name === name) {
+      return config;
     }
   }
 

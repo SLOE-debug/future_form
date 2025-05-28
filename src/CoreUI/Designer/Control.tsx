@@ -10,6 +10,7 @@ import {
   DeepClone,
   GetParentDataSourceGroupControl,
   GetParentFormControl,
+  GetParentControl,
 } from "@/Utils/Designer";
 import ContainerManager from "@/Utils/Designer/ContainerManager";
 import { onUnmounted, watch } from "vue";
@@ -20,8 +21,9 @@ type EventHandlers = UtilsDeclare.EventHandlers;
 
 @ComponentBase
 export default class Control extends Vue {
+  // 控件配置的 id
   @Prop
-  config: ControlConfig;
+  id: string;
 
   @Prop({ default: true })
   l: boolean;
@@ -40,6 +42,18 @@ export default class Control extends Vue {
   @Prop({ default: true })
   lb: boolean;
 
+  get designerStore() {
+    return useDesignerStore();
+  }
+
+  get config(): ControlConfig {
+    return this.designerStore.flatConfigs.entities[this.id] as ControlConfig;
+  }
+
+  get kids() {
+    return this.designerStore.flatConfigs.childrenMap[this.id] || [];
+  }
+
   get parentFormControl() {
     return GetParentFormControl(this);
   }
@@ -57,10 +71,6 @@ export default class Control extends Vue {
     }
 
     return config.disabled;
-  }
-
-  get designerStore() {
-    return useDesignerStore();
   }
 
   // 当前控件是否被选中
@@ -246,30 +256,76 @@ export default class Control extends Vue {
       ElMessage({ message: "不允许删除窗体！", type: "error" });
       return;
     }
-    // 获取父控件
-    const parentControl = this.$parent as Control;
-    // 获取当前控件在父控件的子控件数组中的索引
-    const index = parentControl.config.$children.findIndex((c) => c.id == this.config.id);
+
+    // 获取父控件ID
+    const parentControl = GetParentControl(this);
+    if (!parentControl) {
+      ElMessage({ message: "无法找到父控件！", type: "error" });
+      return;
+    }
+    const parentId = parentControl.config.id;
+
+    // 从拍平配置的子控件映射中获取索引
+    const childrenIds = this.designerStore.flatConfigs.childrenMap[parentId] || [];
+    const index = childrenIds.findIndex((id) => id === this.config.id);
+
+    // 构建完整的控件配置（包括所有子孙控件）
+    const buildCompleteConfig = (controlId: string): ControlConfig => {
+      const config = DeepClone(this.designerStore.flatConfigs.entities[controlId], ["instance"]);
+      const childIds = this.designerStore.flatConfigs.childrenMap[controlId] || [];
+      config.$children = childIds.map((childId) => buildCompleteConfig(childId));
+      return config;
+    };
+
+    const removedControl = buildCompleteConfig(this.config.id);
+
     // 如果 pushStack 为 true，则将当前控件添加到堆栈
     if (pushStack) {
-      this.designerStore.AddStack(
-        new Stack(parentControl, null, DeepClone(this.config, ["instance"]), StackAction.Delete)
-      );
+      this.designerStore.AddStack(new Stack(parentControl, null, removedControl, StackAction.Delete));
     }
+
     // 移除控件的声明
     RemoveControlDeclareToDesignerCode(this.config.name);
+
     // 渲染控件配置器
     this.designerStore.RenderControlConfigurator();
-    // 删除控件
-    let removedControl = parentControl.config.$children.splice(index, 1)[0];
-    return { children: parentControl.config.$children, index, del: removedControl };
+
+    // 递归删除所有子控件
+    const deleteChildrenRecursively = (controlId: string) => {
+      const children = this.designerStore.flatConfigs.childrenMap[controlId] || [];
+      children.forEach((childId) => {
+        deleteChildrenRecursively(childId);
+        delete this.designerStore.flatConfigs.entities[childId];
+      });
+      delete this.designerStore.flatConfigs.childrenMap[controlId];
+    };
+
+    // 从拍平配置中删除控件及其所有子控件
+    deleteChildrenRecursively(this.config.id);
+    delete this.designerStore.flatConfigs.entities[this.config.id];
+
+    // 从父控件的子控件映射中移除
+    if (index !== -1) {
+      childrenIds.splice(index, 1);
+    }
+
+    return { children: childrenIds, index, del: removedControl };
   }
 
   Clone(parent: ControlConfig = null) {
     if (this.designerStore.selectedControls.find((c) => c.config.name == this.config.fromContainer) && !parent) return;
 
     let conf = DeepClone(this.config, []);
-    conf.$children = conf.$children?.map((c) => (this.$refs[c.name] as Control).Clone(conf));
+
+    // 从拍平配置中获取子控件并克隆
+    const childrenIds = this.designerStore.flatConfigs.childrenMap[this.config.id] || [];
+    conf.$children = childrenIds
+      .map((childId) => {
+        const childConfig = this.designerStore.flatConfigs.entities[childId];
+        return (this.$refs[childConfig.name] as Control).Clone(conf);
+      })
+      .filter((child) => child); // 过滤掉空值
+
     return conf;
   }
 
@@ -375,7 +431,6 @@ export default class Control extends Vue {
           this.events.onClick && this.events.onClick(this.config, e);
         }}
       >
-        {" "}
         {<ele style={this.eleStyle} key={this.config.id}></ele>}
         {this.error && <div class={css.error}></div>}
         {this.designerStore.debug && this.selected && this.HelpPoint()}

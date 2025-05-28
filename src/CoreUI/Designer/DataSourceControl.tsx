@@ -10,7 +10,9 @@ type SourceParams = Record<string, any>;
 
 @ComponentBase
 export default class DataSourceControl extends Control {
-  declare config: ControlDeclare.ControlConfig & ControlDeclare.DataSourceControlConfig;
+  public override get config() {
+    return super.config as ControlDeclare.ControlConfig & ControlDeclare.DataSourceControlConfig;
+  }
 
   get virtualFileSystemStore() {
     return useVirtualFileSystemStore();

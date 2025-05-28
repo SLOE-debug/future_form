@@ -147,49 +147,46 @@ export default class EditorPage extends Vue {
    * 关闭文件
    */
   Close(file: IFile) {
-    this.$Store.dispatch("VirtualFileSystem/CloseFile", file);
+    this.virtualFileSystemStore.CloseFile(file);
+  }
+
+  /**
+   * 批量关闭文件的通用方法
+   */
+  private async CloseBatch(filterFn: (file: IFile, index: number) => boolean) {
+    const currentFile = this.virtualFileSystemStore.openFiles[this.currentContextMenuFileIndex];
+    const filesToClose = this.virtualFileSystemStore.openFiles.filter(filterFn);
+
+    this.virtualFileSystemStore.SetAutoSelectNearFile(false);
+
+    // 从后往前关闭，避免索引变化的问题
+    for (let i = filesToClose.length - 1; i >= 0; i--) {
+      await this.Close(filesToClose[i]);
+    }
+
+    this.virtualFileSystemStore.SetAutoSelectNearFile(true);
+    await this.virtualFileSystemStore.SelectFile(currentFile);
   }
 
   /**
    * 关闭其他文件
    */
   CloseOther() {
-    let currentFile = this.virtualFileSystemStore.openFiles[this.currentContextMenuFileIndex];
-    let otherFiles = this.virtualFileSystemStore.openFiles.filter((m, i) => m.id != this.currentContextMenuFileId);
-    this.$Store.dispatch("VirtualFileSystem/SetAutoSelectNearFile", false);
-    for (const file of otherFiles) {
-      this.Close(file);
-    }
-    this.$Store.dispatch("VirtualFileSystem/SetAutoSelectNearFile", true);
-    this.$Store.dispatch("VirtualFileSystem/SelectFile", currentFile);
+    this.CloseBatch((file, index) => index !== this.currentContextMenuFileIndex);
   }
 
   /**
    * 关闭右侧文件
    */
   CloseRight() {
-    let currentFile = this.virtualFileSystemStore.openFiles[this.currentContextMenuFileIndex];
-    let rightFiles = this.virtualFileSystemStore.openFiles.filter((m, i) => i > this.currentContextMenuFileIndex);
-    this.$Store.dispatch("VirtualFileSystem/SetAutoSelectNearFile", false);
-    for (let i = rightFiles.length - 1; i >= 0; i--) {
-      this.Close(rightFiles[i]);
-    }
-    this.$Store.dispatch("VirtualFileSystem/SetAutoSelectNearFile", true);
-    this.$Store.dispatch("VirtualFileSystem/SelectFile", currentFile);
+    this.CloseBatch((file, index) => index > this.currentContextMenuFileIndex);
   }
 
   /**
    * 关闭左侧文件
    */
   CloseLeft() {
-    let currentFile = this.virtualFileSystemStore.openFiles[this.currentContextMenuFileIndex];
-    let leftFiles = this.virtualFileSystemStore.openFiles.filter((m, i) => i < this.currentContextMenuFileIndex);
-    this.$Store.dispatch("VirtualFileSystem/SetAutoSelectNearFile", false);
-    for (const file of leftFiles) {
-      this.Close(file);
-    }
-    this.$Store.dispatch("VirtualFileSystem/SetAutoSelectNearFile", true);
-    this.$Store.dispatch("VirtualFileSystem/SelectFile", currentFile);
+    this.CloseBatch((file, index) => index < this.currentContextMenuFileIndex);
   }
 
   /**
@@ -289,7 +286,7 @@ export default class EditorPage extends Vue {
                   this.virtualFileSystemStore.currentFile == m ? "active bg-[#1e1e1e]" : "",
                 ].join(" ")}
                 onClick={(e) => {
-                  this.$Store.dispatch("VirtualFileSystem/SelectFile", m);
+                  this.virtualFileSystemStore.SelectFile(m);
                 }}
                 onMouseenter={() => {
                   m.showClose = true;

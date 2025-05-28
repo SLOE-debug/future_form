@@ -7,6 +7,7 @@ import { EventManager } from "@/Utils";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { useDesignerStore } from "@/Stores/DesignerStore";
 import { usePageStore } from "@/Stores/PageStore";
+import { useVirtualFileSystemStore } from "@/Stores/VirtualFileSystemStore";
 
 type IDirectory = VritualFileSystemDeclare.IDirectory;
 type IFile = VritualFileSystemDeclare.IFile;
@@ -19,6 +20,10 @@ export default class Sidebar extends Vue {
 
   get designerStore() {
     return useDesignerStore();
+  }
+
+  get virtualFileSystemStore() {
+    return useVirtualFileSystemStore();
   }
 
   get pageStore() {
@@ -89,13 +94,12 @@ export default class Sidebar extends Vue {
   }
 
   async Key_F2() {
-    ((await this.$Store.dispatch("VirtualFileSystem/GetCurrentEntity")) as IDirectory | IFile).Rename();
+    this.virtualFileSystemStore.GetCurrentEntity().Rename();
   }
 
   async Key_Delete() {
     if (this.designerStore.isActive || this.activeTab != "project") return;
-
-    ((await this.$Store.dispatch("VirtualFileSystem/GetCurrentEntity")) as IDirectory | IFile).Delete();
+    this.virtualFileSystemStore.GetCurrentEntity().Delete();
   }
 
   // Ctrl + Shift + Alt + S，保存至云端

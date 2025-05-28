@@ -4,11 +4,11 @@ import { ControlDeclare } from "@/Types/ControlDeclare";
 import { EventManager } from "@/Utils";
 import ContextMenu from "@/CoreUI/Designer/Components/ContextMenu";
 import { UtilsDeclare } from "@/Types/UtilsDeclare";
-import { AddControlToDesigner, DropAddControl, FindControlsByType } from "@/Utils/Designer/Designer";
+import { AddControlToDesigner, DropAddControl } from "@/Utils/Designer/Designer";
 import { VritualFileSystemDeclare } from "@/Types/VritualFileSystemDeclare";
 import { useDesignerStore } from "@/Stores/DesignerStore";
 import { useVirtualFileSystemStore } from "@/Stores/VirtualFileSystemStore";
-import { editor } from "@/Utils/Designer";
+import { DeepClone, editor } from "@/Utils/Designer";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type Coord = UtilsDeclare.Coord;
@@ -22,7 +22,7 @@ export default class DesignerSpace extends Vue {
   height: string;
 
   get config() {
-    return this.designerStore.formConfig;
+    return this.designerStore.flatConfigs.entities[this.virtualFileSystemStore.currentFile.id] || {};
   }
 
   get designerStore() {
@@ -87,7 +87,11 @@ export default class DesignerSpace extends Vue {
   }
 
   async CtrlKeyAControl(e: KeyboardEvent) {
-    this.designerStore.SelectControlByConfig(FindControlsByType(this.designerStore.formConfig));
+    // 过滤掉 id = 当前文件 id 的配置作为全选
+    let configs = Object.values(this.designerStore.flatConfigs.entities).filter(
+      (c) => c.id != this.virtualFileSystemStore.currentFile.id
+    );
+    this.designerStore.SelectControlByConfig(configs);
     e.preventDefault();
   }
 
@@ -144,7 +148,11 @@ export default class DesignerSpace extends Vue {
       extraData = FormControl.GetDefaultConfig();
     }
     this.designerStore.ClearSelected();
-    this.designerStore.SetFormConfig(extraData);
+
+    // 克隆 extraData，避免修改原始数据
+    let clonedExtraData = DeepClone(extraData);
+    clonedExtraData.id = this.virtualFileSystemStore.currentFile.id;
+    this.designerStore.SetFormConfig(clonedExtraData);
   }
 
   eventManager: EventManager = new EventManager();
@@ -204,7 +212,8 @@ export default class DesignerSpace extends Vue {
             lb: false,
             rt: false,
             move: false,
-            config: this.designerStore.formConfig,
+            // config: this.designerStore.formConfig,
+            id: this.virtualFileSystemStore.currentFile?.id,
             ref: "form",
           }}
         ></FormControl>

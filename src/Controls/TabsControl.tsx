@@ -19,7 +19,9 @@ const AsyncSlideSelector = defineAsyncComponent(() => import("@/CoreUI/Designer/
 
 @Component
 export default class TabsControl extends Control {
-  declare config: TabsConfig;
+  public override get config() {
+    return super.config as TabsConfig;
+  }
 
   @Watch("config.value")
   valueChange() {
@@ -378,11 +380,12 @@ export default class TabsControl extends Control {
                       }}
                     />
                   )}
-                  {this.config.$children
+                  {this.kids
+                    .map((kid) => this.designerStore.flatConfigs.entities[kid])
                     .filter((c) => c.fromTabId == t.id)
                     .map((c, i) => {
                       let control = this.$.appContext.components[c.type + "Control"];
-                      return <control key={c.id} config={c} ref={c.name} style={{ zIndex: i }}></control>;
+                      return <control key={c.id} id={c.id} ref={c.name} style={{ zIndex: i }}></control>;
                     })}
                 </div>
               );

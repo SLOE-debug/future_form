@@ -151,10 +151,12 @@ export default class FormControl extends Control {
             }}
           />
         )}
-        {this.config.$children.map((c, i) => {
-          let control = this.$.appContext.components[c.type + "Control"];
-          return <control key={c.id} config={c} ref={c.name} style={{ zIndex: i }}></control>;
-        })}
+        {this.kids
+          .map((kid) => this.designerStore.flatConfigs.entities[kid])
+          .map((c, i) => {
+            let control = this.$.appContext.components[c.type + "Control"];
+            return <control key={c.id} id={c.id} ref={c.name} style={{ zIndex: i }}></control>;
+          })}
       </div>
     );
   }
@@ -284,10 +286,7 @@ export async function GetProps(config: FormConfig) {
 
         if (file) {
           // 计算相对路径
-          let relativePath = Path.GetRelativePath(
-            virtualFileSystemStore.currentFile.GetFullName(),
-            file.GetFullName()
-          );
+          let relativePath = Path.GetRelativePath(virtualFileSystemStore.currentFile.GetFullName(), file.GetFullName());
 
           // 导出的名字
           exportName = "ExtendsWindow";

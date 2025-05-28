@@ -26,7 +26,9 @@ const AsyncSvgIcon = defineAsyncComponent(() => import("@/Components/SvgIcon"));
 
 @Component
 export default class DataSourceGroupControl extends Control {
-  declare config: DataSourceGroupConfig;
+  public override get config() {
+    return super.config as DataSourceGroupConfig;
+  }
 
   Drop(e: DragEvent) {
     DropAddControl(e, this);
@@ -102,10 +104,12 @@ export default class DataSourceGroupControl extends Control {
               }}
             />
           )}
-          {this.config.$children.map((c, i) => {
-            let control = this.$.appContext.components[c.type + "Control"];
-            return <control key={c.id} config={c} ref={c.name} style={{ zIndex: i }}></control>;
-          })}
+          {this.kids
+            .map((kid) => this.designerStore.flatConfigs.entities[kid])
+            .map((c, i) => {
+              let control = this.$.appContext.components[c.type + "Control"];
+              return <control key={c.id} id={c.id} ref={c.name} style={{ zIndex: i }}></control>;
+            })}
         </div>
       </>
     );
