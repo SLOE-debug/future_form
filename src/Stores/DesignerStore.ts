@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import * as ts from "typescript";
 import FormControl from "@/Controls/FormControl";
 import type Control from "@/CoreUI/Designer/Control";
@@ -9,7 +9,7 @@ import { ControlDeclare, DesignerDeclare, VritualFileSystemDeclare } from "@/Typ
 import { FillControlNameCache } from "@/Utils/Designer/Designer";
 import { GetDesignerBackgroundFile } from "@/Utils/VirtualFileSystem/Index";
 import { GetBaseControlProps } from "@/Utils/Designer/Controls";
-import { reactive, shallowReactive } from "@vue/reactivity";
+import { reactive, shallowReactive, toRaw } from "@vue/reactivity";
 
 type ControlConfig = ControlDeclare.ControlConfig;
 type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
@@ -81,8 +81,8 @@ export const useDesignerStore = defineStore("designer", () => {
   const eventNames = ref<string[]>([]);
 
   const flatConfigs = {
-    entities: shallowReactive({}) as Record<string, ControlConfig>,
-    childrenMap: shallowReactive({}) as Record<string, string[]>,
+    entities: reactive({}) as Record<string, ControlConfig>,
+    childrenMap: reactive({}) as Record<string, string[]>,
   };
 
   const selectedContainerControls = computed(() =>
@@ -92,6 +92,51 @@ export const useDesignerStore = defineStore("designer", () => {
       }
       return true;
     })
+  );
+
+  // 同时 watch flatConfigs.entities 和 flatConfigs.childrenMap 的变化
+  // 节流保存
+  let saveTimer: ReturnType<typeof setTimeout> | null = null;
+  watch(
+    () => [flatConfigs.entities, flatConfigs.childrenMap],
+    () => {
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(async () => {
+        const t0 = performance.now();
+        try {
+          const { useVirtualFileSystemStore } = await import("./VirtualFileSystemStore");
+          const vfsStore = useVirtualFileSystemStore();
+          if (vfsStore.currentFile) {
+            function buildTree(id: string): any {
+              const entity = toRaw(flatConfigs.entities)[id];
+              if (!entity) return null;
+              const childrenIds = toRaw(flatConfigs.childrenMap)[id] || [];
+              return {
+                ...entity,
+                $children: childrenIds.map(buildTree),
+              };
+            }
+            const rootId = vfsStore.currentFile.id;
+            if (rootId) {
+              vfsStore.currentFile.extraData = buildTree(rootId);
+              console.log("自动保存到 vfs 的 currentFile.extraData：", vfsStore.currentFile.extraData);
+              console.log("保存到的文件名：", vfsStore.currentFile.name, vfsStore.currentFile);
+              vfsStore.SaveRoot();
+            }
+          }
+          const t1 = performance.now();
+          console.log(`[DesignerStore] 保存用时: ${(t1 - t0).toFixed(2)} ms`);
+
+          // 刷新全局容器缓存
+          const { default: GlobalContainerManager } = await import("@/Utils/Designer/GlobalContainerManager");
+          GlobalContainerManager.refreshContainers(GlobalContainerManager.getAllContainer());
+          console.log("刷新了全局容器缓存");
+        } catch (e) {
+          console.error("自动保存到 vfs 失败：", e);
+        }
+      }, 100); // 100ms 节流
+    },
+    { deep: true }
   );
 
   /**
@@ -130,12 +175,20 @@ export const useDesignerStore = defineStore("designer", () => {
   /**
    * 撤销操作
    */
-  function Undo() {
+  async function Undo() {
     const stack = stacks.value.pop();
     if (Array.isArray(stack)) {
-      stack.forEach((s) => s.Undo());
+      // 按照 action 从大到小排序，然后执行撤销
+      stack.sort((a, b) => b.action - a.action);
+      for (const s of stack) {
+        await s.Undo();
+        s.Dispose();
+      }
     } else {
-      stack?.Undo();
+      if (stack) {
+        await stack.Undo();
+        stack.Dispose();
+      }
     }
   }
 
@@ -323,16 +376,15 @@ export const useDesignerStore = defineStore("designer", () => {
    * 设置表单配置
    */
   function SetFormConfig(config: ControlConfig) {
-    FlattenFormConfig(config);
-    if (config) FillControlNameCache(config);
-  }
-
-  // 拍平 formConfig 的所有控件配置
-  function FlattenFormConfig(config: ControlConfig) {
     if (!config || typeof config !== "object") return;
 
-    flatConfigs.entities = {};
-    flatConfigs.childrenMap = {};
+    // 清空之前的配置
+    for (const key in flatConfigs.entities) {
+      delete flatConfigs.entities[key];
+    }
+    for (const key in flatConfigs.childrenMap) {
+      delete flatConfigs.childrenMap[key];
+    }
 
     function flatten({ $children, ...rest }: ControlConfig) {
       flatConfigs.entities[rest.id] = rest;
@@ -343,6 +395,8 @@ export const useDesignerStore = defineStore("designer", () => {
     }
 
     flatten(config);
+
+    FillControlNameCache(config);
   }
 
   /**
@@ -403,5 +457,31 @@ export const useDesignerStore = defineStore("designer", () => {
     SetPreview,
     GetControlByName,
     UpdateEventNames,
+    ClearStacks,
   };
+
+  /**
+   * 清理所有栈以释放内存
+   */
+  function ClearStacks() {
+    stacks.value.forEach((stack) => {
+      if (Array.isArray(stack)) {
+        stack.forEach((s) => {
+          if ("dispose" in s && typeof s.Dispose === "function") {
+            s.Dispose();
+          }
+        });
+      } else {
+        if ("dispose" in stack && typeof stack.Dispose === "function") {
+          stack.Dispose();
+        }
+      }
+    });
+    stacks.value = [];
+    tempStacks = [];
+    if (pushStackTimeOut) {
+      clearTimeout(pushStackTimeOut);
+      pushStackTimeOut = null as any;
+    }
+  }
 });

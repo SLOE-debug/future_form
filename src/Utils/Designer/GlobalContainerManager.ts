@@ -16,6 +16,23 @@ type Coord = UtilsDeclare.Coord;
  * 管理所有控件的容器关系，避免每个控件都创建实例
  */
 class GlobalContainerManager {
+  // 容器缓存
+  private static _containerCache: ContainerInfo[] = [];
+
+  /**
+   * 刷新容器缓存
+   * @param containers 新的容器列表
+   */
+  static refreshContainers(containers: ContainerInfo[]) {
+    this._containerCache = containers;
+  }
+
+  /**
+   * 获取缓存的容器
+   */
+  static getCachedContainers(): ContainerInfo[] {
+    return this._containerCache;
+  }
   /**
    * 检查容器是否可见
    * @param containerConfig 容器配置
@@ -88,6 +105,9 @@ class GlobalContainerManager {
     const allContainers: ContainerInfo[] = [];
     const { flatConfigs } = designerStore;
 
+    // 优化：只调用一次 GetFormAllControls
+    const allControls = GetFormAllControls();
+
     const queue: {
       configId: string;
       parentPos: Coord;
@@ -123,7 +143,6 @@ class GlobalContainerManager {
         // 如果子控件是容器
         // 且该控件的 adjustType 不是 Move
         // 则将其添加到结果中
-        const allControls = GetFormAllControls();
         if (childConfig.container && allControls[childConfig.name]?.adjustType !== ControlDeclare.AdjustType.Move) {
           allContainers.push({
             globalLeft,
@@ -251,7 +270,8 @@ class GlobalContainerManager {
     }
 
     const rect = (designerStore.formDesigner.$el as HTMLDivElement).getBoundingClientRect();
-    const containers = this.getAllContainer().reverse();
+    // 使用缓存的容器
+    const containers = this.getCachedContainers().reverse();
 
     // 计算鼠标相对位置
     const mousePos = {
@@ -300,29 +320,20 @@ class GlobalContainerManager {
     containers: ContainerInfo[],
     currentControlName: string
   ): ContainerInfo | undefined {
-    for (const containerInfo of containers) {
-      const { screenLeft, screenTop, globalLeft: containerLeft, globalTop: containerTop, container } = containerInfo;
-      const { width: containerWidth, height: containerHeight } = container;
+    return containers.find(({ screenLeft, screenTop, globalLeft, globalTop, container }) => {
+      const { width, height, name } = container;
 
-      // 计算鼠标相对于屏幕的绝对位置
-      const absoluteMouseX = x + screenLeft;
-      const absoluteMouseY = y + screenTop;
+      // 计算鼠标绝对位置并检查边界
+      const mouseX = x + screenLeft;
+      const mouseY = y + screenTop;
 
-      // 检查鼠标是否在此容器内，并且容器有效
-      const isMouseInsideContainer =
-        absoluteMouseX >= containerLeft &&
-        absoluteMouseX <= containerLeft + containerWidth &&
-        absoluteMouseY >= containerTop &&
-        absoluteMouseY <= containerTop + containerHeight;
+      const isInBounds =
+        mouseX >= globalLeft && mouseX <= globalLeft + width && mouseY >= globalTop && mouseY <= globalTop + height;
 
-      const isValidContainer = container.name !== currentControlName && this.isContainerVisible(container, containers);
+      const isValid = name !== currentControlName && this.isContainerVisible(container, containers);
 
-      if (isMouseInsideContainer && isValidContainer) {
-        return containerInfo;
-      }
-    }
-
-    return undefined;
+      return isInBounds && isValid;
+    });
   }
 }
 

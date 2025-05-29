@@ -12,7 +12,9 @@ type ConfiguratorItem = DesignerDeclare.ConfiguratorItem;
 
 @Component
 export default class SelectControl extends DataSourceControl {
-  declare config: SelectConfig;
+  public override get config() {
+    return super.config as SelectConfig;
+  }
 
   // 定义脱离响应的options
   options: Ref<any[]> = shallowRef([]);
@@ -26,9 +28,9 @@ export default class SelectControl extends DataSourceControl {
     }
   }
 
-  unmounted() {
-    delete this.config.GetSources;
-  }
+  // unmounted() {
+  //   delete this.config.GetSources;
+  // }
 
   Desuffix(field: string) {
     return field?.replace(/\[|\]/g, "");
